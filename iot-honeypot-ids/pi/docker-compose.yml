@@ -1,0 +1,285 @@
+# =====================================================================
+# Raspberry Pi Honeypot Fleet — Docker Compose
+# ---------------------------------------------------------------------
+# Runs on a Pi 4 (4 GB RAM). All honeypots live on an isolated network.
+# Telemetry is shipped to PC1 (Logstash) via Filebeat.
+# =====================================================================
+name: iot-honeypot-pi
+
+# Pin Docker Compose file format
+version: "3.9"
+
+# ---- Network: honeypots share an isolated bridge -------------------
+networks:
+  honeynet:
+    driver: bridge
+    internal: false        # needs outbound to PC1 + SSH admin
+  mgmt:
+    driver: bridge
+
+# ---- Volumes --------------------------------------------------------
+volumes:
+  cowrie_var:
+  cowrie_data:
+  cowrie_etc:
+  filebeat_data:
+  collector_data:
+  camera_logs:
+  iot_logs:
+
+# =====================================================================
+services:
+  # ----------------------------------------------------------------
+  # Cowrie — SSH / Telnet honeypot
+  # ----------------------------------------------------------------
+  cowrie:
+    image: cowrie/cowrie:latest
+    container_name: pi-cowrie
+    restart: unless-stopped
+    init: true
+    profiles: ["cowrie"]
+    networks:
+      - honeynet
+    ports:
+      - "${COWRIE_SSH_PORT:-2222}:2222/tcp"
+      - "${COWRIE_TELNET_PORT:-2223}:2223/tcp"
+    environment:
+      - COWRIE_JSON_LOG=${COWRIE_JSON_LOG:-/var/log/cowrie/cowrie.json}
+    volumes:
+      - cowrie_var:/var/log/cowrie
+      - cowrie_data:/cowrie/cowrie-git/var
+      - cowrie_etc:/cowrie/cowrie-git/etc
+      - ./honeypots/cowrie/cowrie.cfg:/cowrie/cowrie-git/etc/cowrie.cfg:ro
+      - ./honeypots/cowrie/userdb.txt:/cowrie/cowrie-git/etc/userdb.txt:ro
+      - ./honeypots/cowrie/fs:/cowrie/cowrie-git/share/cowrie/txtdata/fs:ro
+    # Security hardening
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+    read_only: false        # Cowrie needs to write its tty logs
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=16m
+    mem_limit: ${COWRIE_MEM_LIMIT:-256m}
+    memswap_limit: ${COWRIE_MEM_LIMIT:-256m}
+    cpus: "0.5"
+    pids_limit: 200
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "ss -ltn | grep -q ':2222' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ----------------------------------------------------------------
+  # Camera HTTP honeypot
+  # ----------------------------------------------------------------
+  camera:
+    build:
+      context: ./honeypots/camera
+      dockerfile: Dockerfile
+    image: iot-honeypot/camera:local
+    container_name: pi-camera
+    restart: unless-stopped
+    profiles: ["camera"]
+    networks:
+      - honeynet
+    ports:
+      - "${CAMERA_HTTP_PORT:-8080}:8080/tcp"
+    environment:
+      - DEVICE_ID=${DEVICE_ID_CAMERA:-camera-01}
+      - HOSTNAME=${HONEYPOT_HOSTNAME:-iot-bridge-01}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      # Mount the named volume at the path the honeypot actually writes to.
+      # camera/app.py writes to CAMERA_LOG_PATH=/var/log/camera/camera.jsonl.
+      # Filebeat reads camera_logs:/var/log/camera:ro — the volume must be
+      # mounted at /var/log/camera in the camera container too, so logs
+      # persist to the named volume that Filebeat reads.
+      # CRITICAL: do NOT put a tmpfs over /var/log/camera — that would
+      # shadow the named volume and lose all logs on container restart.
+      - camera_logs:/var/log/camera
+    # Security hardening — the camera does not need any capabilities.
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      # tmpfs only for genuinely temporary directories — NOT /var/log/camera.
+      - /tmp:rw,nosuid,nodev,size=8m
+    mem_limit: ${CAMERA_MEM_LIMIT:-96m}
+    memswap_limit: ${CAMERA_MEM_LIMIT:-96m}
+    cpus: "0.25"
+    pids_limit: 64
+    user: "10001:10001"
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/health',timeout=2).status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  # ----------------------------------------------------------------
+  # IoT service honeypot (TCP)
+  # ----------------------------------------------------------------
+  iot-service:
+    build:
+      context: ./honeypots/iot-service
+      dockerfile: Dockerfile
+    image: iot-honeypot/iot-service:local
+    container_name: pi-iot-service
+    restart: unless-stopped
+    profiles: ["iot-service"]
+    networks:
+      - honeynet
+    ports:
+      - "${IOT_SERVICE_PORT:-9000}:9000/tcp"
+    environment:
+      - DEVICE_ID=${DEVICE_ID_IOT:-iot-01}
+      - HOSTNAME=${HONEYPOT_HOSTNAME:-iot-bridge-01}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      # Mount the named volume at the path the honeypot actually writes to.
+      # iot-service/app.py writes to IOT_LOG_PATH=/var/log/iot/iot.jsonl.
+      # Filebeat reads iot_logs:/var/log/iot:ro — the volume must be
+      # mounted at /var/log/iot in the iot-service container too.
+      # CRITICAL: do NOT put a tmpfs over /var/log/iot — that would
+      # shadow the named volume and lose all logs on container restart.
+      - iot_logs:/var/log/iot
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      # tmpfs only for genuinely temporary directories — NOT /var/log/iot.
+      - /tmp:rw,nosuid,nodev,size=8m
+    mem_limit: ${IOT_SERVICE_MEM_LIMIT:-64m}
+    memswap_limit: ${IOT_SERVICE_MEM_LIMIT:-64m}
+    cpus: "0.2"
+    pids_limit: 48
+    user: "10002:10002"
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import socket; s=socket.socket(); s.settimeout(2); s.connect(('127.0.0.1',9000)); s.close()\" || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  # ----------------------------------------------------------------
+  # Collector — optional local spool/buffer when PC1 is unreachable
+  # ----------------------------------------------------------------
+  # CRITICAL FIX (Issue #6): The collector writes buffered files into
+  # collector_data:/data, but Filebeat did NOT mount collector_data.
+  # Therefore the collector's spool files were never consumed by Filebeat
+  # — the "reliability" the collector claimed to provide was not real.
+  # The fix: mount collector_data into Filebeat as /var/log/collector:ro
+  # and add a filestream input for the collector's spool files.
+  # Filebeat's own disk queue (queue.disk) now provides the PRIMARY
+  # durability guarantee. The collector is an OPTIONAL supplementary
+  # buffer for environments where Filebeat's disk queue is insufficient.
+  # ----------------------------------------------------------------
+  collector:
+    build:
+      context: ./collector
+      dockerfile: Dockerfile
+    image: iot-honeypot/collector:local
+    container_name: pi-collector
+    restart: unless-stopped
+    profiles: ["collector"]
+    networks:
+      - honeynet
+    environment:
+      - CENTRAL_SERVER_IP=${CENTRAL_SERVER_IP}
+      - LOGSTASH_BEATS_PORT=${LOGSTASH_BEATS_PORT:-5044}
+      - SPOOL_DIR=/data
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - collector_data:/data
+      - cowrie_var:/logs/cowrie:ro
+      - camera_logs:/logs/camera:ro
+      - iot_logs:/logs/iot:ro
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=8m
+    mem_limit: ${COLLECTOR_MEM_LIMIT:-64m}
+    cpus: "0.2"
+    pids_limit: 48
+    user: "10003:10003"
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  # ----------------------------------------------------------------
+  # Filebeat — ships honeypot JSON logs to PC1 Logstash
+  # ----------------------------------------------------------------
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:${ELK_VERSION:-8.13.4}
+    container_name: pi-filebeat
+    restart: unless-stopped
+    # Always run so telemetry forwarding survives honeypot restarts.
+    profiles: ["default"]
+    networks:
+      - honeynet
+    depends_on:
+      - cowrie
+      - camera
+      - iot-service
+    environment:
+      - CENTRAL_SERVER_IP=${CENTRAL_SERVER_IP}
+      - LOGSTASH_BEATS_PORT=${LOGSTASH_BEATS_PORT:-5044}
+      - ELK_VERSION=${ELK_VERSION:-8.13.4}
+    user: root               # Filebeat needs to read cowrie's log dir
+    volumes:
+      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - cowrie_var:/var/log/cowrie:ro
+      - camera_logs:/var/log/camera:ro
+      - iot_logs:/var/log/iot:ro
+      # CRITICAL FIX (Issue #6): mount collector_data so Filebeat can
+      # consume the collector's spool files. Without this mount, the
+      # collector's buffered events were never forwarded.
+      - collector_data:/var/log/collector:ro
+      - filebeat_data:/usr/share/filebeat/data
+    command: filebeat -e -strict.perms=false
+    mem_limit: ${FILEBEAT_MEM_LIMIT:-96m}
+    cpus: "0.3"
+    pids_limit: 64
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "filebeat test config >/dev/null 2>&1 || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"

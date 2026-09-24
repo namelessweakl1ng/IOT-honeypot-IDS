@@ -1,0 +1,2459 @@
+@Superpowers
+
+We are doing the NEXT MAJOR ITERATION of the IoT Honeypot + Hybrid IDS research project.
+
+I have attached the current repository archive.
+
+You MUST inspect the repository deeply before modifying anything.
+
+Do NOT assume the previous paper, README, documentation, experiment metadata, or comments are scientifically correct merely because they exist.
+
+This iteration is NOT primarily about UI polish.
+
+The objective is to transform the project from:
+
+"well-built cybersecurity platform with a preliminary ML demonstration"
+
+into:
+
+"a reproducible, experimentally rigorous IoT honeypot + hybrid IDS research platform with defensible empirical evidence."
+
+The final result must support a strong academic paper and a live final-year demonstration.
+
+IMPORTANT:
+Do not fabricate datasets, metrics, attack counts, latency numbers, resource measurements, or experimental results.
+
+If something has not actually been measured, represent it as:
+NOT RUN
+INSUFFICIENT DATA
+NOT AVAILABLE
+
+Never create fake numbers to make the paper look stronger.
+
+============================================================
+0. FIRST: FULL REPOSITORY AUDIT
+============================================================
+
+Before changing code:
+
+1. Inspect the entire repository tree.
+2. Inspect:
+   - README
+   - docs/
+   - dashboard/ml/
+   - model-lab/
+   - shared/
+   - attacker/
+   - pi/
+   - dashboard/
+   - tests/
+   - scripts/
+3. Identify:
+   - implemented functionality
+   - partially implemented functionality
+   - documented-but-unimplemented functionality
+   - experimental functionality
+   - synthetic/demo functionality
+   - production/runtime functionality
+   - dead code
+   - duplicated logic
+   - misleading documentation
+   - hardcoded values
+   - dummy/sample data
+   - assumptions that can contaminate experiments
+4. Produce an internal architecture map before implementation.
+
+Do NOT immediately rewrite large portions of the repository.
+
+============================================================
+1. SCIENTIFIC INTEGRITY IS THE FIRST REQUIREMENT
+============================================================
+
+The current project contains a synthetic dataset with:
+
+- 210 sessions
+- 30 sessions per class
+- 7 classes
+- synthetic labels
+- Random Forest
+- seed 42
+- reported F1 = 1.00
+
+This result must NOT be treated as evidence of real-world IDS performance.
+
+The repository explicitly identifies synthetic data and feature leakage.
+
+Preserve that distinction permanently.
+
+Every dataset must carry provenance metadata.
+
+Minimum dataset metadata:
+
+- dataset_id
+- dataset_version
+- source
+- capture_start
+- capture_end
+- collection_host
+- honeypot_type
+- attack_source
+- campaign_id
+- scenario_id
+- label_source
+- labeling_method
+- labeling_confidence
+- feature_version
+- schema_version
+- preprocessing_version
+- inclusion/exclusion criteria
+
+Supported label provenance should include at least:
+
+SYNTHETIC
+SCENARIO_GROUND_TRUTH
+ANALYST_LABELED
+EXTERNAL_DATASET
+RULE_ENGINE
+UNLABELED
+
+CRITICAL:
+
+RULE_ENGINE labels must NEVER automatically be treated as ground truth.
+
+If a rule engine says:
+
+brute_force
+
+that is a detector output, not ground truth.
+
+For supervised evaluation, distinguish:
+
+ground truth
+predicted label
+rule output
+ML output
+anomaly output
+
+Do not allow these to silently collapse into one field.
+
+============================================================
+2. FIX THE LABEL CIRCULARITY PROBLEM
+============================================================
+
+Audit the complete labeling path.
+
+Current architecture includes:
+
+raw event
+→ Logstash enrichment
+→ attack.classification
+→ rule engine
+→ dataset label
+→ ML training
+
+This can create circular evaluation because the same classification signal can influence both the label and the feature space.
+
+Redesign this.
+
+Ground truth should preferably come from:
+
+A. controlled attacker scenario metadata
+
+Example:
+
+campaign_id = campaign-001
+scenario_id = ssh-bruteforce-001
+known_ground_truth = brute_force
+
+OR
+
+B. analyst annotation
+
+OR
+
+C. external dataset labels
+
+For uncontrolled real traffic:
+
+label = unknown/unlabeled
+
+unless manually validated.
+
+Implement explicit label provenance.
+
+Add tests proving that:
+
+- rule output cannot silently become ground truth
+- classifier labels cannot become ground truth
+- anomaly output cannot become ground truth
+
+without an explicit labeling step.
+
+============================================================
+3. CREATE A REAL DATA COLLECTION PIPELINE
+============================================================
+
+The project already has:
+
+- Cowrie
+- camera HTTP honeypot
+- IoT TCP service
+- Filebeat
+- Logstash
+- Elasticsearch
+- session reconstruction
+- feature extraction
+- attacker scenarios
+
+Turn this into a proper data collection system.
+
+Add a campaign concept.
+
+Example:
+
+campaign:
+    campaign_id
+    start_time
+    end_time
+    attacker_host
+    target_host
+    scenario_id
+    repetition
+    intended_label
+    protocol
+    honeypot
+    notes
+
+Every controlled attack execution must generate a machine-readable campaign manifest.
+
+Example:
+
+campaign-2026-001/
+    manifest.json
+    attacker-run.json
+    telemetry-reference.json
+    ground-truth.json
+
+The manifest should link:
+
+scenario
+→ attacker execution
+→ session IDs
+→ event IDs
+→ labels
+→ feature version
+→ resulting dataset row
+
+This gives us traceability from paper table → dataset → session → event.
+
+============================================================
+4. REAL RASPBERRY PI DATASET
+============================================================
+
+Run the real Raspberry Pi honeypot fleet.
+
+Do NOT synthesize replacement data.
+
+Collect real sessions from:
+
+1. Cowrie SSH
+2. Camera HTTP
+3. IoT TCP service
+
+Target:
+
+minimum initial dataset:
+500+ real sessions
+
+preferred:
+1000+ sessions
+
+Do NOT artificially balance the classes.
+
+Report actual class distribution.
+
+Collect multiple repetitions of each controlled scenario.
+
+At minimum include:
+
+BENIGN:
+- normal HTTP requests
+- normal IoT protocol requests
+- benign SSH administrative-style interaction if appropriate
+- health checks
+- expected service access
+
+ATTACK:
+- SSH brute force
+- SSH interactive command activity
+- camera reconnaissance
+- default credential attempts
+- HTTP enumeration
+- path traversal probes
+- command injection probes
+- IoT probing
+- multi-stage campaigns
+
+Add temporal separation between collection campaigns.
+
+Do not collect all repetitions back-to-back and then randomly split them.
+
+============================================================
+5. PREVENT TEMPORAL / CAMPAIGN LEAKAGE
+============================================================
+
+The existing session-level split is useful but insufficient for the strongest evaluation.
+
+Implement multiple evaluation protocols.
+
+A. Random session-level split
+
+For baseline comparison only.
+
+B. Campaign-level split
+
+No campaign appears in both train and test.
+
+C. Temporal split
+
+Train on earlier time period.
+
+Test on later time period.
+
+D. Attacker-source split
+
+Where possible:
+
+train on attacker source A/B
+
+test on source C
+
+E. Honeypot split
+
+Train on some honeypot types.
+
+Test on another.
+
+F. Cross-scenario split
+
+Train on known scenarios.
+
+Test on held-out scenario variants.
+
+Never allow:
+
+same campaign
+same generated sequence
+same attacker execution
+same session
+
+to appear in both train and test.
+
+Document every split explicitly.
+
+============================================================
+6. DATASET QUALITY REPORT
+============================================================
+
+Create a dataset audit command.
+
+Example:
+
+python -m model_lab.datasets.audit --dataset ...
+
+It must report:
+
+- total sessions
+- total events
+- unique campaigns
+- unique attacker sources
+- unique honeypots
+- class distribution
+- label provenance distribution
+- unlabeled count
+- missing values
+- duplicate sessions
+- duplicate events
+- session duration statistics
+- event count statistics
+- per-class event counts
+- temporal coverage
+- feature missingness
+- suspiciously constant features
+- possible leakage features
+
+Generate both:
+
+JSON machine-readable report
+Markdown human-readable report
+
+============================================================
+7. EXTERNAL DATASET SUPPORT
+============================================================
+
+IMPORTANT:
+
+The current repository does NOT appear to contain complete IoT-23 and N-BaIoT importers.
+
+Do not pretend they exist.
+
+Implement proper dataset adapters.
+
+Architecture:
+
+model-lab/model_lab/datasets/
+    base.py
+    iot23.py
+    nbaioT.py
+    from_es.py
+    bootstrap.py
+
+Use the exact official dataset naming and document licensing/access requirements.
+
+Do not automatically download restricted datasets.
+
+Provide commands that operate on locally supplied dataset paths.
+
+Example:
+
+python -m model_lab.datasets.iot23 \
+    --input /path/to/iot23 \
+    --output model-lab/datasets/iot23-v1
+
+python -m model_lab.datasets.nbaioT \
+    --input /path/to/nbaioT \
+    --output model-lab/datasets/nbaioT-v1
+
+Every adapter must document:
+
+- source format
+- label mapping
+- fields used
+- fields discarded
+- preprocessing
+- aggregation
+- limitations
+- label semantics
+
+============================================================
+8. EXTERNAL DATASET NORMALIZATION
+============================================================
+
+Do NOT force external datasets into the project's schema by blindly renaming fields.
+
+Build a canonical intermediate representation.
+
+Example:
+
+CanonicalSession:
+    session_id
+    timestamp_start
+    timestamp_end
+    protocol
+    source
+    destination
+    event_count
+    authentication_features
+    traffic_features
+    behavioral_features
+    label
+    label_source
+    dataset_origin
+
+Document which canonical features are:
+
+AVAILABLE
+DERIVED
+UNAVAILABLE
+
+Never fill unavailable features with fake values without recording that they were unavailable.
+
+============================================================
+9. IoT-23 / N-BaIoT EXPERIMENTS
+============================================================
+
+Once data is available, implement:
+
+Experiment E1:
+train IoT-23
+test IoT-23
+
+Experiment E2:
+train N-BaIoT
+test N-BaIoT
+
+Experiment E3:
+train IoT-23
+test N-BaIoT
+
+Experiment E4:
+train N-BaIoT
+test IoT-23
+
+Do NOT claim cross-dataset generalization if the canonical feature spaces or labels are incompatible.
+
+If incompatibility exists:
+
+report it explicitly.
+
+For every experiment report:
+
+accuracy
+macro precision
+macro recall
+macro F1
+weighted precision
+weighted recall
+weighted F1
+per-class precision
+per-class recall
+per-class F1
+confusion matrix
+FPR
+FNR
+PR-AUC where meaningful
+ROC-AUC where meaningful
+
+Also report sample/session counts.
+
+============================================================
+10. CLASSIFIER BENCHMARK
+============================================================
+
+The code already registers:
+
+- Logistic Regression
+- Random Forest
+- Gradient Boosting
+
+Actually evaluate all three.
+
+Do not just register them.
+
+Run multiple seeds:
+
+42
+123
+456
+789
+1337
+
+For each algorithm report:
+
+mean
+standard deviation
+median
+minimum
+maximum
+
+for macro F1 and other primary metrics.
+
+Primary metric should be selected BEFORE looking at results.
+
+Do not select whichever metric makes the model look best.
+
+Use:
+
+macro F1
+
+as a primary multiclass metric where appropriate.
+
+Also report weighted metrics because real datasets may be imbalanced.
+
+Do not rank models with a single arbitrary score.
+
+Present the complete results table.
+
+============================================================
+11. CONFIDENCE INTERVALS
+============================================================
+
+Add uncertainty estimation.
+
+Where statistically appropriate:
+
+- bootstrap confidence intervals
+- repeated stratified evaluation
+- paired comparisons
+
+For primary metrics provide:
+
+mean ± std
+
+and preferably:
+
+95% confidence interval
+
+Do not overclaim statistical significance from tiny datasets.
+
+============================================================
+12. RULE ENGINE EVALUATION
+============================================================
+
+The rule engine is a contribution.
+
+Evaluate it independently.
+
+Create a controlled ground-truth evaluation dataset.
+
+For every rule calculate:
+
+TP
+FP
+TN
+FN
+precision
+recall
+F1
+FPR
+false positives/hour
+
+Rules include:
+
+- brute force
+- default credentials
+- command injection
+- path traversal
+- reconnaissance
+- any other implemented rules
+
+Evaluate both:
+
+individual rules
+
+and:
+
+rule engine as a whole.
+
+Important:
+
+Do NOT evaluate rules using labels generated by those same rules.
+
+Ground truth must come from scenario metadata or independent annotation.
+
+============================================================
+13. RULE ENGINE EDGE CASE TESTING
+============================================================
+
+Test:
+
+- legitimate repeated authentication
+- legitimate HTTP enumeration-like behavior
+- noisy traffic
+- incomplete sessions
+- partial telemetry
+- multiple rules firing
+- conflicting rules
+- multi-stage campaigns
+- benign administrative behavior
+
+Document rule precedence.
+
+============================================================
+14. FORMALIZE HYBRID FUSION
+============================================================
+
+The project currently describes:
+
+Tier 1:
+Rules
+
+Tier 2:
+Supervised ML
+
+Tier 3:
+Isolation Forest
+
+But the implementation must define exactly how these outputs become one decision.
+
+Create a formal decision policy.
+
+For example:
+
+Input:
+session
+
+Step 1:
+evaluate deterministic rules
+
+Step 2:
+evaluate classifier
+
+Step 3:
+evaluate anomaly detector
+
+Step 4:
+apply explicit fusion policy
+
+Step 5:
+produce:
+
+final_label
+decision_source
+rule_id
+classifier_prediction
+classifier_confidence
+anomaly_score
+anomaly_threshold
+decision_reason
+
+DO NOT invent the final policy.
+
+Inspect the existing architecture and implement a policy consistent with the actual intended system.
+
+Document it in:
+
+docs/ml/hybrid-decision.md
+
+Add pseudocode.
+
+============================================================
+15. HYBRID ABLATION
+============================================================
+
+Run:
+
+A:
+Rules only
+
+B:
+Classifier only
+
+C:
+Isolation Forest only
+
+D:
+Rules + classifier
+
+E:
+Rules + anomaly detector
+
+F:
+Classifier + anomaly detector
+
+G:
+Rules + classifier + anomaly detector
+
+Use the SAME held-out test protocol.
+
+Do not compare results from different datasets/splits.
+
+Report:
+
+macro F1
+weighted F1
+precision
+recall
+FPR
+FNR
+latency
+
+Also report computational cost where measurable.
+
+============================================================
+16. ISOLATION FOREST EVALUATION
+============================================================
+
+The current project has IsolationForest but lacks convincing experimental validation.
+
+Implement two experiments.
+
+Experiment A:
+Train on benign traffic.
+
+Test on:
+benign + attacks.
+
+Measure:
+
+TPR / detection rate
+FPR
+precision
+recall
+F1
+PR-AUC where meaningful
+anomaly score distribution
+
+Experiment B:
+Leave-one-attack-type-out.
+
+Train without class X.
+
+Test on class X.
+
+Do NOT call this automatic "zero-day detection."
+
+Use terminology:
+
+previously unseen attack behavior
+unseen-class anomaly detection
+out-of-distribution behavior
+
+Only use "zero-day" when discussing the conceptual limitation.
+
+============================================================
+17. ANOMALY THRESHOLD ANALYSIS
+============================================================
+
+Do not blindly use:
+
+contamination=0.1
+
+Evaluate threshold selection.
+
+Report:
+
+threshold
+FPR
+TPR
+precision
+recall
+
+Plot:
+
+ROC curve where meaningful
+
+and especially:
+
+Precision-Recall curve
+
+because anomaly detection may be imbalanced.
+
+Document how the operational threshold was chosen.
+
+============================================================
+18. FEATURE LEAKAGE AUDIT
+============================================================
+
+Keep the existing v1/v2 distinction, but strengthen it.
+
+Create an automated leakage audit.
+
+Check features for:
+
+- direct label derivation
+- post-label enrichment
+- scenario ID leakage
+- campaign ID leakage
+- honeypot identity leakage
+- attacker IP leakage
+- timestamp leakage
+- dataset-origin leakage
+- rule-output leakage
+- future information leakage
+
+A feature should be classified:
+
+SAFE
+SUSPECT
+LEAKY
+UNKNOWN
+
+Classifier training must reject LEAKY features unless the user explicitly requests an experimental leakage run.
+
+============================================================
+19. LEAKAGE DEMONSTRATION
+============================================================
+
+Create a controlled methodological experiment.
+
+Model A:
+leaky features
+
+Model B:
+clean features
+
+Model C:
+clean features + shuffled labels
+
+Model D:
+clean features + noisy labels
+
+The goal is NOT to maximize metrics.
+
+The goal is to demonstrate:
+
+- how leakage inflates performance
+- how random labels destroy learnability
+- how label noise affects robustness
+
+This becomes a methodological contribution.
+
+============================================================
+20. ABLATION STUDY
+============================================================
+
+Group features into meaningful families:
+
+authentication
+timing
+HTTP behavior
+command behavior
+network behavior
+multi-device behavior
+session volume
+
+Run:
+
+ALL
+
+minus authentication
+
+minus timing
+
+minus HTTP
+
+minus command
+
+minus network
+
+minus multi-device
+
+Also consider:
+
+single-family-only experiments
+
+Do NOT run arbitrary one-feature combinations.
+
+Report performance changes under the SAME evaluation split.
+
+============================================================
+21. CROSS-HONEYPOT GENERALIZATION
+============================================================
+
+Evaluate whether behavioral features generalize.
+
+Examples:
+
+Train:
+Cowrie
+
+Test:
+IoT service
+
+Train:
+HTTP + IoT
+
+Test:
+Cowrie
+
+Train:
+Cowrie + HTTP
+
+Test:
+IoT
+
+Only perform experiments where the canonical feature representation is meaningful.
+
+Explicitly report feature availability differences.
+
+Do not force incompatible protocol semantics into fake equivalence.
+
+============================================================
+22. REAL BENIGN TRAFFIC
+============================================================
+
+Build a proper benign corpus.
+
+Include:
+
+- normal HTTP requests
+- legitimate endpoint access
+- IoT PING
+- IoT STAT
+- IoT LIST
+- benign authenticated activity where appropriate
+- normal SSH interaction if safely supported
+- service health checks
+- dashboard/API access if it legitimately traverses the monitored pipeline
+
+Measure:
+
+benign sessions/hour
+benign event rate
+false positives/hour
+
+Do not use only "no attack happened" as the definition of benign.
+
+============================================================
+23. FALSE POSITIVE STUDY
+============================================================
+
+This must become a major result.
+
+Measure:
+
+FPR
+
+false positives/hour
+
+false positives/session
+
+false positives by honeypot
+
+false positives by traffic type
+
+false positives by rule
+
+false positives by ML model
+
+false positives by hybrid system
+
+Provide examples of false positives.
+
+Investigate why they happened.
+
+============================================================
+24. DETECTION LATENCY
+============================================================
+
+Instrument timestamps across the pipeline.
+
+At minimum:
+
+T0:
+attack action generated
+
+T1:
+honeypot receives action
+
+T2:
+honeypot writes telemetry
+
+T3:
+Filebeat forwards
+
+T4:
+Logstash receives
+
+T5:
+Elasticsearch indexes
+
+T6:
+session reconstruction completes
+
+T7:
+feature extraction completes
+
+T8:
+detector produces decision
+
+T9:
+dashboard/API exposes alert
+
+Measure:
+
+T8 - T0
+
+and component-level latency.
+
+Report:
+
+mean
+median
+p95
+p99
+maximum
+
+Do NOT use only average latency.
+
+============================================================
+25. THROUGHPUT
+============================================================
+
+Measure:
+
+events/sec
+
+sessions/sec
+
+detections/sec
+
+pipeline backlog
+
+Filebeat queue behavior
+
+Logstash throughput
+
+Elasticsearch indexing latency
+
+Run controlled traffic-rate experiments.
+
+Example:
+
+10 events/sec
+25
+50
+100
+250
+500
+
+ONLY use rates the Pi can safely generate.
+
+Do not claim scalability beyond tested ranges.
+
+============================================================
+26. RASPBERRY PI RESOURCE STUDY
+============================================================
+
+The project title claims "lightweight."
+
+Prove it.
+
+Measure on the real Raspberry Pi:
+
+CPU %
+RAM
+temperature
+load average
+disk usage
+network RX/TX
+container resource usage
+events/sec
+detection latency
+
+Measure:
+
+idle
+
+normal traffic
+
+light attack
+
+moderate attack
+
+heavy controlled attack
+
+For every measurement record:
+
+timestamp
+duration
+traffic rate
+container
+CPU
+memory
+temperature
+
+Report:
+
+mean
+median
+p95
+peak
+
+Generate graphs.
+
+============================================================
+27. CONTAINER-LEVEL RESOURCE ACCOUNTING
+============================================================
+
+Measure separately:
+
+Cowrie
+camera
+IoT service
+Filebeat
+collector if active
+
+Determine which component dominates:
+
+CPU
+memory
+I/O
+
+This allows the paper to make a precise lightweight claim.
+
+============================================================
+28. ROBUSTNESS TESTING
+============================================================
+
+Introduce controlled telemetry degradation.
+
+Test:
+
+missing events
+delayed events
+duplicate events
+out-of-order timestamps
+malformed JSON
+missing source IP
+missing session ID
+missing HTTP fields
+partial sessions
+
+Measure:
+
+pipeline recovery
+event loss
+session reconstruction failure
+classification degradation
+
+The system should never silently lose malformed events.
+
+The existing dead-letter architecture should be tested empirically.
+
+============================================================
+29. EVENT LOSS / DELIVERY RELIABILITY
+============================================================
+
+Measure:
+
+events generated
+events written
+events shipped
+events received
+events indexed
+
+Compute:
+
+delivery rate
+loss rate
+
+Test Logstash interruption.
+
+Test Elasticsearch interruption.
+
+Test Filebeat restart.
+
+Verify whether queued events recover.
+
+This is particularly important because the project claims reliable telemetry forwarding.
+
+============================================================
+30. FIX FILEBEAT VERSION COMPATIBILITY
+============================================================
+
+The current Pi configuration contains:
+
+queue.spool
+
+but Filebeat 8.13.4 rejects:
+
+unrecognized queue type 'spool'
+
+Do NOT ignore this.
+
+Inspect the actual Filebeat version and configuration.
+
+Replace obsolete configuration with a supported queue mechanism while preserving the intended behavior:
+
+"do not silently lose telemetry when Logstash is temporarily unavailable."
+
+Validate:
+
+syntax
+
+startup
+
+shipping
+
+temporary Logstash outage
+
+recovery
+
+No data-loss claim without measurement.
+
+============================================================
+31. END-TO-END TRACEABILITY
+============================================================
+
+Every controlled experiment must be traceable:
+
+paper result
+→ experiment ID
+→ dataset version
+→ model version
+→ feature version
+→ seed
+→ evaluation protocol
+→ session IDs
+→ raw event IDs
+
+Create a machine-readable experiment manifest.
+
+Example:
+
+experiment.json
+
+must contain:
+
+experiment_id
+hypothesis
+dataset
+dataset_version
+feature_version
+model
+model_version
+algorithm
+hyperparameters
+seed
+split_protocol
+train_count
+test_count
+labels
+metrics
+artifacts
+timestamp
+git_commit
+environment
+
+Record the Git commit hash.
+
+============================================================
+32. EXPERIMENT REGISTRY
+============================================================
+
+Strengthen the current model/experiment registry.
+
+Each experiment should be immutable.
+
+Never overwrite previous results.
+
+Add:
+
+status:
+PLANNED
+RUNNING
+COMPLETED
+FAILED
+INVALID
+
+INVALID is important.
+
+For example:
+
+if leakage is detected:
+INVALID
+
+if test set is empty:
+INVALID
+
+if labels are circular:
+INVALID
+
+if provenance is missing:
+INVALID
+
+Do not allow invalid experiments to masquerade as successful experiments.
+
+============================================================
+33. AUTOMATIC EXPERIMENT VALIDATION
+============================================================
+
+Before an experiment is accepted:
+
+check:
+
+dataset exists
+dataset provenance exists
+ground-truth provenance exists
+no leakage features
+train/test separation
+no campaign overlap
+no duplicate session overlap
+feature version matches
+model version exists
+random seed recorded
+test set non-empty
+class support sufficient
+metrics computable
+
+If any critical condition fails:
+
+experiment = INVALID
+
+============================================================
+34. MODEL CARD
+============================================================
+
+Every validated model should automatically generate a model card.
+
+Include:
+
+model purpose
+training data
+test data
+feature version
+labels
+algorithm
+hyperparameters
+limitations
+known failure cases
+FPR
+FNR
+latency
+resource requirements
+training date
+Git commit
+random seeds
+
+Do not describe a model as production-ready unless the evidence supports it.
+
+============================================================
+35. DATASET CARD
+============================================================
+
+Generate a dataset card.
+
+Include:
+
+collection methodology
+hardware
+network
+honeypot types
+attack scenarios
+benign traffic
+labeling methodology
+class distribution
+collection dates
+known biases
+known limitations
+privacy considerations
+reproducibility instructions
+
+============================================================
+36. BASELINE COMPARISONS
+============================================================
+
+Do not only compare your own models.
+
+Where appropriate, establish simple baselines:
+
+majority classifier
+dummy classifier
+simple rule baseline
+logistic regression
+
+Then compare more complex models against those baselines.
+
+The objective is to show whether complexity adds measurable value.
+
+============================================================
+37. STATISTICAL VALIDITY
+============================================================
+
+Avoid cherry-picking.
+
+Define before execution:
+
+primary metric
+secondary metrics
+primary test protocol
+seed set
+dataset version
+exclusion rules
+
+Do not change evaluation criteria after seeing results merely to improve the narrative.
+
+If multiple experiments are exploratory, label them exploratory.
+
+============================================================
+38. CLASS IMBALANCE
+============================================================
+
+Real telemetry will probably be imbalanced.
+
+Do NOT force artificial balancing merely to obtain attractive F1.
+
+Report:
+
+actual class distribution
+
+Use:
+
+macro metrics
+weighted metrics
+per-class metrics
+
+Consider:
+
+class weights
+threshold adjustment
+
+but document the choice.
+
+============================================================
+39. PR-AUC / ROC-AUC
+============================================================
+
+Use metrics appropriate to the task.
+
+For binary anomaly detection:
+
+PR-AUC should be considered especially when attacks are rare.
+
+For multiclass classification:
+
+macro F1 + per-class metrics should remain central.
+
+Do not blindly report ROC-AUC when the setup does not make it meaningful.
+
+============================================================
+40. CONFIDENCE / CALIBRATION
+============================================================
+
+For probabilistic classifiers evaluate:
+
+confidence calibration
+
+where appropriate.
+
+Measure:
+
+confidence vs correctness
+
+Do not display a probability as if it were guaranteed detection confidence.
+
+The UI should distinguish:
+
+model probability
+
+anomaly score
+
+rule confidence
+
+final decision confidence
+
+============================================================
+41. EXPLAINABILITY
+============================================================
+
+For Random Forest:
+
+feature importance
+
+preferably permutation importance on held-out data.
+
+For Logistic Regression:
+
+coefficients.
+
+For Gradient Boosting:
+
+feature importance.
+
+For individual detections:
+
+show:
+
+top contributing behavioral features
+
+rule explanation
+
+model prediction
+
+probability
+
+anomaly score
+
+This should become part of the demonstration.
+
+============================================================
+42. DETECTION DECISION RECORD
+============================================================
+
+Every final detection should store:
+
+detection_id
+session_id
+event_ids
+final_label
+decision_source
+rule_result
+classifier_result
+anomaly_result
+confidence
+anomaly_score
+threshold
+feature_version
+model_version
+rule_version
+timestamp
+explanation
+
+This creates forensic reproducibility.
+
+============================================================
+43. MULTI-STAGE ATTACK EVALUATION
+============================================================
+
+The repository already contains a multi-stage scenario.
+
+Use it scientifically.
+
+Represent stages:
+
+reconnaissance
+credential access
+discovery
+execution
+collection
+
+Evaluate:
+
+stage recognition
+
+and:
+
+whole-session classification.
+
+Measure whether the system detects:
+
+individual stages
+
+and the final campaign.
+
+============================================================
+44. ATTACK VARIANT GENERALIZATION
+============================================================
+
+Do not repeatedly run exactly the same attacker script.
+
+Create controlled variants:
+
+different usernames
+different request ordering
+different delays
+different endpoint ordering
+different command sequences
+different benign interleaving
+different attack intensity
+
+Train on variant group A.
+
+Test on variant group B.
+
+This is much more valuable than simply increasing the number of identical sessions.
+
+============================================================
+45. ADVERSARIAL / EVASION-STYLE ROBUSTNESS
+============================================================
+
+Within the safe lab environment, test:
+
+slower attacks
+distributed attempts
+request padding
+randomized ordering
+low-and-slow reconnaissance
+benign-looking requests mixed with attack requests
+
+The goal is not offensive capability.
+
+The goal is to evaluate whether behavioral detection depends on brittle thresholds.
+
+Report degradation.
+
+============================================================
+46. CONCEPT DRIFT
+============================================================
+
+If enough real data is collected, divide it chronologically.
+
+Train:
+early period
+
+Test:
+later period
+
+Measure performance drift.
+
+If performance changes, document it.
+
+Do not pretend static evaluation represents long-term deployment.
+
+============================================================
+47. SECURITY OF THE RESEARCH PLATFORM
+============================================================
+
+Audit:
+
+honeypot isolation
+Docker capabilities
+filesystem permissions
+network exposure
+attacker runner safety
+API authorization
+Elasticsearch access
+Kibana access
+secrets
+credentials
+logging
+
+Ensure attacker tooling cannot target arbitrary hosts.
+
+Add tests for safety constraints.
+
+Do not weaken safety controls to make demonstrations easier.
+
+============================================================
+48. REPRODUCIBILITY COMMANDS
+============================================================
+
+Create one-command workflows.
+
+Examples:
+
+./scripts/research/collect-campaign.sh
+./scripts/research/build-dataset.sh
+./scripts/research/audit-dataset.sh
+./scripts/research/run-baselines.sh
+./scripts/research/run-hybrid-evaluation.sh
+./scripts/research/run-resource-benchmark.sh
+./scripts/research/run-latency-benchmark.sh
+./scripts/research/generate-report.sh
+
+Every script must fail loudly on invalid input.
+
+No silent success.
+
+============================================================
+49. RESEARCH ARTIFACT DIRECTORY
+============================================================
+
+Create:
+
+research/
+
+with:
+
+research/
+    campaigns/
+    datasets/
+    experiments/
+    reports/
+    figures/
+    tables/
+    manifests/
+
+Do not put huge raw telemetry directly into Git.
+
+Use .gitignore appropriately.
+
+Commit:
+
+schemas
+scripts
+metadata
+experiment definitions
+small reproducible fixtures
+
+Do NOT commit:
+
+secrets
+large raw telemetry
+PCAP
+credentials
+huge generated artifacts
+
+============================================================
+50. AUTOMATED PAPER TABLE GENERATION
+============================================================
+
+Generate CSV/Markdown/LaTeX-compatible tables from experiment JSON.
+
+Examples:
+
+classifier comparison
+hybrid ablation
+rule evaluation
+anomaly detection
+cross-dataset evaluation
+resource consumption
+latency
+false positives
+
+The paper should consume generated results rather than manually typed numbers.
+
+This eliminates transcription errors.
+
+============================================================
+51. AUTOMATED FIGURE GENERATION
+============================================================
+
+Generate publication-quality figures:
+
+1. class distribution
+2. confusion matrices
+3. classifier comparison
+4. hybrid ablation
+5. anomaly ROC/PR curves
+6. FPR vs detection rate
+7. CPU vs event rate
+8. memory vs event rate
+9. latency distribution
+10. p95 latency
+11. feature ablation
+12. cross-dataset performance
+13. attack-stage detection timeline
+14. false positives over time
+
+Every figure must contain:
+
+title
+axis labels
+units
+legend where required
+dataset/experiment identifier
+
+Do not hardcode results into plotting scripts.
+
+============================================================
+52. DASHBOARD MUST USE REAL DATA
+============================================================
+
+Audit the React dashboard.
+
+Remove fake placeholder metrics if they imply real measurements.
+
+Instead show:
+
+real API-backed values
+
+or:
+
+"No data collected"
+
+Do not display:
+
+"0"
+"—"
+"100%"
+"Healthy"
+
+unless the backend actually knows that value.
+
+The dashboard should expose:
+
+live event count
+session count
+detection count
+class distribution
+model versions
+experiment results
+false positives
+latency
+resource metrics
+recent detections
+
+Kibana remains useful, but the custom dashboard should become a real research control panel.
+
+============================================================
+53. DEMONSTRATION MODE
+============================================================
+
+Create a reproducible final-year-project demonstration.
+
+Flow:
+
+1. verify infrastructure
+2. verify honeypots
+3. generate benign traffic
+4. generate controlled attack
+5. show telemetry
+6. show reconstructed session
+7. show extracted features
+8. show rule result
+9. show classifier result
+10. show anomaly result
+11. show final fused decision
+12. show explanation
+13. show latency
+14. show resource usage
+15. show experiment provenance
+
+The demo must use actual live telemetry.
+
+Synthetic data may be available under a clearly labeled DEVELOPMENT mode only.
+
+============================================================
+54. NO DUMMY DATA IN THE RESEARCH PATH
+============================================================
+
+Separate:
+
+DEVELOPMENT DATA
+
+from:
+
+RESEARCH DATA
+
+from:
+
+LIVE DATA
+
+from:
+
+EXTERNAL DATASETS
+
+The UI must clearly display the source.
+
+Example:
+
+DATA SOURCE:
+LIVE CAPTURE
+
+or:
+
+DATA SOURCE:
+SYNTHETIC DEVELOPMENT
+
+Never mix them silently.
+
+============================================================
+55. TESTING
+============================================================
+
+Preserve all existing tests.
+
+Add tests for:
+
+dataset provenance
+label provenance
+leakage detection
+campaign split
+temporal split
+duplicate detection
+rule evaluation
+hybrid fusion
+anomaly thresholds
+model metadata
+experiment validation
+resource measurement parsing
+latency measurement
+attacker safety
+Filebeat configuration
+telemetry recovery
+
+Unit tests must remain deterministic.
+
+Integration tests should be clearly separated from unit tests.
+
+E2E tests should require actual services.
+
+============================================================
+56. CURRENT FILEBEAT ISSUE
+============================================================
+
+The current repository contains:
+
+queue.spool
+
+but Filebeat 8.13.4 reports:
+
+unrecognized queue type 'spool'
+
+Fix this compatibility problem properly.
+
+Do not simply remove durable queueing because it is inconvenient.
+
+Determine the supported Filebeat 8.13.4 mechanism that best preserves the intended reliability.
+
+Then test:
+
+Filebeat starts
+→ Logstash receives events
+→ temporary Logstash interruption
+→ Filebeat recovers
+→ telemetry eventually reaches Elasticsearch
+
+Document the behavior.
+
+============================================================
+57. DOCUMENTATION CONSISTENCY
+============================================================
+
+Audit every README and docs file.
+
+Remove claims that are not implemented.
+
+Especially verify claims about:
+
+IoT-23
+N-BaIoT
+real data
+zero-day detection
+hybrid fusion
+model evaluation
+latency
+resource efficiency
+reproducibility
+
+The documentation must describe the actual implementation.
+
+============================================================
+58. ACADEMIC TERMINOLOGY
+============================================================
+
+Use precise terminology.
+
+Prefer:
+
+previously unseen attack behavior
+
+over:
+
+zero-day detection
+
+Prefer:
+
+controlled laboratory evaluation
+
+over:
+
+real-world validation
+
+unless actual field data exists.
+
+Prefer:
+
+real honeypot telemetry
+
+over:
+
+real-world attack traffic
+
+unless the source is genuinely uncontrolled real-world traffic.
+
+Prefer:
+
+anomaly detection
+
+over:
+
+zero-day detector
+
+unless there is direct evidence for the stronger claim.
+
+============================================================
+59. LIMITATIONS MUST BE FIRST-CLASS DATA
+============================================================
+
+Every experiment should be able to record limitations.
+
+Examples:
+
+small sample size
+class imbalance
+synthetic data
+limited protocols
+single Pi
+single LAN
+controlled attacker
+rule-derived labels
+external dataset mismatch
+missing features
+limited benign traffic
+
+Do not hide limitations.
+
+A strong paper explains them clearly.
+
+============================================================
+60. RESEARCH QUESTIONS
+============================================================
+
+Structure experiments around explicit research questions.
+
+Suggested questions:
+
+RQ1:
+Can the honeypot fleet reliably collect and normalize IoT attack telemetry?
+
+RQ2:
+How accurately can behavioral features classify known attack behaviors?
+
+RQ3:
+Does the hybrid architecture provide measurable value over individual detection tiers?
+
+RQ4:
+Can anomaly detection identify attack behavior excluded from supervised training?
+
+RQ5:
+How well do behavioral features generalize across honeypot types?
+
+RQ6:
+How well does the detector generalize across external IoT datasets?
+
+RQ7:
+What are the false-positive and latency characteristics of the system?
+
+RQ8:
+Is the system lightweight enough for Raspberry Pi deployment?
+
+Do not force results to support these questions.
+
+If an RQ cannot be answered:
+
+mark it unanswered and explain why.
+
+============================================================
+61. HYPOTHESIS REGISTRY
+============================================================
+
+Create:
+
+research/hypotheses.yaml
+
+Each hypothesis must contain:
+
+id
+question
+hypothesis
+metric
+dataset
+evaluation_protocol
+acceptance_criteria
+status
+
+Do not write acceptance criteria after seeing the results.
+
+============================================================
+62. PAPER-READY RESULTS STRUCTURE
+============================================================
+
+Generate documentation that supports:
+
+VIII. RESULTS
+
+A. Live Honeypot Dataset
+B. Dataset Quality and Label Provenance
+C. Supervised Classifier Evaluation
+D. Rule Engine Evaluation
+E. Isolation Forest Evaluation
+F. Hybrid IDS Ablation
+G. Cross-Honeypot Generalization
+H. Cross-Dataset Generalization
+I. False-Positive Analysis
+J. Detection Latency
+K. Raspberry Pi Resource Consumption
+L. Robustness and Evasion Tests
+M. Leakage / Methodological Validation
+N. Reproducibility
+
+============================================================
+63. PUBLICATION-QUALITY REPRODUCIBILITY
+============================================================
+
+A third party should be able to reproduce the experiment from:
+
+Git commit
++
+dataset manifest
++
+experiment manifest
++
+environment specification
++
+command
++
+seed
++
+feature version
+
+Generate:
+
+environment.json
+
+containing:
+
+Python version
+OS
+architecture
+scikit-learn version
+numpy version
+pandas version
+Elastic version
+Filebeat version
+Docker version
+Git commit
+
+============================================================
+64. GIT HYGIENE
+============================================================
+
+Never commit:
+
+.env
+passwords
+captured credentials
+PCAP
+large raw datasets
+private telemetry
+temporary diagnostics
+local Docker state
+
+Do commit:
+
+source
+schemas
+experiment definitions
+scripts
+dataset manifests
+small test fixtures
+documentation
+
+Before finishing:
+
+git status
+
+must clearly show only intended modifications.
+
+============================================================
+65. DO NOT DELETE VALID EXISTING FUNCTIONALITY
+============================================================
+
+This is a refactor/research-hardening iteration.
+
+Do NOT casually remove:
+
+Cowrie
+camera
+IoT service
+Filebeat
+Logstash
+Elasticsearch
+Kibana
+FastAPI
+model registry
+attacker safety
+existing tests
+
+If something must change, explain why and preserve behavior where possible.
+
+============================================================
+66. PERFORMANCE / RESOURCE CONSTRAINTS
+============================================================
+
+Remember:
+
+Raspberry Pi:
+resource-constrained
+
+Fedora analysis machine:
+handles ELK + ML
+
+Do not move heavy ML computation onto the Pi.
+
+The Pi should remain responsible for:
+
+honeypots
+telemetry
+forwarding
+
+The analysis host should handle:
+
+Elasticsearch
+Logstash
+ML
+experiments
+dashboard
+
+============================================================
+67. ACCEPTANCE CRITERIA
+============================================================
+
+The iteration is NOT complete until all of the following are true.
+
+A. Architecture
+- no unexplained dead paths
+- documented actual architecture
+- clear component boundaries
+
+B. Data
+- real telemetry pipeline operational
+- provenance implemented
+- ground truth separated from detector output
+- dataset audit implemented
+
+C. ML
+- Logistic Regression evaluated
+- Random Forest evaluated
+- Gradient Boosting evaluated
+- multiple seeds evaluated
+- held-out evaluation implemented
+- campaign/temporal split implemented
+
+D. Rules
+- rule evaluation implemented
+- rule metrics generated independently
+- false positives measured
+
+E. Anomaly
+- Isolation Forest evaluated
+- threshold analysis implemented
+- unseen-class experiment implemented
+
+F. Hybrid
+- explicit fusion logic
+- hybrid ablation
+- final decision record
+
+G. Generalization
+- cross-honeypot experiment support
+- IoT-23 adapter
+- N-BaIoT adapter
+- cross-dataset experiment support
+
+H. Systems
+- Raspberry Pi resource measurement
+- throughput measurement
+- latency measurement
+- telemetry reliability measurement
+
+I. Research quality
+- experiment manifests
+- dataset cards
+- model cards
+- reproducibility metadata
+- generated tables
+- generated figures
+
+J. Safety
+- attacker safety tests pass
+- no arbitrary target execution
+- no secrets committed
+
+K. Documentation
+- no unsupported claims
+- no fake experimental results
+- limitations documented
+
+============================================================
+68. VERIFICATION REQUIREMENT
+============================================================
+
+After implementation:
+
+1. Run unit tests.
+2. Run integration tests where infrastructure exists.
+3. Run static checks.
+4. Validate configuration files.
+5. Validate experiment manifests.
+6. Validate dataset audit.
+7. Validate attacker safety.
+8. Validate dashboard build.
+9. Validate ML training on the synthetic DEVELOPMENT dataset.
+10. Validate the real-data pipeline using whatever real data is actually available.
+11. Do not claim real-data results until real data has actually been collected.
+
+Report:
+
+PASS
+FAIL
+SKIPPED
+NOT RUN
+
+for every validation group.
+
+============================================================
+69. IMPORTANT: DO NOT FABRICATE THE PAPER RESULTS
+============================================================
+
+The implementation should create the machinery for experiments.
+
+It must NOT invent:
+
+F1
+precision
+recall
+latency
+CPU
+memory
+throughput
+false-positive rate
+cross-dataset accuracy
+
+If no real dataset exists yet:
+
+say:
+
+NOT RUN — REAL DATA REQUIRED
+
+If IoT-23 is not supplied:
+
+say:
+
+NOT RUN — DATASET NOT PROVIDED
+
+If N-BaIoT is not supplied:
+
+say:
+
+NOT RUN — DATASET NOT PROVIDED
+
+============================================================
+70. FINAL OUTPUT
+============================================================
+
+At the end produce:
+
+1. architecture audit
+2. list of scientific risks found
+3. implementation plan
+4. files changed
+5. new experiment capabilities
+6. new datasets supported
+7. new metrics supported
+8. tests run
+9. tests passed
+10. tests skipped
+11. experiments that remain NOT RUN
+12. exact commands for collecting real data
+13. exact commands for running every experiment
+14. exact commands for generating paper tables
+15. exact commands for generating paper figures
+16. reproducibility instructions
+17. remaining limitations
+
+Do NOT claim the project is publication-ready merely because the code builds.
+
+The goal is to make the evidence pipeline publication-grade.
+
+============================================================
+71. FINAL PRINCIPLE
+============================================================
+
+The most important change is philosophical but must become technical:
+
+Do not optimize the project for:
+
+"getting a high F1."
+
+Optimize it for:
+
+"being able to defend every number in the paper."
+
+Every number must have:
+
+source
+→ dataset
+→ label provenance
+→ experiment
+→ split
+→ model
+→ seed
+→ code version
+→ reproducible command
+
+The finished project should allow a reviewer to ask:
+
+"Where did this number come from?"
+
+and the answer should be machine-traceable.
+
+Start by auditing the repository and identifying the highest-risk scientific validity issues.
+
+Then implement the research infrastructure in phases.
+
+Do NOT perform a giant uncontrolled rewrite.
+
+Use small, verifiable phases.
+
+After each phase:
+- run relevant tests
+- inspect the diff
+- verify behavior
+- document what changed
+
+Do not proceed past a phase with failing validation unless the failure is explicitly documented and understood.

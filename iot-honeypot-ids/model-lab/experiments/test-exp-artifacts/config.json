@@ -1,0 +1,26 @@
+{
+  "experiment_id": "test-exp-artifacts",
+  "training_scenarios": [
+    "ssh-bruteforce"
+  ],
+  "held_out_scenarios": [
+    "http-enumeration"
+  ],
+  "repetitions": 10,
+  "feature_version": "v2",
+  "split_strategy": "campaign",
+  "test_ratio": 0.2,
+  "seed": 42,
+  "models": [
+    "supervised"
+  ],
+  "algorithm": "random_forest",
+  "hyperparameters": {
+    "n_estimators": 100,
+    "max_depth": 8,
+    "class_weight": "balanced"
+  },
+  "created_at": "2026-09-24T04:48:18Z",
+  "git_commit": "",
+  "configuration_hash": "1ed81271b2899673"
+}

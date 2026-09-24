@@ -1,0 +1,1643 @@
+{
+  "name": "iot-honeypot-ids",
+  "path": "iot-honeypot-ids",
+  "type": "directory",
+  "children": [
+    {
+      "name": "attacker",
+      "path": "iot-honeypot-ids/attacker",
+      "type": "directory",
+      "children": [
+        {
+          "name": "credentials",
+          "path": "iot-honeypot-ids/attacker/credentials",
+          "type": "directory",
+          "children": [
+            {
+              "name": "passwords.txt",
+              "path": "iot-honeypot-ids/attacker/credentials/passwords.txt",
+              "type": "file",
+              "size": 451,
+              "lang": "text"
+            },
+            {
+              "name": "users.txt",
+              "path": "iot-honeypot-ids/attacker/credentials/users.txt",
+              "type": "file",
+              "size": 550,
+              "lang": "text"
+            }
+          ]
+        },
+        {
+          "name": "enumeration",
+          "path": "iot-honeypot-ids/attacker/enumeration",
+          "type": "directory",
+          "children": [
+            {
+              "name": "paths.sh",
+              "path": "iot-honeypot-ids/attacker/enumeration/paths.sh",
+              "type": "file",
+              "size": 725,
+              "lang": "bash"
+            }
+          ]
+        },
+        {
+          "name": "http",
+          "path": "iot-honeypot-ids/attacker/http",
+          "type": "directory",
+          "children": [
+            {
+              "name": "probe.sh",
+              "path": "iot-honeypot-ids/attacker/http/probe.sh",
+              "type": "file",
+              "size": 302,
+              "lang": "bash"
+            }
+          ]
+        },
+        {
+          "name": "iot",
+          "path": "iot-honeypot-ids/attacker/iot",
+          "type": "directory",
+          "children": [
+            {
+              "name": "probe.sh",
+              "path": "iot-honeypot-ids/attacker/iot/probe.sh",
+              "type": "file",
+              "size": 516,
+              "lang": "bash"
+            }
+          ]
+        },
+        {
+          "name": "reconnaissance",
+          "path": "iot-honeypot-ids/attacker/reconnaissance",
+          "type": "directory",
+          "children": [
+            {
+              "name": "banner.sh",
+              "path": "iot-honeypot-ids/attacker/reconnaissance/banner.sh",
+              "type": "file",
+              "size": 264,
+              "lang": "bash"
+            }
+          ]
+        },
+        {
+          "name": "runner",
+          "path": "iot-honeypot-ids/attacker/runner",
+          "type": "directory",
+          "children": [
+            {
+              "name": "lib.sh",
+              "path": "iot-honeypot-ids/attacker/runner/lib.sh",
+              "type": "file",
+              "size": 5067,
+              "lang": "bash"
+            }
+          ]
+        },
+        {
+          "name": "scenarios",
+          "path": "iot-honeypot-ids/attacker/scenarios",
+          "type": "directory",
+          "children": [
+            {
+              "name": "camera-default-creds.yaml",
+              "path": "iot-honeypot-ids/attacker/scenarios/camera-default-creds.yaml",
+              "type": "file",
+              "size": 386,
+              "lang": "yaml"
+            },
+            {
+              "name": "camera-recon.yaml",
+              "path": "iot-honeypot-ids/attacker/scenarios/camera-recon.yaml",
+              "type": "file",
+              "size": 365,
+              "lang": "yaml"
+            },
+            {
+              "name": "http-enumeration.yaml",
+              "path": "iot-honeypot-ids/attacker/scenarios/http-enumeration.yaml",
+              "type": "file",
+              "size": 467,
+              "lang": "yaml"
+            },
+            {
+              "name": "iot-probe.yaml",
+              "path": "iot-honeypot-ids/attacker/scenarios/iot-probe.yaml",
+              "type": "file",
+              "size": 384,
+              "lang": "yaml"
+            },
+            {
+              "name": "multi-stage.yaml",
+              "path": "iot-honeypot-ids/attacker/scenarios/multi-stage.yaml",
+              "type": "file",
+              "size": 504,
+              "lang": "yaml"
+            },
+            {
+              "name": "ssh-bruteforce.yaml",
+              "path": "iot-honeypot-ids/attacker/scenarios/ssh-bruteforce.yaml",
+              "type": "file",
+              "size": 469,
+              "lang": "yaml"
+            },
+            {
+              "name": "ssh-interaction.yaml",
+              "path": "iot-honeypot-ids/attacker/scenarios/ssh-interaction.yaml",
+              "type": "file",
+              "size": 433,
+              "lang": "yaml"
+            }
+          ]
+        },
+        {
+          "name": "ssh",
+          "path": "iot-honeypot-ids/attacker/ssh",
+          "type": "directory",
+          "children": [
+            {
+              "name": "bruteforce.sh",
+              "path": "iot-honeypot-ids/attacker/ssh/bruteforce.sh",
+              "type": "file",
+              "size": 303,
+              "lang": "bash"
+            }
+          ]
+        },
+        {
+          "name": ".env.example",
+          "path": "iot-honeypot-ids/attacker/.env.example",
+          "type": "file",
+          "size": 850,
+          "lang": "file"
+        },
+        {
+          "name": "README.md",
+          "path": "iot-honeypot-ids/attacker/README.md",
+          "type": "file",
+          "size": 2657,
+          "lang": "markdown"
+        },
+        {
+          "name": "run-scenario.sh",
+          "path": "iot-honeypot-ids/attacker/run-scenario.sh",
+          "type": "file",
+          "size": 5520,
+          "lang": "bash"
+        }
+      ]
+    },
+    {
+      "name": "dashboard",
+      "path": "iot-honeypot-ids/dashboard",
+      "type": "directory",
+      "children": [
+        {
+          "name": "api",
+          "path": "iot-honeypot-ids/dashboard/api",
+          "type": "directory",
+          "children": [
+            {
+              "name": "app",
+              "path": "iot-honeypot-ids/dashboard/api/app",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "__init__.py",
+                  "path": "iot-honeypot-ids/dashboard/api/app/__init__.py",
+                  "type": "file",
+                  "size": 49,
+                  "lang": "python"
+                },
+                {
+                  "name": "config.py",
+                  "path": "iot-honeypot-ids/dashboard/api/app/config.py",
+                  "type": "file",
+                  "size": 1772,
+                  "lang": "python"
+                },
+                {
+                  "name": "es_client.py",
+                  "path": "iot-honeypot-ids/dashboard/api/app/es_client.py",
+                  "type": "file",
+                  "size": 4105,
+                  "lang": "python"
+                },
+                {
+                  "name": "main.py",
+                  "path": "iot-honeypot-ids/dashboard/api/app/main.py",
+                  "type": "file",
+                  "size": 7419,
+                  "lang": "python"
+                },
+                {
+                  "name": "model_registry.py",
+                  "path": "iot-honeypot-ids/dashboard/api/app/model_registry.py",
+                  "type": "file",
+                  "size": 3327,
+                  "lang": "python"
+                }
+              ]
+            },
+            {
+              "name": "Dockerfile",
+              "path": "iot-honeypot-ids/dashboard/api/Dockerfile",
+              "type": "file",
+              "size": 676,
+              "lang": "file"
+            },
+            {
+              "name": "README.md",
+              "path": "iot-honeypot-ids/dashboard/api/README.md",
+              "type": "file",
+              "size": 1753,
+              "lang": "markdown"
+            },
+            {
+              "name": "requirements.txt",
+              "path": "iot-honeypot-ids/dashboard/api/requirements.txt",
+              "type": "file",
+              "size": 196,
+              "lang": "text"
+            }
+          ]
+        },
+        {
+          "name": "config",
+          "path": "iot-honeypot-ids/dashboard/config",
+          "type": "directory",
+          "children": [
+            {
+              "name": "README.md",
+              "path": "iot-honeypot-ids/dashboard/config/README.md",
+              "type": "file",
+              "size": 119,
+              "lang": "markdown"
+            }
+          ]
+        },
+        {
+          "name": "elasticsearch",
+          "path": "iot-honeypot-ids/dashboard/elasticsearch",
+          "type": "directory",
+          "children": [
+            {
+              "name": "index-templates",
+              "path": "iot-honeypot-ids/dashboard/elasticsearch/index-templates",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "honeypot-detections.json",
+                  "path": "iot-honeypot-ids/dashboard/elasticsearch/index-templates/honeypot-detections.json",
+                  "type": "file",
+                  "size": 1111,
+                  "lang": "json"
+                },
+                {
+                  "name": "honeypot-errors.json",
+                  "path": "iot-honeypot-ids/dashboard/elasticsearch/index-templates/honeypot-errors.json",
+                  "type": "file",
+                  "size": 769,
+                  "lang": "json"
+                },
+                {
+                  "name": "honeypot-events.json",
+                  "path": "iot-honeypot-ids/dashboard/elasticsearch/index-templates/honeypot-events.json",
+                  "type": "file",
+                  "size": 2985,
+                  "lang": "json"
+                },
+                {
+                  "name": "honeypot-sessions.json",
+                  "path": "iot-honeypot-ids/dashboard/elasticsearch/index-templates/honeypot-sessions.json",
+                  "type": "file",
+                  "size": 1938,
+                  "lang": "json"
+                },
+                {
+                  "name": "honeypot-training.json",
+                  "path": "iot-honeypot-ids/dashboard/elasticsearch/index-templates/honeypot-training.json",
+                  "type": "file",
+                  "size": 921,
+                  "lang": "json"
+                },
+                {
+                  "name": "README.md",
+                  "path": "iot-honeypot-ids/dashboard/elasticsearch/index-templates/README.md",
+                  "type": "file",
+                  "size": 197,
+                  "lang": "markdown"
+                }
+              ]
+            },
+            {
+              "name": "elasticsearch.yml",
+              "path": "iot-honeypot-ids/dashboard/elasticsearch/elasticsearch.yml",
+              "type": "file",
+              "size": 717,
+              "lang": "yaml"
+            }
+          ]
+        },
+        {
+          "name": "frontend",
+          "path": "iot-honeypot-ids/dashboard/frontend",
+          "type": "directory",
+          "children": [
+            {
+              "name": "src",
+              "path": "iot-honeypot-ids/dashboard/frontend/src",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "App.tsx",
+                  "path": "iot-honeypot-ids/dashboard/frontend/src/App.tsx",
+                  "type": "file",
+                  "size": 10878,
+                  "lang": "typescript"
+                },
+                {
+                  "name": "main.tsx",
+                  "path": "iot-honeypot-ids/dashboard/frontend/src/main.tsx",
+                  "type": "file",
+                  "size": 237,
+                  "lang": "typescript"
+                },
+                {
+                  "name": "styles.css",
+                  "path": "iot-honeypot-ids/dashboard/frontend/src/styles.css",
+                  "type": "file",
+                  "size": 2245,
+                  "lang": "css"
+                }
+              ]
+            },
+            {
+              "name": ".gitignore",
+              "path": "iot-honeypot-ids/dashboard/frontend/.gitignore",
+              "type": "file",
+              "size": 40,
+              "lang": "file"
+            },
+            {
+              "name": "Dockerfile",
+              "path": "iot-honeypot-ids/dashboard/frontend/Dockerfile",
+              "type": "file",
+              "size": 449,
+              "lang": "file"
+            },
+            {
+              "name": "index.html",
+              "path": "iot-honeypot-ids/dashboard/frontend/index.html",
+              "type": "file",
+              "size": 386,
+              "lang": "html"
+            },
+            {
+              "name": "package.json",
+              "path": "iot-honeypot-ids/dashboard/frontend/package.json",
+              "type": "file",
+              "size": 486,
+              "lang": "json"
+            },
+            {
+              "name": "README.md",
+              "path": "iot-honeypot-ids/dashboard/frontend/README.md",
+              "type": "file",
+              "size": 710,
+              "lang": "markdown"
+            },
+            {
+              "name": "tsconfig.json",
+              "path": "iot-honeypot-ids/dashboard/frontend/tsconfig.json",
+              "type": "file",
+              "size": 508,
+              "lang": "json"
+            },
+            {
+              "name": "vite.config.ts",
+              "path": "iot-honeypot-ids/dashboard/frontend/vite.config.ts",
+              "type": "file",
+              "size": 190,
+              "lang": "typescript"
+            }
+          ]
+        },
+        {
+          "name": "kibana",
+          "path": "iot-honeypot-ids/dashboard/kibana",
+          "type": "directory",
+          "children": [
+            {
+              "name": "saved-objects",
+              "path": "iot-honeypot-ids/dashboard/kibana/saved-objects",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "README.md",
+                  "path": "iot-honeypot-ids/dashboard/kibana/saved-objects/README.md",
+                  "type": "file",
+                  "size": 504,
+                  "lang": "markdown"
+                }
+              ]
+            },
+            {
+              "name": "kibana.yml",
+              "path": "iot-honeypot-ids/dashboard/kibana/kibana.yml",
+              "type": "file",
+              "size": 541,
+              "lang": "yaml"
+            }
+          ]
+        },
+        {
+          "name": "logstash",
+          "path": "iot-honeypot-ids/dashboard/logstash",
+          "type": "directory",
+          "children": [
+            {
+              "name": "config",
+              "path": "iot-honeypot-ids/dashboard/logstash/config",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "logstash.yml",
+                  "path": "iot-honeypot-ids/dashboard/logstash/config/logstash.yml",
+                  "type": "file",
+                  "size": 423,
+                  "lang": "yaml"
+                },
+                {
+                  "name": "pipelines.yml",
+                  "path": "iot-honeypot-ids/dashboard/logstash/config/pipelines.yml",
+                  "type": "file",
+                  "size": 158,
+                  "lang": "yaml"
+                }
+              ]
+            },
+            {
+              "name": "pipelines",
+              "path": "iot-honeypot-ids/dashboard/logstash/pipelines",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "beats.conf",
+                  "path": "iot-honeypot-ids/dashboard/logstash/pipelines/beats.conf",
+                  "type": "file",
+                  "size": 6553,
+                  "lang": "file"
+                },
+                {
+                  "name": "errors.conf",
+                  "path": "iot-honeypot-ids/dashboard/logstash/pipelines/errors.conf",
+                  "type": "file",
+                  "size": 331,
+                  "lang": "file"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "ml",
+          "path": "iot-honeypot-ids/dashboard/ml",
+          "type": "directory",
+          "children": [
+            {
+              "name": "__init__.py",
+              "path": "iot-honeypot-ids/dashboard/ml/__init__.py",
+              "type": "file",
+              "size": 110,
+              "lang": "python"
+            },
+            {
+              "name": "evaluate.py",
+              "path": "iot-honeypot-ids/dashboard/ml/evaluate.py",
+              "type": "file",
+              "size": 3662,
+              "lang": "python"
+            },
+            {
+              "name": "features.py",
+              "path": "iot-honeypot-ids/dashboard/ml/features.py",
+              "type": "file",
+              "size": 10509,
+              "lang": "python"
+            },
+            {
+              "name": "models.py",
+              "path": "iot-honeypot-ids/dashboard/ml/models.py",
+              "type": "file",
+              "size": 9992,
+              "lang": "python"
+            },
+            {
+              "name": "README.md",
+              "path": "iot-honeypot-ids/dashboard/ml/README.md",
+              "type": "file",
+              "size": 1052,
+              "lang": "markdown"
+            },
+            {
+              "name": "rules.py",
+              "path": "iot-honeypot-ids/dashboard/ml/rules.py",
+              "type": "file",
+              "size": 3366,
+              "lang": "python"
+            }
+          ]
+        },
+        {
+          "name": ".env.example",
+          "path": "iot-honeypot-ids/dashboard/.env.example",
+          "type": "file",
+          "size": 1720,
+          "lang": "file"
+        },
+        {
+          "name": "docker-compose.yml",
+          "path": "iot-honeypot-ids/dashboard/docker-compose.yml",
+          "type": "file",
+          "size": 6892,
+          "lang": "yaml"
+        },
+        {
+          "name": "README.md",
+          "path": "iot-honeypot-ids/dashboard/README.md",
+          "type": "file",
+          "size": 2121,
+          "lang": "markdown"
+        }
+      ]
+    },
+    {
+      "name": "data",
+      "path": "iot-honeypot-ids/data",
+      "type": "directory",
+      "children": [
+        {
+          "name": "sample-telemetry",
+          "path": "iot-honeypot-ids/data/sample-telemetry",
+          "type": "directory",
+          "children": [
+            {
+              "name": "camera-recon.jsonl",
+              "path": "iot-honeypot-ids/data/sample-telemetry/camera-recon.jsonl",
+              "type": "file",
+              "size": 4123,
+              "lang": "jsonl"
+            },
+            {
+              "name": "README.md",
+              "path": "iot-honeypot-ids/data/sample-telemetry/README.md",
+              "type": "file",
+              "size": 707,
+              "lang": "markdown"
+            },
+            {
+              "name": "ssh-bruteforce.jsonl",
+              "path": "iot-honeypot-ids/data/sample-telemetry/ssh-bruteforce.jsonl",
+              "type": "file",
+              "size": 5091,
+              "lang": "jsonl"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "docs",
+      "path": "iot-honeypot-ids/docs",
+      "type": "directory",
+      "children": [
+        {
+          "name": "architecture",
+          "path": "iot-honeypot-ids/docs/architecture",
+          "type": "directory",
+          "children": [
+            {
+              "name": "components.md",
+              "path": "iot-honeypot-ids/docs/architecture/components.md",
+              "type": "file",
+              "size": 2524,
+              "lang": "markdown"
+            },
+            {
+              "name": "data-flow.md",
+              "path": "iot-honeypot-ids/docs/architecture/data-flow.md",
+              "type": "file",
+              "size": 4860,
+              "lang": "markdown"
+            },
+            {
+              "name": "network.md",
+              "path": "iot-honeypot-ids/docs/architecture/network.md",
+              "type": "file",
+              "size": 3536,
+              "lang": "markdown"
+            },
+            {
+              "name": "README.md",
+              "path": "iot-honeypot-ids/docs/architecture/README.md",
+              "type": "file",
+              "size": 2600,
+              "lang": "markdown"
+            }
+          ]
+        },
+        {
+          "name": "demo",
+          "path": "iot-honeypot-ids/docs/demo",
+          "type": "directory",
+          "children": [
+            {
+              "name": "README.md",
+              "path": "iot-honeypot-ids/docs/demo/README.md",
+              "type": "file",
+              "size": 2451,
+              "lang": "markdown"
+            }
+          ]
+        },
+        {
+          "name": "deployment",
+          "path": "iot-honeypot-ids/docs/deployment",
+          "type": "directory",
+          "children": [
+            {
+              "name": "fedora.md",
+              "path": "iot-honeypot-ids/docs/deployment/fedora.md",
+              "type": "file",
+              "size": 2565,
+              "lang": "markdown"
+            },
+            {
+              "name": "pi-os.md",
+              "path": "iot-honeypot-ids/docs/deployment/pi-os.md",
+              "type": "file",
+              "size": 2796,
+              "lang": "markdown"
+            },
+            {
+              "name": "README.md",
+              "path": "iot-honeypot-ids/docs/deployment/README.md",
+              "type": "file",
+              "size": 427,
+              "lang": "markdown"
+            },
+            {
+              "name": "windows.md",
+              "path": "iot-honeypot-ids/docs/deployment/windows.md",
+              "type": "file",
+              "size": 2583,
+              "lang": "markdown"
+            }
+          ]
+        },
+        {
+          "name": "ml",
+          "path": "iot-honeypot-ids/docs/ml",
+          "type": "directory",
+          "children": [
+            {
+              "name": "architecture.md",
+              "path": "iot-honeypot-ids/docs/ml/architecture.md",
+              "type": "file",
+              "size": 5378,
+              "lang": "markdown"
+            },
+            {
+              "name": "features.md",
+              "path": "iot-honeypot-ids/docs/ml/features.md",
+              "type": "file",
+              "size": 4713,
+              "lang": "markdown"
+            },
+            {
+              "name": "reproducibility.md",
+              "path": "iot-honeypot-ids/docs/ml/reproducibility.md",
+              "type": "file",
+              "size": 2627,
+              "lang": "markdown"
+            }
+          ]
+        },
+        {
+          "name": "security",
+          "path": "iot-honeypot-ids/docs/security",
+          "type": "directory",
+          "children": [
+            {
+              "name": "safety.md",
+              "path": "iot-honeypot-ids/docs/security/safety.md",
+              "type": "file",
+              "size": 4580,
+              "lang": "markdown"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "model-lab",
+      "path": "iot-honeypot-ids/model-lab",
+      "type": "directory",
+      "children": [
+        {
+          "name": "datasets",
+          "path": "iot-honeypot-ids/model-lab/datasets",
+          "type": "directory",
+          "children": [
+            {
+              "name": "v1",
+              "path": "iot-honeypot-ids/model-lab/datasets/v1",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "sessions.csv",
+                  "path": "iot-honeypot-ids/model-lab/datasets/v1/sessions.csv",
+                  "type": "file",
+                  "size": 47141,
+                  "lang": "csv"
+                }
+              ]
+            },
+            {
+              "name": "README.md",
+              "path": "iot-honeypot-ids/model-lab/datasets/README.md",
+              "type": "file",
+              "size": 860,
+              "lang": "markdown"
+            }
+          ]
+        },
+        {
+          "name": "evaluation",
+          "path": "iot-honeypot-ids/model-lab/evaluation",
+          "type": "directory",
+          "children": [
+            {
+              "name": "README.md",
+              "path": "iot-honeypot-ids/model-lab/evaluation/README.md",
+              "type": "file",
+              "size": 168,
+              "lang": "markdown"
+            }
+          ]
+        },
+        {
+          "name": "experiments",
+          "path": "iot-honeypot-ids/model-lab/experiments",
+          "type": "directory",
+          "children": [
+            {
+              "name": "exp-1788892971.json",
+              "path": "iot-honeypot-ids/model-lab/experiments/exp-1788892971.json",
+              "type": "file",
+              "size": 3880,
+              "lang": "json"
+            },
+            {
+              "name": "exp-1788892974.json",
+              "path": "iot-honeypot-ids/model-lab/experiments/exp-1788892974.json",
+              "type": "file",
+              "size": 3832,
+              "lang": "json"
+            },
+            {
+              "name": "exp-eval-model-v001-1788893018.json",
+              "path": "iot-honeypot-ids/model-lab/experiments/exp-eval-model-v001-1788893018.json",
+              "type": "file",
+              "size": 2594,
+              "lang": "json"
+            },
+            {
+              "name": "exp-eval-model-v002-1788893022.json",
+              "path": "iot-honeypot-ids/model-lab/experiments/exp-eval-model-v002-1788893022.json",
+              "type": "file",
+              "size": 2594,
+              "lang": "json"
+            },
+            {
+              "name": "README.md",
+              "path": "iot-honeypot-ids/model-lab/experiments/README.md",
+              "type": "file",
+              "size": 415,
+              "lang": "markdown"
+            }
+          ]
+        },
+        {
+          "name": "features",
+          "path": "iot-honeypot-ids/model-lab/features",
+          "type": "directory",
+          "children": [
+            {
+              "name": "README.md",
+              "path": "iot-honeypot-ids/model-lab/features/README.md",
+              "type": "file",
+              "size": 271,
+              "lang": "markdown"
+            }
+          ]
+        },
+        {
+          "name": "model_lab",
+          "path": "iot-honeypot-ids/model-lab/model_lab",
+          "type": "directory",
+          "children": [
+            {
+              "name": "datasets",
+              "path": "iot-honeypot-ids/model-lab/model_lab/datasets",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "__init__.py",
+                  "path": "iot-honeypot-ids/model-lab/model_lab/datasets/__init__.py",
+                  "type": "file",
+                  "size": 49,
+                  "lang": "python"
+                },
+                {
+                  "name": "bootstrap.py",
+                  "path": "iot-honeypot-ids/model-lab/model_lab/datasets/bootstrap.py",
+                  "type": "file",
+                  "size": 4863,
+                  "lang": "python"
+                },
+                {
+                  "name": "from_es.py",
+                  "path": "iot-honeypot-ids/model-lab/model_lab/datasets/from_es.py",
+                  "type": "file",
+                  "size": 5034,
+                  "lang": "python"
+                }
+              ]
+            },
+            {
+              "name": "__init__.py",
+              "path": "iot-honeypot-ids/model-lab/model_lab/__init__.py",
+              "type": "file",
+              "size": 51,
+              "lang": "python"
+            },
+            {
+              "name": "common.py",
+              "path": "iot-honeypot-ids/model-lab/model_lab/common.py",
+              "type": "file",
+              "size": 884,
+              "lang": "python"
+            },
+            {
+              "name": "compare.py",
+              "path": "iot-honeypot-ids/model-lab/model_lab/compare.py",
+              "type": "file",
+              "size": 3162,
+              "lang": "python"
+            },
+            {
+              "name": "evaluate.py",
+              "path": "iot-honeypot-ids/model-lab/model_lab/evaluate.py",
+              "type": "file",
+              "size": 5472,
+              "lang": "python"
+            },
+            {
+              "name": "replay.py",
+              "path": "iot-honeypot-ids/model-lab/model_lab/replay.py",
+              "type": "file",
+              "size": 8266,
+              "lang": "python"
+            },
+            {
+              "name": "train.py",
+              "path": "iot-honeypot-ids/model-lab/model_lab/train.py",
+              "type": "file",
+              "size": 3704,
+              "lang": "python"
+            }
+          ]
+        },
+        {
+          "name": "models",
+          "path": "iot-honeypot-ids/model-lab/models",
+          "type": "directory",
+          "children": [
+            {
+              "name": "model-v001",
+              "path": "iot-honeypot-ids/model-lab/models/model-v001",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "metadata.json",
+                  "path": "iot-honeypot-ids/model-lab/models/model-v001/metadata.json",
+                  "type": "file",
+                  "size": 5001,
+                  "lang": "json"
+                },
+                {
+                  "name": "model.joblib",
+                  "path": "iot-honeypot-ids/model-lab/models/model-v001/model.joblib",
+                  "type": "file",
+                  "size": 218321,
+                  "lang": "file"
+                }
+              ]
+            },
+            {
+              "name": "model-v002",
+              "path": "iot-honeypot-ids/model-lab/models/model-v002",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "metadata.json",
+                  "path": "iot-honeypot-ids/model-lab/models/model-v002/metadata.json",
+                  "type": "file",
+                  "size": 5190,
+                  "lang": "json"
+                },
+                {
+                  "name": "model.joblib",
+                  "path": "iot-honeypot-ids/model-lab/models/model-v002/model.joblib",
+                  "type": "file",
+                  "size": 246401,
+                  "lang": "file"
+                }
+              ]
+            },
+            {
+              "name": "README.md",
+              "path": "iot-honeypot-ids/model-lab/models/README.md",
+              "type": "file",
+              "size": 802,
+              "lang": "markdown"
+            }
+          ]
+        },
+        {
+          "name": "replay",
+          "path": "iot-honeypot-ids/model-lab/replay",
+          "type": "directory",
+          "children": [
+            {
+              "name": "README.md",
+              "path": "iot-honeypot-ids/model-lab/replay/README.md",
+              "type": "file",
+              "size": 163,
+              "lang": "markdown"
+            }
+          ]
+        },
+        {
+          "name": "training",
+          "path": "iot-honeypot-ids/model-lab/training",
+          "type": "directory",
+          "children": [
+            {
+              "name": "README.md",
+              "path": "iot-honeypot-ids/model-lab/training/README.md",
+              "type": "file",
+              "size": 160,
+              "lang": "markdown"
+            }
+          ]
+        },
+        {
+          "name": "README.md",
+          "path": "iot-honeypot-ids/model-lab/README.md",
+          "type": "file",
+          "size": 2170,
+          "lang": "markdown"
+        }
+      ]
+    },
+    {
+      "name": "pi",
+      "path": "iot-honeypot-ids/pi",
+      "type": "directory",
+      "children": [
+        {
+          "name": "collector",
+          "path": "iot-honeypot-ids/pi/collector",
+          "type": "directory",
+          "children": [
+            {
+              "name": "app.py",
+              "path": "iot-honeypot-ids/pi/collector/app.py",
+              "type": "file",
+              "size": 3782,
+              "lang": "python"
+            },
+            {
+              "name": "Dockerfile",
+              "path": "iot-honeypot-ids/pi/collector/Dockerfile",
+              "type": "file",
+              "size": 291,
+              "lang": "file"
+            }
+          ]
+        },
+        {
+          "name": "config",
+          "path": "iot-honeypot-ids/pi/config",
+          "type": "directory",
+          "children": [
+            {
+              "name": "README.md",
+              "path": "iot-honeypot-ids/pi/config/README.md",
+              "type": "file",
+              "size": 498,
+              "lang": "markdown"
+            }
+          ]
+        },
+        {
+          "name": "filebeat",
+          "path": "iot-honeypot-ids/pi/filebeat",
+          "type": "directory",
+          "children": [
+            {
+              "name": "filebeat.yml",
+              "path": "iot-honeypot-ids/pi/filebeat/filebeat.yml",
+              "type": "file",
+              "size": 3613,
+              "lang": "yaml"
+            }
+          ]
+        },
+        {
+          "name": "honeypots",
+          "path": "iot-honeypot-ids/pi/honeypots",
+          "type": "directory",
+          "children": [
+            {
+              "name": "camera",
+              "path": "iot-honeypot-ids/pi/honeypots/camera",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "app.py",
+                  "path": "iot-honeypot-ids/pi/honeypots/camera/app.py",
+                  "type": "file",
+                  "size": 12427,
+                  "lang": "python"
+                },
+                {
+                  "name": "Dockerfile",
+                  "path": "iot-honeypot-ids/pi/honeypots/camera/Dockerfile",
+                  "type": "file",
+                  "size": 808,
+                  "lang": "file"
+                },
+                {
+                  "name": "README.md",
+                  "path": "iot-honeypot-ids/pi/honeypots/camera/README.md",
+                  "type": "file",
+                  "size": 1835,
+                  "lang": "markdown"
+                },
+                {
+                  "name": "requirements.txt",
+                  "path": "iot-honeypot-ids/pi/honeypots/camera/requirements.txt",
+                  "type": "file",
+                  "size": 30,
+                  "lang": "text"
+                }
+              ]
+            },
+            {
+              "name": "cowrie",
+              "path": "iot-honeypot-ids/pi/honeypots/cowrie",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "cowrie.cfg",
+                  "path": "iot-honeypot-ids/pi/honeypots/cowrie/cowrie.cfg",
+                  "type": "file",
+                  "size": 2432,
+                  "lang": "text"
+                },
+                {
+                  "name": "fs",
+                  "path": "iot-honeypot-ids/pi/honeypots/cowrie/fs",
+                  "type": "file",
+                  "size": 1569,
+                  "lang": "file"
+                },
+                {
+                  "name": "README.md",
+                  "path": "iot-honeypot-ids/pi/honeypots/cowrie/README.md",
+                  "type": "file",
+                  "size": 1295,
+                  "lang": "markdown"
+                },
+                {
+                  "name": "userdb.txt",
+                  "path": "iot-honeypot-ids/pi/honeypots/cowrie/userdb.txt",
+                  "type": "file",
+                  "size": 326,
+                  "lang": "text"
+                }
+              ]
+            },
+            {
+              "name": "iot-service",
+              "path": "iot-honeypot-ids/pi/honeypots/iot-service",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "app.py",
+                  "path": "iot-honeypot-ids/pi/honeypots/iot-service/app.py",
+                  "type": "file",
+                  "size": 8264,
+                  "lang": "python"
+                },
+                {
+                  "name": "Dockerfile",
+                  "path": "iot-honeypot-ids/pi/honeypots/iot-service/Dockerfile",
+                  "type": "file",
+                  "size": 351,
+                  "lang": "file"
+                },
+                {
+                  "name": "README.md",
+                  "path": "iot-honeypot-ids/pi/honeypots/iot-service/README.md",
+                  "type": "file",
+                  "size": 943,
+                  "lang": "markdown"
+                },
+                {
+                  "name": "requirements.txt",
+                  "path": "iot-honeypot-ids/pi/honeypots/iot-service/requirements.txt",
+                  "type": "file",
+                  "size": 72,
+                  "lang": "text"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "scripts",
+          "path": "iot-honeypot-ids/pi/scripts",
+          "type": "directory",
+          "children": [
+            {
+              "name": "configure.sh",
+              "path": "iot-honeypot-ids/pi/scripts/configure.sh",
+              "type": "file",
+              "size": 2121,
+              "lang": "bash"
+            },
+            {
+              "name": "logs.sh",
+              "path": "iot-honeypot-ids/pi/scripts/logs.sh",
+              "type": "file",
+              "size": 361,
+              "lang": "bash"
+            },
+            {
+              "name": "restart.sh",
+              "path": "iot-honeypot-ids/pi/scripts/restart.sh",
+              "type": "file",
+              "size": 99,
+              "lang": "bash"
+            },
+            {
+              "name": "start.sh",
+              "path": "iot-honeypot-ids/pi/scripts/start.sh",
+              "type": "file",
+              "size": 765,
+              "lang": "bash"
+            },
+            {
+              "name": "status.sh",
+              "path": "iot-honeypot-ids/pi/scripts/status.sh",
+              "type": "file",
+              "size": 1785,
+              "lang": "bash"
+            },
+            {
+              "name": "stop.sh",
+              "path": "iot-honeypot-ids/pi/scripts/stop.sh",
+              "type": "file",
+              "size": 203,
+              "lang": "bash"
+            },
+            {
+              "name": "update.sh",
+              "path": "iot-honeypot-ids/pi/scripts/update.sh",
+              "type": "file",
+              "size": 263,
+              "lang": "bash"
+            }
+          ]
+        },
+        {
+          "name": ".env.example",
+          "path": "iot-honeypot-ids/pi/.env.example",
+          "type": "file",
+          "size": 1702,
+          "lang": "file"
+        },
+        {
+          "name": "docker-compose.yml",
+          "path": "iot-honeypot-ids/pi/docker-compose.yml",
+          "type": "file",
+          "size": 7753,
+          "lang": "yaml"
+        },
+        {
+          "name": "README.md",
+          "path": "iot-honeypot-ids/pi/README.md",
+          "type": "file",
+          "size": 4391,
+          "lang": "markdown"
+        }
+      ]
+    },
+    {
+      "name": "scripts",
+      "path": "iot-honeypot-ids/scripts",
+      "type": "directory",
+      "children": [
+        {
+          "name": "demo",
+          "path": "iot-honeypot-ids/scripts/demo",
+          "type": "directory",
+          "children": [
+            {
+              "name": "run-demo.sh",
+              "path": "iot-honeypot-ids/scripts/demo/run-demo.sh",
+              "type": "file",
+              "size": 3547,
+              "lang": "bash"
+            }
+          ]
+        },
+        {
+          "name": "deployment",
+          "path": "iot-honeypot-ids/scripts/deployment",
+          "type": "directory",
+          "children": [
+            {
+              "name": "start-pc1.sh",
+              "path": "iot-honeypot-ids/scripts/deployment/start-pc1.sh",
+              "type": "file",
+              "size": 424,
+              "lang": "bash"
+            },
+            {
+              "name": "status.sh",
+              "path": "iot-honeypot-ids/scripts/deployment/status.sh",
+              "type": "file",
+              "size": 631,
+              "lang": "bash"
+            },
+            {
+              "name": "stop-pc1.sh",
+              "path": "iot-honeypot-ids/scripts/deployment/stop-pc1.sh",
+              "type": "file",
+              "size": 146,
+              "lang": "bash"
+            }
+          ]
+        },
+        {
+          "name": "development",
+          "path": "iot-honeypot-ids/scripts/development",
+          "type": "directory",
+          "children": [
+            {
+              "name": "import-sample-data.sh",
+              "path": "iot-honeypot-ids/scripts/development/import-sample-data.sh",
+              "type": "file",
+              "size": 3301,
+              "lang": "bash"
+            },
+            {
+              "name": "lint.sh",
+              "path": "iot-honeypot-ids/scripts/development/lint.sh",
+              "type": "file",
+              "size": 796,
+              "lang": "bash"
+            }
+          ]
+        },
+        {
+          "name": "setup",
+          "path": "iot-honeypot-ids/scripts/setup",
+          "type": "directory",
+          "children": [
+            {
+              "name": "init.ps1",
+              "path": "iot-honeypot-ids/scripts/setup/init.ps1",
+              "type": "file",
+              "size": 1562,
+              "lang": "powershell"
+            },
+            {
+              "name": "init.sh",
+              "path": "iot-honeypot-ids/scripts/setup/init.sh",
+              "type": "file",
+              "size": 1302,
+              "lang": "bash"
+            }
+          ]
+        },
+        {
+          "name": "testing",
+          "path": "iot-honeypot-ids/scripts/testing",
+          "type": "directory",
+          "children": [
+            {
+              "name": "run-e2e.sh",
+              "path": "iot-honeypot-ids/scripts/testing/run-e2e.sh",
+              "type": "file",
+              "size": 2088,
+              "lang": "bash"
+            },
+            {
+              "name": "run-tests.sh",
+              "path": "iot-honeypot-ids/scripts/testing/run-tests.sh",
+              "type": "file",
+              "size": 357,
+              "lang": "bash"
+            }
+          ]
+        },
+        {
+          "name": "README.md",
+          "path": "iot-honeypot-ids/scripts/README.md",
+          "type": "file",
+          "size": 771,
+          "lang": "markdown"
+        }
+      ]
+    },
+    {
+      "name": "shared",
+      "path": "iot-honeypot-ids/shared",
+      "type": "directory",
+      "children": [
+        {
+          "name": "attack-types",
+          "path": "iot-honeypot-ids/shared/attack-types",
+          "type": "directory",
+          "children": [
+            {
+              "name": "__init__.py",
+              "path": "iot-honeypot-ids/shared/attack-types/__init__.py",
+              "type": "file",
+              "size": 384,
+              "lang": "python"
+            },
+            {
+              "name": "taxonomy.md",
+              "path": "iot-honeypot-ids/shared/attack-types/taxonomy.md",
+              "type": "file",
+              "size": 3170,
+              "lang": "markdown"
+            }
+          ]
+        },
+        {
+          "name": "documentation",
+          "path": "iot-honeypot-ids/shared/documentation",
+          "type": "directory",
+          "children": [
+            {
+              "name": "design-decisions.md",
+              "path": "iot-honeypot-ids/shared/documentation/design-decisions.md",
+              "type": "file",
+              "size": 3483,
+              "lang": "markdown"
+            },
+            {
+              "name": "glossary.md",
+              "path": "iot-honeypot-ids/shared/documentation/glossary.md",
+              "type": "file",
+              "size": 2186,
+              "lang": "markdown"
+            },
+            {
+              "name": "README.md",
+              "path": "iot-honeypot-ids/shared/documentation/README.md",
+              "type": "file",
+              "size": 273,
+              "lang": "markdown"
+            },
+            {
+              "name": "threat-model.md",
+              "path": "iot-honeypot-ids/shared/documentation/threat-model.md",
+              "type": "file",
+              "size": 2494,
+              "lang": "markdown"
+            }
+          ]
+        },
+        {
+          "name": "schemas",
+          "path": "iot-honeypot-ids/shared/schemas",
+          "type": "directory",
+          "children": [
+            {
+              "name": "__init__.py",
+              "path": "iot-honeypot-ids/shared/schemas/__init__.py",
+              "type": "file",
+              "size": 376,
+              "lang": "python"
+            },
+            {
+              "name": "event-schema.json",
+              "path": "iot-honeypot-ids/shared/schemas/event-schema.json",
+              "type": "file",
+              "size": 3242,
+              "lang": "json"
+            },
+            {
+              "name": "event_schema.py",
+              "path": "iot-honeypot-ids/shared/schemas/event_schema.py",
+              "type": "file",
+              "size": 3230,
+              "lang": "python"
+            }
+          ]
+        },
+        {
+          "name": "README.md",
+          "path": "iot-honeypot-ids/shared/README.md",
+          "type": "file",
+          "size": 486,
+          "lang": "markdown"
+        }
+      ]
+    },
+    {
+      "name": "tests",
+      "path": "iot-honeypot-ids/tests",
+      "type": "directory",
+      "children": [
+        {
+          "name": "e2e",
+          "path": "iot-honeypot-ids/tests/e2e",
+          "type": "directory",
+          "children": [
+            {
+              "name": "README.md",
+              "path": "iot-honeypot-ids/tests/e2e/README.md",
+              "type": "file",
+              "size": 665,
+              "lang": "markdown"
+            }
+          ]
+        },
+        {
+          "name": "integration",
+          "path": "iot-honeypot-ids/tests/integration",
+          "type": "directory",
+          "children": [
+            {
+              "name": "test_api.py",
+              "path": "iot-honeypot-ids/tests/integration/test_api.py",
+              "type": "file",
+              "size": 1282,
+              "lang": "python"
+            },
+            {
+              "name": "test_elasticsearch.py",
+              "path": "iot-honeypot-ids/tests/integration/test_elasticsearch.py",
+              "type": "file",
+              "size": 1360,
+              "lang": "python"
+            }
+          ]
+        },
+        {
+          "name": "unit",
+          "path": "iot-honeypot-ids/tests/unit",
+          "type": "directory",
+          "children": [
+            {
+              "name": "test_attacker_safety.py",
+              "path": "iot-honeypot-ids/tests/unit/test_attacker_safety.py",
+              "type": "file",
+              "size": 2447,
+              "lang": "python"
+            },
+            {
+              "name": "test_config.py",
+              "path": "iot-honeypot-ids/tests/unit/test_config.py",
+              "type": "file",
+              "size": 1350,
+              "lang": "python"
+            },
+            {
+              "name": "test_event_schema.py",
+              "path": "iot-honeypot-ids/tests/unit/test_event_schema.py",
+              "type": "file",
+              "size": 2357,
+              "lang": "python"
+            },
+            {
+              "name": "test_features.py",
+              "path": "iot-honeypot-ids/tests/unit/test_features.py",
+              "type": "file",
+              "size": 3860,
+              "lang": "python"
+            },
+            {
+              "name": "test_model_serialization.py",
+              "path": "iot-honeypot-ids/tests/unit/test_model_serialization.py",
+              "type": "file",
+              "size": 3206,
+              "lang": "python"
+            },
+            {
+              "name": "test_rules.py",
+              "path": "iot-honeypot-ids/tests/unit/test_rules.py",
+              "type": "file",
+              "size": 2914,
+              "lang": "python"
+            },
+            {
+              "name": "test_session_reconstruction.py",
+              "path": "iot-honeypot-ids/tests/unit/test_session_reconstruction.py",
+              "type": "file",
+              "size": 1574,
+              "lang": "python"
+            }
+          ]
+        },
+        {
+          "name": "conftest.py",
+          "path": "iot-honeypot-ids/tests/conftest.py",
+          "type": "file",
+          "size": 443,
+          "lang": "python"
+        },
+        {
+          "name": "README.md",
+          "path": "iot-honeypot-ids/tests/README.md",
+          "type": "file",
+          "size": 753,
+          "lang": "markdown"
+        }
+      ]
+    },
+    {
+      "name": ".env.example",
+      "path": "iot-honeypot-ids/.env.example",
+      "type": "file",
+      "size": 2576,
+      "lang": "file"
+    },
+    {
+      "name": ".gitignore",
+      "path": "iot-honeypot-ids/.gitignore",
+      "type": "file",
+      "size": 2749,
+      "lang": "file"
+    },
+    {
+      "name": "LICENSE",
+      "path": "iot-honeypot-ids/LICENSE",
+      "type": "file",
+      "size": 1625,
+      "lang": "file"
+    },
+    {
+      "name": "pytest.ini",
+      "path": "iot-honeypot-ids/pytest.ini",
+      "type": "file",
+      "size": 156,
+      "lang": "text"
+    },
+    {
+      "name": "README.md",
+      "path": "iot-honeypot-ids/README.md",
+      "type": "file",
+      "size": 9284,
+      "lang": "markdown"
+    },
+    {
+      "name": "requirements.txt",
+      "path": "iot-honeypot-ids/requirements.txt",
+      "type": "file",
+      "size": 434,
+      "lang": "text"
+    }
+  ],
+  "stats": {
+    "files": 166,
+    "dirs": 68,
+    "size": 866602
+  }
+}

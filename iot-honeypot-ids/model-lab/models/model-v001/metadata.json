@@ -1,0 +1,230 @@
+{
+  "model_id": "model-v001",
+  "algorithm": "random_forest",
+  "dataset_version": "v1",
+  "feature_version": "v1",
+  "features": [
+    "event_count",
+    "duration_s",
+    "bytes_in_total",
+    "bytes_out_total",
+    "auth_attempts",
+    "auth_successes",
+    "auth_failure_ratio",
+    "unique_usernames",
+    "command_count",
+    "command_diversity",
+    "http_request_count",
+    "http_uri_diversity",
+    "http_status_4xx_ratio",
+    "http_status_5xx_ratio",
+    "unique_protocols",
+    "devices_touched",
+    "ports_touched",
+    "time_between_events_mean_s",
+    "time_between_events_stdev_s",
+    "request_rate_per_min",
+    "auth_failure_rate_per_min",
+    "contains_path_traversal",
+    "contains_command_injection",
+    "contains_default_credentials",
+    "is_recon_only"
+  ],
+  "leaky_features_excluded": [],
+  "hyperparameters": {
+    "n_estimators": 100,
+    "max_depth": 8,
+    "random_state": 42,
+    "class_weight": "balanced"
+  },
+  "metrics": {
+    "in_sample_accuracy": 1.0,
+    "in_sample_precision_macro": 1.0,
+    "in_sample_recall_macro": 1.0,
+    "in_sample_f1_macro": 1.0,
+    "n_samples": 210,
+    "n_features": 25,
+    "classes": [
+      "anomaly",
+      "benign",
+      "brute_force",
+      "command_injection",
+      "default_credentials",
+      "path_traversal",
+      "reconnaissance"
+    ],
+    "confusion_matrix": [
+      [
+        6,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        6,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        6,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        6,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        6,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        6,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        6
+      ]
+    ],
+    "confusion_matrix_labels": [
+      "anomaly",
+      "benign",
+      "brute_force",
+      "command_injection",
+      "default_credentials",
+      "path_traversal",
+      "reconnaissance"
+    ],
+    "per_class": {
+      "anomaly": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 6.0
+      },
+      "benign": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 6.0
+      },
+      "brute_force": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 6.0
+      },
+      "command_injection": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 6.0
+      },
+      "default_credentials": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 6.0
+      },
+      "path_traversal": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 6.0
+      },
+      "reconnaissance": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 6.0
+      },
+      "accuracy": 1.0,
+      "macro avg": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 42.0
+      },
+      "weighted avg": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 42.0
+      }
+    },
+    "in_sample_roc_auc_ovr": 1.0,
+    "feature_importances": {
+      "event_count": 0.08014914157461062,
+      "duration_s": 0.1049170829282614,
+      "bytes_in_total": 0.0,
+      "bytes_out_total": 0.0,
+      "auth_attempts": 0.058443892938534685,
+      "auth_successes": 0.021603716338077842,
+      "auth_failure_ratio": 0.0717220322536569,
+      "unique_usernames": 0.026404377280965844,
+      "command_count": 0.04399565885876289,
+      "command_diversity": 0.031206117881780845,
+      "http_request_count": 0.04630507863289867,
+      "http_uri_diversity": 0.06964255674600618,
+      "http_status_4xx_ratio": 0.0,
+      "http_status_5xx_ratio": 0.0,
+      "unique_protocols": 0.0,
+      "devices_touched": 0.031770280257602264,
+      "ports_touched": 0.040230344798851896,
+      "time_between_events_mean_s": 0.03183946933045609,
+      "time_between_events_stdev_s": 0.0,
+      "request_rate_per_min": 0.06772733900782359,
+      "auth_failure_rate_per_min": 0.03872184031984545,
+      "contains_path_traversal": 0.06667339756280906,
+      "contains_command_injection": 0.04938609682517808,
+      "contains_default_credentials": 0.060030108744652706,
+      "is_recon_only": 0.059231467719225
+    },
+    "accuracy": 1.0,
+    "precision_macro": 1.0,
+    "recall_macro": 1.0,
+    "f1_macro": 1.0,
+    "n_test": 42,
+    "n_train": 168,
+    "false_positive_rate": 0.0,
+    "false_negative_rate": 0.0,
+    "evaluated_at_iso": "2026-09-08T18:43:38Z"
+  },
+  "seed": 42,
+  "status": "validated",
+  "notes": "",
+  "created_at": 1788892971,
+  "created_at_iso": "2026-09-08T18:42:51Z"
+}

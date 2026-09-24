@@ -1,0 +1,407 @@
+{
+  "experiment_id": "research-001",
+  "config": {
+    "experiment_id": "research-001",
+    "training_scenarios": [
+      "ssh-bruteforce",
+      "camera-recon",
+      "camera-default-creds",
+      "benign-browsing"
+    ],
+    "held_out_scenarios": [
+      "http-enumeration"
+    ],
+    "repetitions": 10,
+    "feature_version": "v2",
+    "split_strategy": "campaign",
+    "test_ratio": 0.2,
+    "seed": 42,
+    "models": [
+      "supervised",
+      "anomaly",
+      "hybrid"
+    ],
+    "algorithm": "random_forest",
+    "hyperparameters": {
+      "n_estimators": 100,
+      "max_depth": 8,
+      "class_weight": "balanced"
+    },
+    "created_at": "2026-09-09T14:07:13Z",
+    "git_commit": "",
+    "configuration_hash": "df3fccce493b4417"
+  },
+  "dataset_info": {
+    "version": "v1",
+    "session_count": 210,
+    "campaign_count": 210,
+    "unique_campaign_ratio": 1.0,
+    "class_distribution": {
+      "benign": 30,
+      "reconnaissance": 30,
+      "brute_force": 30,
+      "default_credentials": 30,
+      "command_injection": 30,
+      "path_traversal": 30,
+      "anomaly": 30
+    },
+    "label_sources": {
+      "SYNTHETIC": 210
+    },
+    "hash": "0bedb62be2de7384",
+    "feature_version": "v2",
+    "features_used": 22,
+    "leaky_features_excluded": [
+      "contains_path_traversal",
+      "contains_command_injection",
+      "contains_default_credentials"
+    ]
+  },
+  "model_results": [
+    {
+      "model_type": "supervised",
+      "model_id": "model-sup-research-001",
+      "training_metrics": {
+        "accuracy": 1.0,
+        "f1_macro": 1.0
+      },
+      "held_out_metrics": {
+        "accuracy": 0.9761904761904762,
+        "precision_macro": 0.9714285714285714,
+        "recall_macro": 0.979591836734694,
+        "f1_macro": 0.9731379731379732,
+        "false_positive_rate": 0.0037593984962406013,
+        "false_negative_rate": 0.02040816326530612,
+        "confusion_matrix": [
+          [
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            6,
+            0,
+            0,
+            0,
+            1,
+            0
+          ],
+          [
+            0,
+            0,
+            3,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            5,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            5,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            4,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            10
+          ]
+        ],
+        "confusion_matrix_labels": [
+          "anomaly",
+          "benign",
+          "brute_force",
+          "command_injection",
+          "default_credentials",
+          "path_traversal",
+          "reconnaissance"
+        ],
+        "per_class": {
+          "anomaly": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1-score": 1.0,
+            "support": 8.0
+          },
+          "benign": {
+            "precision": 1.0,
+            "recall": 0.8571428571428571,
+            "f1-score": 0.9230769230769231,
+            "support": 7.0
+          },
+          "brute_force": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1-score": 1.0,
+            "support": 3.0
+          },
+          "command_injection": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1-score": 1.0,
+            "support": 5.0
+          },
+          "default_credentials": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1-score": 1.0,
+            "support": 5.0
+          },
+          "path_traversal": {
+            "precision": 0.8,
+            "recall": 1.0,
+            "f1-score": 0.8888888888888888,
+            "support": 4.0
+          },
+          "reconnaissance": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1-score": 1.0,
+            "support": 10.0
+          },
+          "accuracy": 0.9761904761904762,
+          "macro avg": {
+            "precision": 0.9714285714285714,
+            "recall": 0.979591836734694,
+            "f1-score": 0.9731379731379732,
+            "support": 42.0
+          },
+          "weighted avg": {
+            "precision": 0.980952380952381,
+            "recall": 0.9761904761904762,
+            "f1-score": 0.9765974765974766,
+            "support": 42.0
+          }
+        }
+      },
+      "unknown_metrics": {},
+      "predictions": [],
+      "feature_importances": {
+        "event_count": 0.10382536019715356,
+        "duration_s": 0.12119547732471633,
+        "bytes_in_total": 0.0,
+        "bytes_out_total": 0.0,
+        "auth_attempts": 0.06869619356356954,
+        "auth_successes": 0.028448434943555416,
+        "auth_failure_ratio": 0.07056640531553741,
+        "unique_usernames": 0.03424208438499194,
+        "command_count": 0.055456245407399817,
+        "command_diversity": 0.06452020462626067,
+        "http_request_count": 0.07820555501921587,
+        "http_uri_diversity": 0.10080397017200211,
+        "http_status_4xx_ratio": 0.0,
+        "http_status_5xx_ratio": 0.0,
+        "unique_protocols": 0.0,
+        "devices_touched": 0.028273702654005906,
+        "ports_touched": 0.027065747405331686,
+        "time_between_events_mean_s": 0.03279882843901419,
+        "time_between_events_stdev_s": 0.0,
+        "request_rate_per_min": 0.07323641724801747,
+        "auth_failure_rate_per_min": 0.0458915033123478,
+        "is_recon_only": 0.06677386998688037
+      }
+    },
+    {
+      "model_type": "anomaly",
+      "model_id": "model-anom-research-001",
+      "training_metrics": {},
+      "held_out_metrics": {
+        "test_anomaly_rate": 0.23809523809523808,
+        "test_mean_anomaly_score": 0.07491423437804788
+      },
+      "unknown_metrics": {},
+      "predictions": [],
+      "feature_importances": {}
+    },
+    {
+      "model_type": "hybrid",
+      "model_id": "model-hyb-research-001",
+      "training_metrics": {},
+      "held_out_metrics": {
+        "accuracy": 0.9761904761904762,
+        "precision_macro": 0.9714285714285714,
+        "recall_macro": 0.979591836734694,
+        "f1_macro": 0.9731379731379732,
+        "false_positive_rate": 0.0037593984962406013,
+        "false_negative_rate": 0.02040816326530612,
+        "confusion_matrix": [
+          [
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            6,
+            0,
+            0,
+            0,
+            1,
+            0
+          ],
+          [
+            0,
+            0,
+            3,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            5,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            5,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            4,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            10
+          ]
+        ],
+        "confusion_matrix_labels": [
+          "anomaly",
+          "benign",
+          "brute_force",
+          "command_injection",
+          "default_credentials",
+          "path_traversal",
+          "reconnaissance"
+        ],
+        "per_class": {
+          "anomaly": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1-score": 1.0,
+            "support": 8.0
+          },
+          "benign": {
+            "precision": 1.0,
+            "recall": 0.8571428571428571,
+            "f1-score": 0.9230769230769231,
+            "support": 7.0
+          },
+          "brute_force": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1-score": 1.0,
+            "support": 3.0
+          },
+          "command_injection": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1-score": 1.0,
+            "support": 5.0
+          },
+          "default_credentials": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1-score": 1.0,
+            "support": 5.0
+          },
+          "path_traversal": {
+            "precision": 0.8,
+            "recall": 1.0,
+            "f1-score": 0.8888888888888888,
+            "support": 4.0
+          },
+          "reconnaissance": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1-score": 1.0,
+            "support": 10.0
+          },
+          "accuracy": 0.9761904761904762,
+          "macro avg": {
+            "precision": 0.9714285714285714,
+            "recall": 0.979591836734694,
+            "f1-score": 0.9731379731379732,
+            "support": 42.0
+          },
+          "weighted avg": {
+            "precision": 0.980952380952381,
+            "recall": 0.9761904761904762,
+            "f1-score": 0.9765974765974766,
+            "support": 42.0
+          }
+        }
+      },
+      "unknown_metrics": {},
+      "predictions": [],
+      "feature_importances": {}
+    }
+  ],
+  "split_info": {
+    "strategy": "campaign",
+    "train_size": 168,
+    "test_size": 42,
+    "elapsed_seconds": 0.39
+  },
+  "warnings": [
+    "Dataset has ~1 session per campaign. Campaign-level generalization is NOT valid. Run scenarios with repetitions > 1 to produce multiple sessions per campaign.",
+    "Dataset contains 3 leaky features: contains_path_traversal, contains_command_injection, contains_default_credentials. These must be excluded from classifier training (use feature_version=v2).",
+    "Dataset contains synthetic/bootstrap data. Do not use as final research evidence. Generate real experimental data via the campaign runner."
+  ],
+  "created_at": "2026-09-09T14:07:13Z",
+  "status": "completed"
+}

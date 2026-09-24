@@ -1,0 +1,139 @@
+{
+  "model_id": "random_forest-exp-58ed50ac901a",
+  "algorithm": "random_forest",
+  "dataset_version": "/tmp/tmpq7xebd92/sessions.csv",
+  "feature_version": "v2",
+  "features": [
+    "event_count",
+    "duration_s",
+    "bytes_in_total",
+    "bytes_out_total",
+    "auth_attempts",
+    "auth_successes",
+    "auth_failure_ratio",
+    "unique_usernames",
+    "command_count",
+    "command_diversity",
+    "http_request_count",
+    "http_uri_diversity",
+    "http_status_4xx_ratio",
+    "http_status_5xx_ratio",
+    "unique_protocols",
+    "devices_touched",
+    "ports_touched",
+    "time_between_events_mean_s",
+    "time_between_events_stdev_s",
+    "request_rate_per_min",
+    "auth_failure_rate_per_min",
+    "is_recon_only"
+  ],
+  "leaky_features_excluded": [
+    "contains_path_traversal",
+    "contains_command_injection",
+    "contains_default_credentials"
+  ],
+  "hyperparameters": {
+    "n_estimators": 100,
+    "max_depth": 8,
+    "random_state": 42,
+    "class_weight": "balanced"
+  },
+  "metrics": {
+    "in_sample_accuracy": 1.0,
+    "in_sample_precision_macro": 1.0,
+    "in_sample_recall_macro": 1.0,
+    "in_sample_f1_macro": 1.0,
+    "n_samples": 24,
+    "n_features": 22,
+    "classes": [
+      "benign",
+      "brute_force",
+      "reconnaissance"
+    ],
+    "confusion_matrix": [
+      [
+        8,
+        0,
+        0
+      ],
+      [
+        0,
+        8,
+        0
+      ],
+      [
+        0,
+        0,
+        8
+      ]
+    ],
+    "confusion_matrix_labels": [
+      "benign",
+      "brute_force",
+      "reconnaissance"
+    ],
+    "per_class": {
+      "benign": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 8.0
+      },
+      "brute_force": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 8.0
+      },
+      "reconnaissance": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 8.0
+      },
+      "accuracy": 1.0,
+      "macro avg": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 24.0
+      },
+      "weighted avg": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 24.0
+      }
+    },
+    "in_sample_roc_auc_ovr": 1.0,
+    "feature_importances": {
+      "event_count": 0.04051915370611625,
+      "duration_s": 0.07132299183853033,
+      "bytes_in_total": 0.06100188321250086,
+      "bytes_out_total": 0.04112620500329402,
+      "auth_attempts": 0.0358624421139738,
+      "auth_successes": 0.07120090941983023,
+      "auth_failure_ratio": 0.021933562067405727,
+      "unique_usernames": 0.05576706287609848,
+      "command_count": 0.085127775500112,
+      "command_diversity": 0.04845361982580342,
+      "http_request_count": 0.042696130054946616,
+      "http_uri_diversity": 0.05260954380453954,
+      "http_status_4xx_ratio": 0.04771833159966558,
+      "http_status_5xx_ratio": 0.035142580823431885,
+      "unique_protocols": 0.0,
+      "devices_touched": 0.0,
+      "ports_touched": 0.02885362242109265,
+      "time_between_events_mean_s": 0.05158827998411268,
+      "time_between_events_stdev_s": 0.044014827740152355,
+      "request_rate_per_min": 0.05577221309038558,
+      "auth_failure_rate_per_min": 0.048543388369355775,
+      "is_recon_only": 0.06074547654865199
+    }
+  },
+  "seed": 42,
+  "status": "experimental",
+  "notes": "experiment=exp-58ed50ac901a, split=session_level",
+  "created_at": 1790225289,
+  "created_at_iso": "2026-09-24T04:48:09Z"
+}

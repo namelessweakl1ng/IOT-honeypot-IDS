@@ -1,0 +1,19 @@
+id: http-enumeration-001
+name: HTTP Enumeration & Injection
+description: Probe for path traversal, command injection, and exposed files.
+protocol: http
+expected_behavior:
+  - path_traversal_attempts
+  - command_injection_attempts
+  - sensitive_file_access
+severity: medium
+mitre:
+  tactic: Discovery
+  technique: T1046 Network Service Scanning
+steps:
+  - id: 1
+    name: traversal_probes
+  - id: 2
+    name: injection_probes
+  - id: 3
+    name: sensitive_file_probes

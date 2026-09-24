@@ -1,0 +1,17 @@
+id: ssh-interaction-001
+name: SSH Login + Command Interaction
+description: Authenticate to the SSH honeypot with default creds and execute commands.
+protocol: ssh
+expected_behavior:
+  - authentication_success
+  - command_execution
+  - file_enumeration
+severity: medium
+mitre:
+  tactic: Execution
+  technique: T1059 Command and Scripting Interpreter
+steps:
+  - id: 1
+    name: login_default_creds
+  - id: 2
+    name: execute_commands

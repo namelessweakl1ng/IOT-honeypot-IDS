@@ -1,0 +1,14 @@
+# Project-wide Python requirements (for development on PC1).
+# Per-component requirements live in dashboard/api/requirements.txt.
+# This file is a convenience so a fresh developer can do:
+#   python -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt
+
+-r dashboard/api/requirements.txt
+
+# Testing
+pytest==8.2.2
+pytest-cov==5.0.0
+
+# Linting (optional, used by scripts/development/lint.sh)
+ruff==0.4.7
+mypy==1.10.0

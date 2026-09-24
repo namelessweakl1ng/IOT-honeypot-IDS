@@ -1,0 +1,2228 @@
+@Superpowers
+
+PASS 6 — REAL TELEMETRY PIPELINE
+
+Goal:
+
+Make the TRAPSIG telemetry path genuinely operational and
+demonstrable using real Raspberry Pi honeypot traffic:
+
+PC2 attacker
+    ↓
+Pi honeypot
+    ↓
+JSON telemetry
+    ↓
+Filebeat
+    ↓
+PC1 Logstash
+    ↓
+Elasticsearch
+    ↓
+FastAPI
+    ↓
+automatic session materialization
+    ↓
+dashboard
+
+This pass is about REAL telemetry only.
+
+Do NOT add fake telemetry.
+Do NOT silently fall back to demo data.
+Do NOT build the ML detector yet.
+Do NOT redesign the dashboard.
+Do NOT create another Pass 5.x.
+
+Pass 5 runtime-mode architecture is frozen.
+
+============================================================
+0. CURRENT BASELINE
+============================================================
+
+Current project architecture:
+
+PC1:
+- Elasticsearch
+- Logstash
+- Kibana
+- FastAPI
+- model-lab
+- Next.js dashboard
+
+Pi:
+- Cowrie SSH/Telnet honeypot
+- Camera HTTP honeypot
+- IoT TCP honeypot
+- Filebeat
+- optional collector
+
+PC2:
+- controlled attacker scenario runner
+
+Current important files:
+
+iot-honeypot-ids/pi/docker-compose.yml
+iot-honeypot-ids/pi/filebeat/filebeat.yml
+
+iot-honeypot-ids/dashboard/docker-compose.yml
+iot-honeypot-ids/dashboard/logstash/pipelines/beats.conf
+iot-honeypot-ids/dashboard/elasticsearch/index-templates/*.json
+
+iot-honeypot-ids/dashboard/api/app/main.py
+iot-honeypot-ids/dashboard/api/app/es_client.py
+iot-honeypot-ids/dashboard/api/app/session_materializer.py
+iot-honeypot-ids/dashboard/api/app/session_scheduler.py
+
+iot-honeypot-ids/shared/schemas/event_schema.py
+iot-honeypot-ids/shared/schemas/event-schema.json
+
+iot-honeypot-ids/dashboard/ml/features.py
+
+iot-honeypot-ids/attacker/run-scenario.sh
+iot-honeypot-ids/attacker/runner/lib.sh
+
+iot-honeypot-ids/scripts/testing/run-e2e.sh
+
+============================================================
+1. PASS 6 SUCCESS DEFINITION
+============================================================
+
+Pass 6 is successful only when a real attack can be demonstrated as:
+
+PC2 attacker
+    ↓
+real Pi honeypot
+    ↓
+real honeypot log file
+    ↓
+Filebeat reads the file
+    ↓
+Logstash receives the event
+    ↓
+Logstash normalizes it
+    ↓
+Elasticsearch stores it
+    ↓
+FastAPI can retrieve it
+    ↓
+session materializer creates a session
+    ↓
+FastAPI /sessions returns that session
+    ↓
+dashboard displays the real event/session
+
+The proof must use actual telemetry.
+
+Synthetic/demo data does NOT count as E2E verification.
+
+============================================================
+2. FIRST: TRACE THE EXISTING PIPELINE
+============================================================
+
+Before changing code, inspect and document the complete current
+data flow.
+
+Trace:
+
+PC2 scenario
+→ Pi network port
+→ honeypot
+→ log file
+→ Filebeat input
+→ Logstash Beats input
+→ Logstash filters
+→ ES index
+→ FastAPI query
+→ session materializer
+→ dashboard
+
+For each boundary identify:
+
+INPUT
+OUTPUT
+FORMAT
+IDENTIFIER
+FAILURE BEHAVIOR
+
+Do not immediately edit code.
+
+Find the actual root causes of any broken boundaries first.
+
+============================================================
+3. CRITICAL BUG: COWRIE LOG VOLUME MISMATCH
+============================================================
+
+Inspect:
+
+iot-honeypot-ids/pi/docker-compose.yml
+iot-honeypot-ids/pi/honeypots/cowrie/cowrie.cfg
+iot-honeypot-ids/pi/filebeat/filebeat.yml
+
+Current Cowrie configuration says:
+
+json_log_file = /var/log/cowrie/cowrie.json
+
+But the Cowrie service mounts:
+
+cowrie_var:/cowrie/cowrie-git/var
+
+Filebeat mounts the same named volume as:
+
+cowrie_var:/var/log/cowrie:ro
+
+This does NOT guarantee that:
+
+/var/log/cowrie/cowrie.json
+
+inside Cowrie is the same filesystem location that Filebeat reads.
+
+The current configuration can therefore produce:
+
+Cowrie writes:
+container filesystem /var/log/cowrie/cowrie.json
+
+Filebeat reads:
+named volume /var/log/cowrie/cowrie.json
+
+while the named volume is actually mounted into Cowrie at:
+
+/cowrie/cowrie-git/var
+
+Fix the volume/path contract.
+
+Choose ONE clear architecture.
+
+Preferred:
+
+Make the named Cowrie volume contain exactly the directory that
+Filebeat reads.
+
+For example, if Cowrie genuinely writes:
+
+/var/log/cowrie/cowrie.json
+
+then mount:
+
+cowrie_var:/var/log/cowrie
+
+inside Cowrie.
+
+Do not simultaneously rely on an unrelated
+/cowrie/cowrie-git/var mount for that log file.
+
+Preserve whatever other Cowrie directories are actually required,
+but make the JSON log path unambiguous.
+
+Then Filebeat:
+
+cowrie_var:/var/log/cowrie:ro
+
+must see the exact same file.
+
+Verify:
+
+inside Cowrie:
+ /var/log/cowrie/cowrie.json
+
+inside Filebeat:
+ /var/log/cowrie/cowrie.json
+
+must refer to the same persisted volume data.
+
+Do NOT solve this with a second copied log file.
+
+Do NOT use host bind mounts unnecessarily.
+
+============================================================
+4. VERIFY CAMERA LOG CONTRACT
+============================================================
+
+Inspect:
+
+iot-honeypot-ids/pi/honeypots/camera/Dockerfile
+iot-honeypot-ids/pi/honeypots/camera/app.py
+iot-honeypot-ids/pi/docker-compose.yml
+iot-honeypot-ids/pi/filebeat/filebeat.yml
+
+The camera writes:
+
+/var/log/camera/camera.jsonl
+
+The named volume:
+
+camera_logs
+
+must be mounted at:
+
+/var/log/camera
+
+inside the camera container
+
+AND:
+
+/var/log/camera
+
+inside Filebeat.
+
+Verify that the non-root camera user can actually write there.
+
+Do not change the security model merely to make logging work.
+
+Required result:
+
+camera request
+→ /var/log/camera/camera.jsonl
+→ Filebeat reads same volume
+
+============================================================
+5. VERIFY IOT LOG CONTRACT
+============================================================
+
+Inspect:
+
+iot-honeypot-ids/pi/honeypots/iot-service/app.py
+iot-honeypot-ids/pi/honeypots/iot-service/Dockerfile
+iot-honeypot-ids/pi/docker-compose.yml
+iot-honeypot-ids/pi/filebeat/filebeat.yml
+
+The IoT service writes:
+
+/var/log/iot/iot.jsonl
+
+The named volume:
+
+iot_logs
+
+must be mounted at:
+
+/var/log/iot
+
+inside the IoT service
+
+AND:
+
+/var/log/iot
+
+inside Filebeat.
+
+Verify the non-root user can write.
+
+Required result:
+
+TCP interaction
+→ /var/log/iot/iot.jsonl
+→ Filebeat reads same volume
+
+============================================================
+6. FILEBEAT CONTRACT
+============================================================
+
+Inspect:
+
+iot-honeypot-ids/pi/filebeat/filebeat.yml
+
+Verify all three inputs:
+
+cowrie-json
+camera-jsonl
+iot-jsonl
+
+produce parseable structured events.
+
+For every input verify:
+
+- JSON is parsed
+- event_id survives
+- session_id survives
+- @timestamp survives
+- source.ip survives
+- device.id survives
+- honeypot identity survives
+- protocol survives
+- event fields survive
+- attack metadata survives where emitted
+- tags/provenance survive
+
+Do not flatten fields destructively.
+
+Do not silently discard malformed JSON.
+
+Filebeat must spool to disk when Logstash is unavailable.
+
+Verify that the spool configuration is actually valid for the pinned
+Filebeat version.
+
+Do not merely trust the comments in filebeat.yml.
+
+============================================================
+7. LOGSTASH INPUT
+============================================================
+
+Inspect:
+
+iot-honeypot-ids/dashboard/logstash/pipelines/beats.conf
+
+Verify:
+
+beats
+port 5044
+
+receives the Filebeat events.
+
+Verify the Logstash container actually loads this pipeline.
+
+Inspect:
+
+logstash/config/pipelines.yml
+logstash/config/logstash.yml
+
+Make sure the pipeline configuration does not reference missing
+pipelines or silently fail to load.
+
+Use Logstash configuration validation where supported by the pinned
+image.
+
+============================================================
+8. LOGSTASH NORMALIZATION
+============================================================
+
+For each honeypot verify the normalized output.
+
+------------------------------------------------------------
+Cowrie
+------------------------------------------------------------
+
+Verify:
+
+Cowrie original eventid
+→ event.action or another justified normalized field
+
+Cowrie session
+→ session_id
+
+src_ip
+→ source.ip
+
+src_port
+→ source.port
+
+dst_ip
+→ destination.ip
+
+dst_port
+→ destination.port
+
+username
+→ authentication.username
+
+sensor
+→ device.id
+
+honeypot.name
+→ cowrie
+
+protocol
+→ ssh
+
+Do not lose the original event semantics.
+
+Classification must occur BEFORE renaming fields when necessary.
+
+Preserve the previous Pass 5 Cowrie ordering fix.
+
+------------------------------------------------------------
+Camera
+------------------------------------------------------------
+
+Verify:
+
+device.id
+device.type
+source.ip
+source.port
+destination
+http.*
+event.*
+honeypot.*
+attack.*
+
+survive normalization.
+
+------------------------------------------------------------
+IoT
+------------------------------------------------------------
+
+Verify:
+
+device.id
+device.type
+source.ip
+source.port
+destination
+protocol
+event.*
+honeypot.*
+attack.*
+
+survive normalization.
+
+============================================================
+9. TIMESTAMP CONTRACT
+============================================================
+
+Every normal event must contain:
+
+@timestamp
+ingested_at
+timestamp_source
+
+Rules:
+
+If source provides @timestamp:
+
+preserve it.
+
+Set:
+
+timestamp_source = source_provided
+
+Always set:
+
+ingested_at = Logstash ingestion time.
+
+If source has no usable @timestamp:
+
+use ingestion time as @timestamp
+
+and:
+
+timestamp_source = ingest_fallback
+
+Do not overwrite valid source timestamps with ingestion time.
+
+============================================================
+10. EVENT ID CONTRACT
+============================================================
+
+event_id is the event-level identity.
+
+Required:
+
+- stable
+- unique per event
+- deterministic when generated by Logstash
+- usable as Elasticsearch document_id
+
+Normal event indexing must use:
+
+document_id = event_id
+
+and:
+
+action = create
+
+so duplicate delivery does not silently overwrite an unrelated event.
+
+If duplicate event_id arrives:
+
+it must not create a second event.
+
+Do not silently replace a different event with the same ID.
+
+If duplicate behavior needs explicit handling, document it.
+
+============================================================
+11. SESSION ID CONTRACT
+============================================================
+
+session_id is the primary event correlation key.
+
+Every honeypot event that represents a session interaction must have:
+
+session_id
+
+Camera:
+same source IP remains in the same session until idle timeout.
+
+IoT:
+one TCP connection must retain the same session_id for all events
+within that connection.
+
+Cowrie:
+use Cowrie's session identifier consistently.
+
+Verify that Logstash does not accidentally rename/drop it.
+
+Events missing session_id must NOT be silently inserted into the normal
+event index.
+
+They must be routed to the malformed/dead-letter path.
+
+============================================================
+12. MALFORMED EVENT CONTRACT
+============================================================
+
+Required normal event fields are defined in:
+
+shared/schemas/event_schema.py
+
+and:
+
+shared/schemas/event-schema.json
+
+Audit that the canonical requirements are consistent.
+
+At minimum validate:
+
+@timestamp
+event_id
+session_id
+source.ip
+device.id
+event.type
+honeypot.name
+
+Malformed events must:
+
+- remain observable
+- not be silently dropped
+- be routed to honeypot-errors-*
+- retain enough raw information for investigation
+- include an explicit reason/stage
+
+Do not expose credentials or secrets in dead-letter documents.
+
+============================================================
+13. CRITICAL ELASTICSEARCH TEMPLATE PROBLEM
+============================================================
+
+Current:
+
+dashboard/docker-compose.yml
+
+mounts:
+
+./elasticsearch/index-templates
+
+into:
+
+/usr/share/elasticsearch/config/index-templates
+
+But Elasticsearch does NOT automatically install arbitrary JSON files from
+that directory as index templates merely because they are mounted.
+
+The repository therefore needs a deterministic provisioning mechanism.
+
+Implement the smallest reliable solution.
+
+Preferred:
+
+Create an explicit Elasticsearch bootstrap/provisioning script that:
+
+1. waits for Elasticsearch health
+2. authenticates using the configured credentials
+3. installs the composable index templates
+4. installs any required ingest pipeline
+5. installs required ILM policy
+6. verifies installation
+7. is idempotent
+
+Do not manually require the user to paste curl commands.
+
+The deployment should have one documented provisioning entry point.
+
+Possible location:
+
+iot-honeypot-ids/scripts/deployment/bootstrap-elasticsearch.sh
+
+or another repository-consistent location.
+
+If you choose another location, explain why.
+
+============================================================
+14. CRITICAL: honeypot-default INGEST PIPELINE
+============================================================
+
+Current:
+
+honeypot-events.json
+
+contains:
+
+"index.default_pipeline": "honeypot-default"
+
+Search the repository.
+
+There is currently no obvious definition of:
+
+honeypot-default
+
+Do NOT leave a dangling default pipeline.
+
+Choose ONE:
+
+A. Implement the pipeline properly and install it during ES bootstrap.
+
+OR
+
+B. Remove the default_pipeline reference if it provides no required
+behavior and move that behavior into the existing Logstash normalization
+where appropriate.
+
+Do NOT duplicate transformations between Logstash and ES ingest
+pipeline without a clear reason.
+
+Prefer keeping normalization in Logstash and removing the ES default
+pipeline if the pipeline is unnecessary.
+
+But preserve any behavior that is genuinely required by the template.
+
+After the change:
+
+an event indexed into honeypot-events-*
+must not fail because of a missing ingest pipeline.
+
+============================================================
+15. ILM POLICY
+============================================================
+
+Current honeypot-events template references:
+
+honeypot-events-policy
+
+But no obvious policy definition currently exists.
+
+Create/install the policy if it is actually intended.
+
+It must be appropriate for this student lab.
+
+Do NOT create an elaborate multi-node lifecycle architecture.
+
+A simple bounded retention policy is sufficient.
+
+Document:
+
+- retention duration
+- rollover/deletion behavior if used
+- why it is safe for a 256 GB SSD environment
+
+The policy must be installed before an index that requires it is
+created.
+
+If ILM is not necessary for the current architecture, remove the
+dangling reference and document the decision.
+
+Do not leave a reference to a non-existent policy.
+
+============================================================
+16. INDEX TEMPLATE INSTALLATION
+============================================================
+
+Install and verify:
+
+honeypot-events-*
+honeypot-sessions-*
+honeypot-detections-*
+honeypot-errors-*
+honeypot-training-*
+
+Do not create a separate template architecture for each deployment
+environment.
+
+Use the existing JSON files as the source of truth.
+
+Verify mappings through the Elasticsearch API.
+
+Especially verify:
+
+source.ip → ip
+destination.ip → ip
+session_id → keyword
+event_id → keyword
+@timestamp → date
+ingested_at → date
+
+and the session fields.
+
+Do not rely on dynamic mappings for these core fields.
+
+============================================================
+17. TEMPLATE / SCHEMA CONSISTENCY
+============================================================
+
+Audit:
+
+shared/schemas/event-schema.json
+
+shared/schemas/event_schema.py
+
+dashboard/elasticsearch/index-templates/honeypot-events.json
+
+They currently represent similar but not perfectly identical concepts.
+
+Do NOT blindly rewrite them.
+
+Establish a clear relationship:
+
+canonical event schema
+    ↓
+ES mapping
+
+Required fields and types must be compatible.
+
+Document any intentional difference.
+
+Add automated verification where practical so future changes cannot
+silently drift.
+
+============================================================
+18. ELASTICSEARCH CLIENT
+============================================================
+
+Inspect:
+
+dashboard/api/app/es_client.py
+
+Verify:
+
+search_events()
+search_sessions()
+get_session()
+search_detections()
+
+against the actual ES mappings.
+
+Important:
+
+GET /sessions/{id}
+
+must retrieve:
+
+1. session document
+2. event timeline
+
+The event timeline must come from:
+
+honeypot-events-*
+
+using:
+
+session_id
+
+and be sorted chronologically.
+
+Do not return ES internal metadata to the browser unless explicitly
+required.
+
+Preserve the previous defensive malformed-response handling.
+
+============================================================
+19. FASTAPI EVENTS API
+============================================================
+
+Verify:
+
+GET /events
+
+supports:
+
+size
+source_ip
+device
+
+and queries real Elasticsearch data in LIVE mode.
+
+Do not fabricate events.
+
+Verify response shape is stable:
+
+{
+  "events": [...],
+  "total": N
+}
+
+or the existing documented equivalent.
+
+If ES is unavailable:
+
+return a clear degraded/error response.
+
+Do not return old demo events.
+
+============================================================
+20. FASTAPI SESSIONS API
+============================================================
+
+Verify:
+
+GET /sessions
+
+returns actual materialized sessions.
+
+Verify:
+
+GET /sessions/{session_id}
+
+returns the actual session and actual event timeline.
+
+Do not reconstruct sessions in the browser.
+
+The browser must consume server-side materialized session data.
+
+============================================================
+21. SESSION MATERIALIZER
+============================================================
+
+Inspect:
+
+dashboard/api/app/session_materializer.py
+
+Current design:
+
+honeypot-events-*
+    ↓
+reconstruct_sessions()
+    ↓
+build_session_document()
+    ↓
+honeypot-sessions-*
+
+Preserve this architecture.
+
+Verify:
+
+- session_id groups events
+- event_ids are preserved
+- started_at is earliest event
+- ended_at is latest event
+- duration_s is correct
+- event_count is correct
+- source is preserved
+- destination is preserved
+- device is preserved
+- honeypot is preserved
+- protocol is preserved
+- auth aggregates are correct
+- HTTP aggregates are correct
+- classifications are not fabricated
+
+The session document must retain event lineage.
+
+At minimum:
+
+event_ids
+
+must point back to actual event IDs.
+
+============================================================
+22. SESSION MATERIALIZATION BOUNDARIES
+============================================================
+
+Preserve the existing safety limits:
+
+lookback_minutes
+max_events
+max_sessions
+pagination
+
+Do not introduce an unbounded ES scan.
+
+Verify search_after pagination does not:
+
+- skip events
+- duplicate events
+- lose events with identical timestamps
+
+Keep:
+
+session_id
+@timestamp
+event_id
+
+as deterministic ordering keys.
+
+============================================================
+23. SESSION SCHEDULER
+============================================================
+
+Inspect:
+
+dashboard/api/app/session_scheduler.py
+
+Current contract:
+
+materialization only when:
+
+runtime_mode == LIVE
+
+AND:
+
+Elasticsearch is reachable.
+
+Preserve this.
+
+The scheduler must NOT materialize:
+
+EMPTY
+DEMO
+
+events.
+
+This prevents stale/demo contamination.
+
+Verify:
+
+- scheduler starts with FastAPI
+- scheduler stops cleanly
+- only one scheduler exists
+- lock prevents overlapping runs
+- exceptions don't kill FastAPI
+- interval remains bounded
+- last result is observable
+- no credentials are exposed
+
+Do not replace this with a browser timer.
+
+============================================================
+24. LIVE MODE DATA PATH
+============================================================
+
+When:
+
+backend mode = LIVE
+
+the dashboard must use:
+
+FastAPI → Elasticsearch
+
+for actual telemetry.
+
+It must NOT fall back to:
+
+local demo CSV
+synthetic JSONL
+hardcoded events
+
+when ES has no data.
+
+LIVE + no telemetry:
+
+show a genuine empty state.
+
+LIVE + backend/ES failure:
+
+show a genuine unavailable/degraded state.
+
+Never silently turn LIVE into DEMO.
+
+============================================================
+25. DEMO/LIVE ISOLATION
+============================================================
+
+Preserve the existing separation:
+
+DEMO:
+local/demo dataset
+
+LIVE:
+real Elasticsearch telemetry
+
+UNKNOWN:
+backend mode cannot currently be verified
+
+Do not allow synthetic sample events to appear in LIVE mode.
+
+Do not allow old ES events to contaminate EMPTY/DEMO session
+materialization.
+
+============================================================
+26. ATTACKER SCENARIO RUNNER
+============================================================
+
+Inspect:
+
+attacker/run-scenario.sh
+attacker/runner/lib.sh
+
+The runner currently generates:
+
+campaign_id
+run_id
+
+but those identifiers are not currently propagated into the network
+telemetry in a reliable way.
+
+Do NOT invent fake campaign metadata.
+
+For Pass 6, establish a reliable run-level correlation mechanism.
+
+The minimum requirement is:
+
+Every attacker run must have:
+
+campaign_id
+run_id
+scenario
+
+and a local run manifest containing:
+
+campaign_id
+run_id
+scenario
+target
+attacker/source identity if safely available
+started_at
+ended_at
+
+Use the existing runs/ mechanism.
+
+Do not send secrets.
+
+Do not put passwords into telemetry.
+
+============================================================
+27. CAMPAIGN CORRELATION
+============================================================
+
+Do NOT force campaign_id into every protocol if doing so would create
+fragile or misleading telemetry.
+
+Instead establish a documented correlation boundary.
+
+Preferred architecture:
+
+attacker run manifest
+        +
+actual session source IP
+        +
+scenario timing
+        ↓
+campaign/session correlation metadata
+
+If reliable automatic correlation can be added without compromising
+the honeypot protocols, do so.
+
+For example, HTTP may safely carry a dedicated lab correlation header.
+
+For SSH and IoT, do not abuse usernames/passwords or protocol payloads
+just to transmit campaign metadata.
+
+If campaign propagation cannot be made reliable in this pass, preserve
+the run manifest and explicitly document that campaign correlation is
+a later analysis-layer concern.
+
+Do NOT fake campaign_id inside events after the fact.
+
+============================================================
+28. REAL EVENT PROVENANCE
+============================================================
+
+Every real event should make its origin clear.
+
+At minimum:
+
+honeypot.name
+device.id
+device.type
+device.container where available
+source.ip
+destination.port
+protocol
+event.type
+event.action
+session_id
+event_id
+@timestamp
+ingested_at
+timestamp_source
+
+Do not insert:
+
+SYNTHETIC
+REPLAY
+
+tags into real telemetry.
+
+Those tags are reserved for synthetic/demo data.
+
+============================================================
+29. CREDENTIAL SAFETY
+============================================================
+
+Audit every honeypot log.
+
+Passwords must never be stored.
+
+Camera:
+Authorization password must remain redacted.
+
+IoT:
+raw protocol content must not accidentally store credentials.
+
+Cowrie:
+preserve normal Cowrie telemetry without exposing unnecessary
+secrets.
+
+Do not increase telemetry verbosity if it captures sensitive data.
+
+============================================================
+30. PI RESOURCE BUDGET
+============================================================
+
+Pi is a Raspberry Pi 4, 4 GB RAM.
+
+Preserve:
+
+Cowrie
+Camera
+IoT service
+Filebeat
+
+within the existing bounded resource model.
+
+Do not add:
+
+Elasticsearch
+Logstash
+Kibana
+Redis
+Kafka
+Kubernetes
+heavy databases
+large agents
+
+to the Pi.
+
+The Pi is a sensor/telemetry source.
+
+============================================================
+31. PC1 STORAGE BUDGET
+============================================================
+
+PC1 has limited SSD storage.
+
+Keep Elasticsearch:
+
+- single node
+- one shard where appropriate
+- zero replicas for lab
+- bounded retention
+- no unnecessary indices
+- no unbounded event growth
+
+Do not introduce a distributed storage architecture.
+
+============================================================
+32. KIBANA
+============================================================
+
+Verify Kibana can actually query:
+
+honeypot-events-*
+honeypot-sessions-*
+honeypot-detections-*
+honeypot-errors-*
+
+Do not require Kibana for FastAPI to function.
+
+Kibana is the raw telemetry/analyst surface.
+
+The custom dashboard is the investigation/control surface.
+
+If saved objects or data views are stale, update them only as necessary
+for the real indices.
+
+Do not redesign Kibana.
+
+============================================================
+33. E2E TEST MUST BE REAL
+============================================================
+
+Current:
+
+scripts/testing/run-e2e.sh
+
+is too weak.
+
+It currently:
+
+1. launches an attacker scenario
+2. waits 5 seconds
+3. checks whether any event exists in ES
+4. checks /sessions
+
+This can pass because an old event exists.
+
+Replace this with a real bounded E2E verification.
+
+The test must establish a unique test run.
+
+Use:
+
+campaign_id
+run_id
+
+or another unique run marker where safely supported.
+
+Record:
+
+start_time
+
+before the attack.
+
+Run one controlled scenario.
+
+Then poll for a bounded timeout.
+
+Do NOT use a fixed 5-second assumption.
+
+Use something like:
+
+poll every 2 seconds
+timeout 60 seconds
+
+or another justified bounded interval.
+
+Verify:
+
+A. attacker scenario completed
+
+B. at least one NEW event arrived after start_time
+
+C. the event belongs to the expected honeypot/protocol
+
+D. event contains:
+   event_id
+   session_id
+   @timestamp
+   source.ip
+   device.id
+   honeypot.name
+
+E. event is retrievable through FastAPI /events
+
+F. session materializer has created a session
+
+G. FastAPI /sessions returns that session
+
+H. GET /sessions/{id} returns the event timeline
+
+I. event_ids in the session correspond to actual event IDs
+
+Do NOT pass merely because any old ES document exists.
+
+============================================================
+34. E2E SCENARIO
+============================================================
+
+Use the safest, most deterministic existing scenario.
+
+Recommended first E2E:
+
+camera-recon
+
+because it does not depend on SSH password tooling.
+
+Verify:
+
+real HTTP request
+→ camera JSONL
+→ Filebeat
+→ Logstash
+→ ES
+→ session
+→ API
+
+Then add coverage for:
+
+iot-probe
+
+and:
+
+ssh-bruteforce
+
+if the environment supports them.
+
+Do not require all scenarios to pass before the first pipeline can be
+considered functional.
+
+But all supported scenarios must be tested before final verification
+if the environment allows it.
+
+============================================================
+35. E2E SHOULD IDENTIFY THE NEW DATA
+============================================================
+
+Do not search:
+
+match_all + latest event
+
+because old data can satisfy it.
+
+Instead use a bounded query such as:
+
+@timestamp >= test_start_time
+
+and, where safely possible:
+
+source.ip == attacker source
+
+and/or:
+
+honeypot.name == expected honeypot
+
+and/or:
+
+run/campaign correlation metadata.
+
+The test must prove the attack caused the event.
+
+============================================================
+36. SESSION E2E
+============================================================
+
+After the event appears, poll:
+
+GET /sessions
+
+until the expected session exists.
+
+Do not assume the 15-second scheduler has already completed.
+
+Timeout should be bounded.
+
+If it never appears:
+
+fail with diagnostics showing:
+
+- latest event
+- session_id
+- scheduler status
+- ES session index count
+- FastAPI response
+
+Do not silently continue.
+
+============================================================
+37. DIAGNOSTIC OUTPUT
+============================================================
+
+When E2E fails, print useful non-secret diagnostics:
+
+- scenario
+- target
+- campaign_id
+- run_id
+- test start time
+- event count before
+- event count after
+- matching event IDs
+- matching session IDs
+- scheduler status
+- ES index names
+- Logstash health
+- Filebeat container status if remotely accessible
+
+Never print:
+
+- passwords
+- private keys
+- API secrets
+- authorization headers
+- SSH credentials
+
+============================================================
+38. PIPELINE FAILURE TESTS
+============================================================
+
+Add deterministic integration tests for:
+
+1. malformed JSON
+2. missing session_id
+3. missing source.ip
+4. duplicate event_id
+5. missing @timestamp
+6. invalid timestamp
+7. backend/ES unavailable
+8. empty ES result
+9. session materialization with no events
+10. session materialization with one event
+11. session materialization with multiple events
+12. event lineage
+
+Where real Docker integration is unavailable, test the transformation
+logic with fixtures.
+
+Do not pretend fixture tests are equivalent to Docker E2E.
+
+Clearly separate:
+
+unit
+integration
+E2E
+
+============================================================
+39. LOGSTASH PIPELINE TESTING
+============================================================
+
+Where practical, add fixture-based tests for:
+
+camera event
+iot event
+cowrie event
+malformed event
+
+Verify expected normalized fields.
+
+The tests should catch:
+
+- Cowrie rename-before-classification regression
+- lost session_id
+- lost source.ip
+- lost event_id
+- wrong honeypot name
+- wrong protocol
+- malformed routing
+
+Do not rely solely on string-presence tests.
+
+============================================================
+40. DOCKER COMPOSE VALIDATION
+============================================================
+
+Validate:
+
+Pi compose
+PC1 compose
+
+using the pinned Docker Compose environment.
+
+Check:
+
+docker compose config
+
+and, where possible:
+
+docker compose config --quiet
+
+or equivalent.
+
+Verify:
+
+- all referenced files exist
+- all volumes are valid
+- all environment variables are documented
+- all services have correct dependencies
+- profiles do not accidentally prevent required telemetry services
+- health checks are valid
+- no duplicate/shadowed volume mounts exist
+
+Pay special attention to the Cowrie volume correction.
+
+============================================================
+41. FILEBEAT / LOGSTASH / ES STARTUP ORDER
+============================================================
+
+Verify startup behavior:
+
+PC1:
+
+Elasticsearch
+    ↓
+Logstash
+    ↓
+FastAPI
+
+Pi:
+
+honeypots
+    ↓
+Filebeat
+
+Filebeat may start before Logstash is available.
+
+It must retry/spool.
+
+Logstash must wait for ES readiness.
+
+FastAPI must not start querying ES as though ES is healthy when it is
+not.
+
+Do not use arbitrary long sleeps as the primary readiness mechanism.
+
+Health checks should establish readiness.
+
+============================================================
+42. API HEALTH SEMANTICS
+============================================================
+
+Preserve the distinction between:
+
+backend reachable
+ES reachable
+Pi reachable
+
+Do not collapse:
+
+BACKEND_UNREACHABLE
+OFFLINE
+UNCHECKED
+
+These were explicitly hardened in Pass 5.
+
+Do not regress them.
+
+============================================================
+43. NO AUTOMATIC LIVE ACTIVATION
+============================================================
+
+Real telemetry arriving in Elasticsearch must NOT automatically change:
+
+EMPTY → LIVE
+
+LIVE is still explicitly entered through the existing backend-owned
+runtime mode mechanism.
+
+The scheduler only materializes sessions when backend mode is LIVE.
+
+Do not modify this contract.
+
+============================================================
+44. NO AUTOMATIC DEMO FALLBACK
+============================================================
+
+If real telemetry is unavailable:
+
+LIVE mode must remain LIVE but show no live telemetry / degraded state.
+
+It must never load:
+
+sample telemetry
+demo CSV
+synthetic events
+
+automatically.
+
+============================================================
+45. DASHBOARD VERIFICATION
+============================================================
+
+After real E2E data exists, verify the dashboard can show:
+
+LIVE EVENTS:
+actual event
+
+ATTACK SESSIONS:
+actual reconstructed session
+
+SESSION DETAIL:
+actual event timeline
+
+OVERVIEW:
+actual event/session counts
+
+No hardcoded demo records.
+
+No fake attacker IP.
+
+No fake timestamps.
+
+No fake session IDs.
+
+Use the existing dashboard presentation architecture.
+
+Do not redesign the UI in Pass 6.
+
+============================================================
+46. DEMO DATA REMAINS EXPLICIT
+============================================================
+
+The existing:
+
+LOAD DEMO DATA
+
+flow remains available.
+
+But it must remain explicitly marked:
+
+MODE: DEMO
+DATA SOURCE: DEMO DATASET
+
+Real E2E telemetry must be distinguishable from demo data.
+
+Do not mix them.
+
+============================================================
+47. DATA SOURCE / PROVENANCE
+============================================================
+
+Audit the event tags and fields so an analyst can answer:
+
+"Did this event come from the real Pi or from synthetic demo data?"
+
+Real telemetry:
+must have real honeypot origin and must not be tagged SYNTHETIC/REPLAY.
+
+Synthetic:
+must remain clearly marked.
+
+Do not create ambiguous telemetry.
+
+============================================================
+48. SESSION DOCUMENT PROVENANCE
+============================================================
+
+A reconstructed session must make it possible to answer:
+
+Which events produced this session?
+
+At minimum:
+
+session_id
+event_ids
+started_at
+ended_at
+event_count
+source.ip
+honeypot.name
+device.id
+protocol
+
+must be available.
+
+GET /sessions/{id}
+
+must return:
+
+session metadata
++
+actual event timeline
+
+This is a central thesis requirement.
+
+============================================================
+49. NO LEAKAGE INTO ML YET
+============================================================
+
+Do NOT modify the ML training pipeline as part of Pass 6 except where
+required to ensure it can later consume the real session documents.
+
+Do NOT:
+
+- train a new model
+- claim detection accuracy
+- claim unknown-family detection
+- change feature versions
+- add labels to real events
+- fabricate ground truth
+
+Pass 6 establishes trustworthy telemetry.
+
+ML comes later.
+
+============================================================
+50. DOCUMENTATION
+============================================================
+
+Update only the documentation necessary to accurately describe the
+real pipeline.
+
+At minimum review:
+
+docs/architecture/data-flow.md
+docs/demo/README.md
+docs/deployment/pi-os.md
+docs/deployment/fedora.md
+pi/README.md
+dashboard/README.md
+tests/e2e/README.md
+
+Correct any statements that are no longer true.
+
+Especially document:
+
+- Cowrie log volume contract
+- ES bootstrap/provisioning
+- index template installation
+- ILM policy
+- E2E command
+- expected propagation delay
+- LIVE mode requirement for session materialization
+- real vs synthetic telemetry
+
+Do not write claims that require physical verification unless the
+verification was actually performed.
+
+============================================================
+51. TEST MATRIX
+============================================================
+
+Create a clear test matrix.
+
+UNIT:
+
+- schema validation
+- event normalization
+- session reconstruction
+- session document generation
+- timestamp handling
+- event ID behavior
+- malformed routing
+
+INTEGRATION:
+
+- ES client
+- template installation
+- Logstash fixture transformations
+- session materialization
+- API event/session queries
+
+E2E:
+
+camera-recon
+iot-probe
+ssh-bruteforce
+
+where the physical lab environment supports them.
+
+============================================================
+52. TEST ENVIRONMENT HONESTY
+============================================================
+
+There are two types of verification.
+
+A. Cloud/static verification
+
+Can verify:
+
+- source
+- config
+- unit tests
+- compose syntax
+- fixture transformations
+
+B. Physical lab verification
+
+Requires:
+
+- real Raspberry Pi
+- PC1 ELK running
+- PC2 attacker machine
+- real network connectivity
+
+Do NOT claim physical E2E success from cloud/static tests.
+
+If physical E2E cannot be run in the current environment:
+
+state:
+
+PHYSICAL E2E NOT EXECUTED
+
+and report exactly what remains to be verified.
+
+Do not fake screenshots or event counts.
+
+============================================================
+53. PHYSICAL E2E PROCEDURE
+============================================================
+
+Document the exact real-lab procedure for later execution.
+
+PC1:
+
+1. configure dashboard/.env
+2. bootstrap ES
+3. start ELK + API
+4. verify health
+5. enter LIVE mode explicitly
+6. verify scheduler
+
+Pi:
+
+1. configure pi/.env
+2. verify CENTRAL_SERVER_IP
+3. start honeypots
+4. start Filebeat
+5. verify all containers
+6. verify log files are actually being written
+
+PC2:
+
+1. configure attacker/.env
+2. verify LAB_SUBNET
+3. run:
+
+./attacker/run-scenario.sh \
+  --target <PI_IP> \
+  --scenario camera-recon
+
+Then verify:
+
+Pi log
+→ Filebeat
+→ Logstash
+→ ES
+→ FastAPI
+→ session
+→ dashboard
+
+Repeat with:
+
+iot-probe
+
+and:
+
+ssh-bruteforce
+
+where supported.
+
+============================================================
+54. REQUIRED OPERATIONAL CHECKS
+============================================================
+
+Provide commands for an operator to inspect:
+
+Pi:
+
+docker compose ps
+docker compose logs filebeat
+docker compose logs cowrie
+docker compose logs camera
+docker compose logs iot-service
+
+and:
+
+docker exec pi-filebeat ...
+
+where useful.
+
+PC1:
+
+docker compose ps
+docker compose logs logstash
+docker compose logs elasticsearch
+docker compose logs api
+
+ES:
+
+cluster health
+index list
+template list
+pipeline list
+ILM policy list
+
+FastAPI:
+
+/health
+/mode
+/events
+/sessions
+/sessions/{id}
+/sessions/scheduler/status
+
+Do not expose secrets in these commands.
+
+============================================================
+55. PERFORMANCE / BACKPRESSURE
+============================================================
+
+Verify that:
+
+Pi can survive temporary PC1 outage.
+
+Filebeat spools.
+
+When PC1 returns:
+
+Filebeat resumes forwarding.
+
+Logstash processes buffered events.
+
+Duplicate event delivery does not create duplicate event documents.
+
+Do not introduce Redis/Kafka.
+
+Use the existing Filebeat spool.
+
+============================================================
+56. LOG ROTATION
+============================================================
+
+Verify:
+
+- Pi honeypot logs are bounded
+- Filebeat logs are bounded
+- Docker json-file logs are bounded
+- ES retention is bounded
+
+Do not allow an attack storm to fill the Pi SD card.
+
+============================================================
+57. SECURITY AUDIT
+============================================================
+
+Verify no regression in:
+
+- Pi SSH strict host verification
+- backend API authentication
+- API key secrecy
+- Pi credentials
+- private key handling
+- attacker subnet restriction
+- no privileged honeypot containers
+- no Docker socket exposure
+- no password logging
+- no secret logging
+
+Do not weaken security to simplify E2E testing.
+
+============================================================
+58. ACCEPTANCE CRITERIA
+============================================================
+
+Pass 6 is complete only if:
+
+[ ] Cowrie log volume/path is physically coherent.
+
+[ ] Camera log volume/path is physically coherent.
+
+[ ] IoT log volume/path is physically coherent.
+
+[ ] Filebeat reads the actual honeypot files.
+
+[ ] Filebeat retry/spool behavior is valid.
+
+[ ] Logstash receives Beats events.
+
+[ ] Cowrie normalization works.
+
+[ ] Camera normalization works.
+
+[ ] IoT normalization works.
+
+[ ] event_id survives end-to-end.
+
+[ ] session_id survives end-to-end.
+
+[ ] source.ip survives end-to-end.
+
+[ ] device.id survives end-to-end.
+
+[ ] honeypot.name survives end-to-end.
+
+[ ] @timestamp survives.
+
+[ ] ingested_at is added.
+
+[ ] timestamp_source is correct.
+
+[ ] malformed events are observable.
+
+[ ] duplicate event IDs are handled safely.
+
+[ ] ES templates are actually installed.
+
+[ ] ES mappings are verified.
+
+[ ] no dangling honeypot-default pipeline exists.
+
+[ ] no dangling ILM policy reference exists.
+
+[ ] ES event indexing works.
+
+[ ] FastAPI /events reads real ES events.
+
+[ ] session materializer creates sessions from real events.
+
+[ ] scheduler only materializes in LIVE.
+
+[ ] session event_ids preserve lineage.
+
+[ ] GET /sessions/{id} returns real timeline.
+
+[ ] E2E cannot pass because of stale old data.
+
+[ ] E2E has bounded polling.
+
+[ ] real event appears after attack.
+
+[ ] real session appears after attack.
+
+[ ] dashboard displays real event/session data in LIVE.
+
+[ ] LIVE never silently falls back to demo.
+
+[ ] DEMO remains explicitly marked.
+
+[ ] no fake telemetry was introduced.
+
+[ ] Pi resource constraints remain bounded.
+
+[ ] PC1 storage remains bounded.
+
+[ ] documentation matches actual behavior.
+
+============================================================
+59. IMPORTANT: DO NOT HIDE FAILURES
+============================================================
+
+If one component cannot be verified, do not change the system to make
+the test green by weakening the assertion.
+
+Example:
+
+BAD:
+
+ES has no matching event
+→ search any event
+→ pass
+
+GOOD:
+
+No matching new event
+→ fail
+→ print diagnostics
+→ investigate pipeline boundary
+
+Likewise:
+
+BAD:
+
+session missing
+→ fabricate session
+
+GOOD:
+
+session missing
+→ fail
+→ inspect materializer/scheduler/ES
+
+============================================================
+60. VERIFICATION COMMANDS
+============================================================
+
+Run all available repository tests.
+
+At minimum:
+
+Python unit tests
+Python integration tests where services are available
+frontend tests
+ESLint
+TypeScript/build
+compose configuration validation
+
+Run the actual E2E script where a real lab is available.
+
+Report exact:
+
+command
+exit code
+passed
+failed
+skipped
+
+Separate:
+
+STATIC/UNIT VERIFICATION
+
+from:
+
+DOCKER INTEGRATION VERIFICATION
+
+from:
+
+PHYSICAL LAB E2E VERIFICATION
+
+Never combine them into one vague "all tests passed".
+
+============================================================
+61. FINAL AUDIT
+============================================================
+
+After implementation, perform a source audit for:
+
+cowrie.json
+camera.jsonl
+iot.jsonl
+
+Verify every path on both writer and reader sides.
+
+Search for:
+
+honeypot-default
+honeypot-events-policy
+
+and prove every referenced ES pipeline/policy exists or remove the
+dangling reference.
+
+Search for:
+
+SYNTHETIC
+REPLAY
+
+and ensure they are not being added to real telemetry.
+
+Search for:
+
+event_id
+session_id
+source.ip
+device.id
+honeypot.name
+
+through the entire pipeline.
+
+Trace each field:
+
+Pi
+→ Filebeat
+→ Logstash
+→ ES
+→ API
+→ session
+→ dashboard
+
+============================================================
+62. COMMIT
+============================================================
+
+Do not split this into Pass 6.1 / 6.2 / 6.3.
+
+This is ONE Pass 6 implementation.
+
+Use one final commit:
+
+Pass 6: Establish real telemetry pipeline
+
+Do not start Pass 7 automatically.
+
+============================================================
+63. FINAL REPORT
+============================================================
+
+Report:
+
+1. Root causes found
+2. Files changed
+3. Cowrie volume/path correction
+4. Filebeat changes
+5. Logstash changes
+6. Elasticsearch provisioning changes
+7. API/session changes
+8. E2E changes
+9. Documentation changes
+10. Unit test results
+11. Integration test results
+12. E2E results
+13. Physical lab verification status
+14. Exact commands used
+15. Any remaining blockers
+
+If physical Pi/PC1/PC2 verification was not possible, explicitly say:
+
+PHYSICAL E2E NOT EXECUTED
+
+Do not claim otherwise.
+
+STOP after the report.

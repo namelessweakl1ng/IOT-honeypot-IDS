@@ -1,0 +1,262 @@
+{
+  "experiment_id": "test-session-split",
+  "config": {
+    "experiment_id": "test-session-split",
+    "training_scenarios": [
+      "ssh-bruteforce"
+    ],
+    "held_out_scenarios": [],
+    "repetitions": 10,
+    "feature_version": "v2",
+    "split_strategy": "session",
+    "test_ratio": 0.2,
+    "seed": 42,
+    "models": [
+      "supervised",
+      "anomaly",
+      "hybrid"
+    ],
+    "algorithm": "random_forest",
+    "hyperparameters": {
+      "n_estimators": 100,
+      "max_depth": 8,
+      "class_weight": "balanced"
+    },
+    "created_at": "2026-09-24T04:48:10Z",
+    "git_commit": "",
+    "configuration_hash": "a4bd0daeefc87aa0"
+  },
+  "dataset_info": {
+    "version": "v1",
+    "session_count": 50,
+    "campaign_count": 10,
+    "unique_campaign_ratio": 0.2,
+    "class_distribution": {
+      "benign": 17,
+      "brute_force": 17,
+      "reconnaissance": 16
+    },
+    "label_sources": {
+      "scenario": 50
+    },
+    "hash": "a9ef1af264571f95117338c747ae2b6fadbf8c86220bebf01f95d3689871a2ab",
+    "feature_version": "v2",
+    "features_used": 22,
+    "leaky_features_excluded": [
+      "contains_path_traversal",
+      "contains_command_injection",
+      "contains_default_credentials"
+    ]
+  },
+  "model_results": [
+    {
+      "model_type": "supervised",
+      "model_id": "model-sup-test-session-split",
+      "training_metrics": {
+        "accuracy": 1.0,
+        "f1_macro": 1.0,
+        "note": "in-sample (training set) \u2014 diagnostic only, NOT held-out"
+      },
+      "held_out_metrics": {
+        "accuracy": 0.0,
+        "precision_macro": 0.0,
+        "recall_macro": 0.0,
+        "f1_macro": 0.0,
+        "false_positive_rate": 0.5,
+        "false_negative_rate": 1.0,
+        "confusion_matrix": [
+          [
+            0,
+            1,
+            3
+          ],
+          [
+            4,
+            0,
+            0
+          ],
+          [
+            1,
+            3,
+            0
+          ]
+        ],
+        "confusion_matrix_labels": [
+          "benign",
+          "brute_force",
+          "reconnaissance"
+        ],
+        "per_class": {
+          "benign": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 4.0
+          },
+          "brute_force": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 4.0
+          },
+          "reconnaissance": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 4.0
+          },
+          "accuracy": 0.0,
+          "macro avg": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 12.0
+          },
+          "weighted avg": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 12.0
+          }
+        }
+      },
+      "unknown_metrics": {},
+      "predictions": [],
+      "feature_importances": {
+        "event_count": 0.4970383092445257,
+        "duration_s": 0.5029616907554744,
+        "bytes_in_total": 0.0,
+        "bytes_out_total": 0.0,
+        "auth_attempts": 0.0,
+        "auth_successes": 0.0,
+        "auth_failure_ratio": 0.0,
+        "unique_usernames": 0.0,
+        "command_count": 0.0,
+        "command_diversity": 0.0,
+        "http_request_count": 0.0,
+        "http_uri_diversity": 0.0,
+        "http_status_4xx_ratio": 0.0,
+        "http_status_5xx_ratio": 0.0,
+        "unique_protocols": 0.0,
+        "devices_touched": 0.0,
+        "ports_touched": 0.0,
+        "time_between_events_mean_s": 0.0,
+        "time_between_events_stdev_s": 0.0,
+        "request_rate_per_min": 0.0,
+        "auth_failure_rate_per_min": 0.0,
+        "is_recon_only": 0.0
+      }
+    },
+    {
+      "model_type": "anomaly",
+      "model_id": "model-anom-test-session-split",
+      "training_metrics": {},
+      "held_out_metrics": {
+        "test_anomaly_rate": 0.0,
+        "test_mean_anomaly_score": 0.0467562828492745,
+        "benign_false_positive_rate": 0.0,
+        "benign_count": 4,
+        "malicious_detection_rate": 0.0,
+        "malicious_count": 8,
+        "threshold": -0.02682814987400619,
+        "threshold_selection": {
+          "method": "benign_fpr_0.05_on_training (fallback: no val set)",
+          "selected_threshold": -0.02682814987400619,
+          "selected_on": "training_set_fallback",
+          "warning": "No validation set available \u2014 threshold selected on training set. For research-grade evaluation, use unknown_family split which provides a proper validation set."
+        }
+      },
+      "unknown_metrics": {},
+      "predictions": [],
+      "feature_importances": {}
+    },
+    {
+      "model_type": "feature_hybrid",
+      "model_id": "model-feat-hyb-test-session-split",
+      "training_metrics": {},
+      "held_out_metrics": {
+        "accuracy": 0.0,
+        "precision_macro": 0.0,
+        "recall_macro": 0.0,
+        "f1_macro": 0.0,
+        "false_positive_rate": 0.5,
+        "false_negative_rate": 1.0,
+        "confusion_matrix": [
+          [
+            0,
+            1,
+            3
+          ],
+          [
+            4,
+            0,
+            0
+          ],
+          [
+            2,
+            2,
+            0
+          ]
+        ],
+        "confusion_matrix_labels": [
+          "benign",
+          "brute_force",
+          "reconnaissance"
+        ],
+        "per_class": {
+          "benign": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 4.0
+          },
+          "brute_force": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 4.0
+          },
+          "reconnaissance": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 4.0
+          },
+          "accuracy": 0.0,
+          "macro avg": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 12.0
+          },
+          "weighted avg": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 12.0
+          }
+        },
+        "benign_false_positive_rate": 1.0,
+        "threshold_used": -0.02682814987400619,
+        "threshold_source": "benign_fpr_0.05_on_training (fallback: no val set)",
+        "composition": "supervised + anomaly (feature-level); rule engine NOT included (requires events)"
+      },
+      "unknown_metrics": {},
+      "predictions": [],
+      "feature_importances": {}
+    }
+  ],
+  "split_info": {
+    "strategy": "session",
+    "train_size": 38,
+    "test_size": 12,
+    "leakage_unsafe": true,
+    "elapsed_seconds": 0.21
+  },
+  "warnings": [
+    "Dataset is small (50 sessions). Results may not be statistically meaningful.",
+    "Session-level split does NOT prevent campaign leakage. Results from this split are NOT scientifically valid for campaign-level generalization claims. Use campaign split."
+  ],
+  "created_at": "2026-09-24T04:48:10Z",
+  "status": "completed"
+}

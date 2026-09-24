@@ -1,0 +1,71 @@
+{
+  "index_patterns": ["honeypot-sessions-*"],
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "index.refresh_interval": "30s"
+    },
+    "mappings": {
+      "dynamic": "false",
+      "properties": {
+        "@timestamp":   { "type": "date" },
+        "session_id":    { "type": "keyword" },
+        "campaign_id":   { "type": "keyword" },
+        "device": {
+          "properties": {
+            "id":   { "type": "keyword" },
+            "type": { "type": "keyword" }
+          }
+        },
+        "source": {
+          "properties": {
+            "ip":   { "type": "ip" },
+            "port": { "type": "integer" }
+          }
+        },
+        "destination": {
+          "properties": {
+            "ip":   { "type": "ip" },
+            "port": { "type": "integer" }
+          }
+        },
+        "protocol":   { "type": "keyword" },
+        "started_at":  { "type": "date" },
+        "ended_at":    { "type": "date" },
+        "duration_s":  { "type": "float" },
+        "event_count": { "type": "integer" },
+        "event_ids":   { "type": "keyword" },
+        "honeypot": {
+          "properties": {
+            "name":      { "type": "keyword" },
+            "container": { "type": "keyword" }
+          }
+        },
+        "bytes_in":    { "type": "long" },
+        "bytes_out":   { "type": "long" },
+        "auth_attempts":   { "type": "integer" },
+        "auth_successes":  { "type": "integer" },
+        "unique_usernames": { "type": "integer" },
+        "command_count":    { "type": "integer" },
+        "uri_count":        { "type": "integer" },
+        "unique_uris":      { "type": "integer" },
+        "attack_stage":     { "type": "keyword" },
+        "classification":   { "type": "keyword" },
+        "confidence":       { "type": "float" },
+        "labels": {
+          "properties": {
+            "rule_engine":   { "type": "keyword" },
+            "ml_classifier": { "type": "keyword" },
+            "anomaly_score": { "type": "float" }
+          }
+        },
+        "events_ref": { "type": "keyword" }
+      }
+    }
+  },
+  "priority": 110,
+  "_meta": {
+    "description": "Reconstructed attack sessions."
+  }
+}

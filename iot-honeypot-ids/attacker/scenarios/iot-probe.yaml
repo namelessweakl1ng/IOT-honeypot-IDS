@@ -1,0 +1,17 @@
+id: iot-probe-001
+name: IoT Service Probe
+description: Connect to the IoT TCP service and exercise its protocol commands.
+protocol: tcp_iot
+expected_behavior:
+  - banner_grab
+  - command_attempts
+  - authentication_attempts
+severity: low
+mitre:
+  tactic: Discovery
+  technique: T1046 Network Service Scanning
+steps:
+  - id: 1
+    name: banner_grab
+  - id: 2
+    name: protocol_probes

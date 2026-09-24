@@ -1,0 +1,1884 @@
+@Superpowers
+
+We are beginning a RESEARCH VALIDITY + EXPERIMENTAL HARDENING iteration of the IoT Honeypot + Hybrid IDS project.
+
+I have provided the current repository archive.
+
+You MUST inspect the repository before modifying it.
+
+This iteration has a higher priority than UI polish or adding more models.
+
+The goal is:
+
+TURN THE CURRENT PROJECT INTO A SCIENTIFICALLY DEFENSIBLE, REPRODUCIBLE EXPERIMENTAL PLATFORM.
+
+The central principle is:
+
+DO NOT OPTIMIZE FOR HIGH METRICS.
+
+OPTIMIZE FOR BEING ABLE TO DEFEND EVERY METRIC.
+
+============================================================
+CRITICAL FINDINGS FROM THE CURRENT REPOSITORY
+============================================================
+
+The current repository contains:
+
+- Raspberry Pi honeypots:
+  - Cowrie
+  - HTTP camera emulator
+  - IoT TCP service
+
+- Filebeat
+- Logstash
+- Elasticsearch
+- Kibana
+- FastAPI
+- React dashboard
+- session reconstruction
+- behavioral feature extraction
+- deterministic rules
+- Logistic Regression
+- Random Forest
+- Gradient Boosting
+- Isolation Forest
+- attacker scenarios
+- experiment JSON files
+- model registry
+- synthetic dataset
+- Elasticsearch-to-dataset importer
+
+However, the current experimental evidence has serious validity limitations.
+
+DO NOT silently preserve these limitations as if they were valid research results.
+
+============================================================
+CRITICAL ISSUE #1:
+THE CURRENT "HELD-OUT" EVALUATION IS INVALID
+============================================================
+
+Inspect:
+
+model-lab/model_lab/train.py
+
+and:
+
+model-lab/model_lab/evaluate.py
+
+Current behavior:
+
+train.py loads the ENTIRE dataset and trains the model on every row.
+
+evaluate.py later creates a session-level train/test split and evaluates the already-trained model on the test rows.
+
+Therefore:
+
+TRAINING DATA
+    |
+    +---- contains the eventual test rows
+    |
+    MODEL
+    |
+    +---- evaluated on those same rows
+
+This is NOT a valid held-out evaluation.
+
+The current experiment artifacts claim:
+
+"session-level held-out evaluation"
+
+with:
+
+train_size = 168
+test_size = 42
+
+but the model was trained on all 210 samples.
+
+THIS MUST BE FIXED FIRST.
+
+Do not delete the old experiment artifacts.
+
+Instead mark existing results as:
+
+LEGACY_INVALID_EVALUATION
+
+or:
+
+INVALID_LEAKED_EVALUATION
+
+with an explicit reason:
+
+"The estimator was trained on the complete dataset before the reported evaluation split was applied."
+
+The existing 1.00 F1 must NOT be presented as valid generalization evidence.
+
+============================================================
+CRITICAL ISSUE #2:
+TRAIN/TEST SPLITTING MUST HAPPEN BEFORE TRAINING
+============================================================
+
+Redesign the experimental API.
+
+The correct flow is:
+
+DATASET
+  |
+  +---- TRAIN SPLIT
+  |
+  +---- TEST SPLIT
+           |
+           |
+      LOCK TEST SET
+           |
+           v
+      TRAIN MODEL
+           |
+           v
+      EVALUATE TEST
+           |
+           v
+      RESULTS
+
+The test set must never be passed into model fitting.
+
+Implement an explicit experiment runner rather than allowing:
+
+train()
+then later
+evaluate()
+
+to accidentally create an invalid protocol.
+
+Example conceptual API:
+
+ExperimentRunner.run(
+    dataset,
+    split_protocol,
+    algorithm,
+    seed,
+)
+
+The runner should:
+
+1. load dataset
+2. validate provenance
+3. validate labels
+4. validate features
+5. split data
+6. freeze test set
+7. train model only on training data
+8. evaluate only on test data
+9. record exact split
+10. record model
+11. record metrics
+12. record Git commit
+13. record environment
+14. mark experiment VALID or INVALID
+
+============================================================
+CRITICAL ISSUE #3:
+LABEL PROVENANCE / CIRCULARITY
+============================================================
+
+Inspect:
+
+model-lab/model_lab/datasets/from_es.py
+
+dashboard/ml/rules.py
+
+dashboard/ml/features.py
+
+dashboard/logstash/pipelines/beats.conf
+
+The current architecture can contain:
+
+raw event
+    |
+    v
+attack.classification
+    |
+    v
+rule engine
+    |
+    v
+dataset label
+    |
+    v
+ML
+
+Meanwhile some features are themselves derived from:
+
+attack.classification
+
+Examples include:
+
+contains_path_traversal
+contains_command_injection
+contains_default_credentials
+
+This creates a circular or near-circular labeling problem.
+
+A detector output cannot automatically become ground truth.
+
+Implement separate fields:
+
+ground_truth_label
+ground_truth_source
+rule_prediction
+classifier_prediction
+anomaly_prediction
+final_prediction
+
+Never silently map:
+
+rule_prediction -> ground_truth_label
+
+Ground truth sources must explicitly be:
+
+SCENARIO_GROUND_TRUTH
+ANALYST_LABELED
+EXTERNAL_DATASET
+SYNTHETIC
+
+and:
+
+RULE_ENGINE
+ML_PREDICTION
+ANOMALY_DETECTOR
+
+must NOT be considered ground truth.
+
+For uncontrolled live traffic:
+
+ground_truth = UNKNOWN
+
+unless independently annotated.
+
+============================================================
+CRITICAL ISSUE #4:
+FEATURE LEAKAGE
+============================================================
+
+The repository already identifies three leaky features:
+
+contains_path_traversal
+contains_command_injection
+contains_default_credentials
+
+Keep the leakage experiment because it is scientifically useful.
+
+But create a formal leakage audit.
+
+Every feature must be classified:
+
+SAFE
+SUSPECT
+LEAKY
+UNKNOWN
+
+The audit must inspect:
+
+- direct label derivation
+- rule outputs
+- attack.classification
+- scenario_id
+- campaign_id
+- attacker identity
+- dataset identity
+- future timestamps
+- post-detection fields
+- analyst annotations
+- fields unavailable at detection time
+
+A production/evaluation run must reject LEAKY features unless the experiment explicitly has:
+
+purpose = leakage_analysis
+
+============================================================
+CRITICAL ISSUE #5:
+THE SYNTHETIC DATASET IS A DEVELOPMENT FIXTURE, NOT EVIDENCE
+============================================================
+
+The current dataset contains:
+
+210 sessions
+7 classes
+30 sessions/class
+
+The synthetic generator deliberately makes classes highly separable.
+
+The existing 1.00 F1 results therefore must be treated as:
+
+DEVELOPMENT / METHODOLOGICAL BASELINE
+
+not:
+
+real IDS performance.
+
+Keep the dataset.
+
+Do not delete it.
+
+Rename/document its role clearly.
+
+The dashboard and paper-generation pipeline must visually label synthetic results:
+
+SYNTHETIC DEVELOPMENT DATA
+
+Never:
+
+LIVE PERFORMANCE
+
+============================================================
+PHASE 1:
+BUILD A VALID EXPERIMENT ENGINE
+============================================================
+
+Implement:
+
+model_lab/experiments/
+
+with explicit objects for:
+
+DatasetSpec
+SplitSpec
+ExperimentSpec
+ModelSpec
+MetricResult
+ExperimentResult
+
+Every experiment must have:
+
+experiment_id
+hypothesis
+dataset_id
+dataset_version
+label_source
+feature_version
+algorithm
+hyperparameters
+seed
+split_protocol
+train_ids
+test_ids
+train_count
+test_count
+git_commit
+environment
+start_time
+end_time
+status
+metrics
+artifacts
+limitations
+
+Statuses:
+
+PLANNED
+RUNNING
+COMPLETED
+FAILED
+INVALID
+
+An experiment with invalid methodology must be:
+
+INVALID
+
+not COMPLETED.
+
+============================================================
+PHASE 2:
+IMPLEMENT PROPER SPLIT PROTOCOLS
+============================================================
+
+Implement:
+
+1. RANDOM_SESSION_SPLIT
+
+2. CAMPAIGN_SPLIT
+
+3. TEMPORAL_SPLIT
+
+4. ATTACKER_SOURCE_SPLIT
+
+5. SCENARIO_VARIANT_SPLIT
+
+6. HONEYPOT_SPLIT
+
+The most important split for the real project should be:
+
+CAMPAIGN_SPLIT
+
+because repeated events from the same controlled campaign should not appear in both train and test.
+
+Temporal split should be:
+
+EARLIER CAMPAIGNS -> TRAIN
+LATER CAMPAIGNS -> TEST
+
+Document every split.
+
+============================================================
+PHASE 3:
+MULTIPLE SEEDS
+============================================================
+
+Evaluate:
+
+42
+123
+456
+789
+1337
+
+For every model/protocol combination record:
+
+mean
+std
+median
+minimum
+maximum
+
+Primary metric:
+
+macro F1
+
+Secondary:
+
+macro precision
+macro recall
+weighted F1
+accuracy
+FPR
+FNR
+
+Where appropriate:
+
+95% confidence interval
+
+Do not choose metrics after looking at results.
+
+============================================================
+PHASE 4:
+MODEL BENCHMARK
+============================================================
+
+Actually evaluate:
+
+Logistic Regression
+Random Forest
+Gradient Boosting
+
+Also evaluate:
+
+Isolation Forest
+
+separately as an anomaly detector.
+
+Do NOT create a ranking or "winner" field in the research artifacts.
+
+Instead produce a complete comparison table.
+
+For every algorithm report:
+
+dataset
+split protocol
+seed
+train size
+test size
+macro precision
+macro recall
+macro F1
+weighted F1
+FPR
+FNR
+latency
+model size
+training time
+
+============================================================
+PHASE 5:
+REAL RASPBERRY PI DATA COLLECTION
+============================================================
+
+The highest-priority empirical task is real telemetry.
+
+Use the actual Pi deployment.
+
+Collect data from:
+
+Cowrie
+camera HTTP honeypot
+IoT service
+
+Target:
+
+minimum:
+500 real sessions
+
+preferred:
+1000+
+
+Do NOT artificially balance the classes.
+
+Record actual distribution.
+
+Collect:
+
+BENIGN
+
+and controlled attacks including:
+
+SSH brute force
+SSH interaction
+HTTP reconnaissance
+HTTP enumeration
+path traversal
+command injection
+default credential attempts
+IoT probing
+multi-stage campaigns
+
+Use multiple campaign repetitions.
+
+Vary:
+
+timing
+credentials
+request ordering
+command sequences
+URI ordering
+attack intensity
+
+Do not run the same exact attack script hundreds of times and call that generalization.
+
+============================================================
+PHASE 6:
+CAMPAIGN GROUND TRUTH
+============================================================
+
+Every controlled attacker execution must generate:
+
+campaign_id
+scenario_id
+repetition
+intended_label
+start_time
+end_time
+target
+attacker_source
+command/version
+ground_truth_source
+
+The attack runner must emit a machine-readable campaign manifest.
+
+Example:
+
+research/campaigns/<campaign-id>/manifest.json
+
+The manifest must connect:
+
+scenario
+    ->
+attacker execution
+    ->
+session IDs
+    ->
+event IDs
+    ->
+ground truth
+    ->
+dataset rows
+
+This provides complete traceability.
+
+============================================================
+PHASE 7:
+BENIGN TRAFFIC
+============================================================
+
+Do not define benign simply as:
+
+"nothing malicious happened."
+
+Build explicit benign scenarios.
+
+Examples:
+
+HTTP health checks
+normal camera requests
+legitimate endpoint access
+IoT ping
+IoT status
+IoT list
+normal protocol interaction
+benign SSH activity where safe
+administrative traffic
+
+Record benign campaign manifests exactly like attacks.
+
+This enables:
+
+false positives/hour
+
+which is much more meaningful than synthetic F1.
+
+============================================================
+PHASE 8:
+RULE ENGINE EVALUATION
+============================================================
+
+Rules are part of the actual IDS contribution.
+
+Evaluate independently.
+
+Rules currently include:
+
+brute force
+default credentials
+command injection
+path traversal
+reconnaissance
+
+For every rule:
+
+TP
+FP
+TN
+FN
+precision
+recall
+F1
+FPR
+false positives/hour
+
+Ground truth MUST come from:
+
+scenario manifest
+
+or independent analyst annotation.
+
+Never evaluate a rule against labels generated by that same rule.
+
+Also test benign edge cases:
+
+legitimate repeated authentication
+normal GET-heavy traffic
+health checks
+partial sessions
+multiple rules firing
+conflicting rules
+
+Document rule precedence.
+
+============================================================
+PHASE 9:
+FORMAL HYBRID FUSION
+============================================================
+
+The current documentation describes:
+
+Tier 1:
+Rules
+
+Tier 2:
+Supervised ML
+
+Tier 3:
+Isolation Forest
+
+But the fusion semantics are not sufficiently formal.
+
+Implement explicit fusion.
+
+Every detection should contain:
+
+rule_prediction
+rule_confidence
+classifier_prediction
+classifier_probability
+anomaly_score
+anomaly_threshold
+final_prediction
+decision_source
+decision_reason
+
+Define exact precedence.
+
+Do not invent arbitrary logic.
+
+Inspect the intended architecture and implement a defensible policy.
+
+Document it as pseudocode.
+
+============================================================
+PHASE 10:
+HYBRID ABLATION
+============================================================
+
+Evaluate:
+
+Rules only
+
+Classifier only
+
+Isolation Forest only
+
+Rules + Classifier
+
+Rules + Isolation Forest
+
+Classifier + Isolation Forest
+
+Rules + Classifier + Isolation Forest
+
+Use the SAME held-out protocol.
+
+Report:
+
+macro F1
+weighted F1
+precision
+recall
+FPR
+FNR
+latency
+
+Do not compare results generated from different datasets.
+
+============================================================
+PHASE 11:
+ISOLATION FOREST
+============================================================
+
+Implement:
+
+Experiment A:
+train on benign traffic
+
+test:
+benign + attacks
+
+Experiment B:
+leave one attack behavior out of training
+
+test on excluded behavior
+
+Call this:
+
+UNSEEN-CLASS ANOMALY DETECTION
+
+or:
+
+PREVIOUSLY UNSEEN ATTACK BEHAVIOR
+
+Do NOT automatically call it:
+
+zero-day detection.
+
+Evaluate:
+
+detection rate
+FPR
+precision
+recall
+F1
+PR-AUC where appropriate
+
+Perform threshold analysis instead of blindly relying on:
+
+contamination=0.1
+
+============================================================
+PHASE 12:
+CROSS-HONEYPOT GENERALIZATION
+============================================================
+
+Evaluate whether behavioral features transfer between:
+
+Cowrie
+camera
+IoT service
+
+Examples:
+
+train Cowrie
+test IoT
+
+train HTTP + IoT
+test Cowrie
+
+train Cowrie + HTTP
+test IoT
+
+Only perform experiments where the feature semantics remain meaningful.
+
+If a feature is unavailable for a honeypot:
+
+mark unavailable.
+
+Do NOT substitute fake values.
+
+Document domain mismatch.
+
+============================================================
+PHASE 13:
+EXTERNAL DATASETS
+============================================================
+
+The current repository documentation suggests broader dataset support, but the supplied repository does not contain complete IoT-23 or N-BaIoT adapters.
+
+Implement real adapters.
+
+Create:
+
+model-lab/model_lab/datasets/iot23.py
+model-lab/model_lab/datasets/n_baiot.py
+
+Do not automatically download restricted datasets.
+
+Accept user-provided paths.
+
+Normalize into the canonical session schema.
+
+Every imported row must retain:
+
+dataset_origin
+original_label
+canonical_label
+label_mapping_version
+
+Document:
+
+fields used
+fields discarded
+aggregation
+limitations
+label mapping
+
+============================================================
+PHASE 14:
+CROSS-DATASET GENERALIZATION
+============================================================
+
+Support:
+
+IoT-23 -> IoT-23
+
+N-BaIoT -> N-BaIoT
+
+IoT-23 -> N-BaIoT
+
+N-BaIoT -> IoT-23
+
+But only when feature semantics and label mappings make the comparison scientifically meaningful.
+
+If they are not compatible:
+
+record:
+
+NOT COMPARABLE
+
+with the exact reason.
+
+Never force incompatible datasets together merely to produce a number.
+
+============================================================
+PHASE 15:
+DATASET AUDIT
+============================================================
+
+Create:
+
+python -m model_lab.datasets.audit
+
+Output:
+
+dataset size
+session count
+event count
+campaign count
+attack-source count
+honeypot count
+class distribution
+label provenance
+missing values
+duplicates
+temporal coverage
+feature missingness
+potential leakage
+class support
+
+Output:
+
+JSON
+Markdown
+
+============================================================
+PHASE 16:
+DATASET CARD
+============================================================
+
+Automatically generate:
+
+dataset-card.md
+
+containing:
+
+collection methodology
+hardware
+software
+honeypots
+attack scenarios
+benign scenarios
+labeling methodology
+class distribution
+dates
+biases
+limitations
+privacy
+reproducibility
+
+============================================================
+PHASE 17:
+MODEL CARD
+============================================================
+
+Generate model cards containing:
+
+purpose
+dataset
+label provenance
+features
+algorithm
+hyperparameters
+seeds
+training protocol
+test protocol
+metrics
+FPR
+FNR
+latency
+resource usage
+limitations
+failure modes
+Git commit
+
+============================================================
+PHASE 18:
+FEATURE ABLATION
+============================================================
+
+Group features:
+
+timing
+authentication
+HTTP
+commands
+network
+device scope
+
+Run:
+
+ALL FEATURES
+
+minus timing
+
+minus authentication
+
+minus HTTP
+
+minus command
+
+minus network
+
+minus device
+
+and single-family experiments where scientifically meaningful.
+
+Use identical evaluation splits.
+
+Do not cherry-pick favorable results.
+
+============================================================
+PHASE 19:
+LEAKAGE METHODOLOGY EXPERIMENT
+============================================================
+
+Run four explicit conditions:
+
+A:
+Leaky features
+
+B:
+Clean features
+
+C:
+Clean features + shuffled labels
+
+D:
+Clean features + controlled label noise
+
+Purpose:
+
+demonstrate methodological sensitivity.
+
+The objective is NOT high F1.
+
+The objective is to show:
+
+leakage inflation
+loss of learnability
+label-noise sensitivity
+
+============================================================
+PHASE 20:
+FALSE POSITIVE STUDY
+============================================================
+
+Measure:
+
+false positives/session
+false positives/hour
+false positive rate
+false positives by rule
+false positives by model
+false positives by honeypot
+false positives by benign traffic type
+
+For false positives, store:
+
+session_id
+detector
+decision
+explanation
+traffic_type
+
+Create a false-positive analysis report.
+
+============================================================
+PHASE 21:
+DETECTION LATENCY
+============================================================
+
+Instrument:
+
+T0 attack generation
+T1 honeypot reception
+T2 telemetry write
+T3 Filebeat send
+T4 Logstash receive
+T5 Elasticsearch indexing
+T6 session reconstruction
+T7 feature extraction
+T8 detector decision
+T9 dashboard exposure
+
+Measure:
+
+T8-T0
+
+and component-level latency.
+
+Report:
+
+mean
+median
+p95
+p99
+max
+
+Do not report only average latency.
+
+============================================================
+PHASE 22:
+THROUGHPUT
+============================================================
+
+Measure:
+
+events/sec
+sessions/sec
+detections/sec
+queue depth
+processing backlog
+
+Use controlled traffic rates.
+
+Never claim scalability beyond measured rates.
+
+============================================================
+PHASE 23:
+RASPBERRY PI RESOURCE STUDY
+============================================================
+
+Because the project makes a "lightweight" claim, measure it.
+
+On the real Pi collect:
+
+CPU
+RAM
+temperature
+load average
+network RX
+network TX
+disk usage
+container CPU
+container memory
+events/sec
+detection latency
+
+Test:
+
+idle
+normal traffic
+light attack
+moderate attack
+heavy controlled attack
+
+Report:
+
+mean
+median
+p95
+peak
+
+Do not fabricate measurements.
+
+============================================================
+PHASE 24:
+CONTAINER RESOURCE BREAKDOWN
+============================================================
+
+Measure separately:
+
+Cowrie
+camera
+IoT service
+Filebeat
+collector
+
+Determine:
+
+CPU contribution
+RAM contribution
+I/O contribution
+
+============================================================
+PHASE 25:
+TELEMETRY RELIABILITY
+============================================================
+
+The project claims reliable telemetry.
+
+Actually test it.
+
+Count:
+
+events generated
+events written
+events shipped
+events received
+events indexed
+
+Compute:
+
+delivery rate
+loss rate
+
+Then interrupt Logstash.
+
+Verify:
+
+Filebeat behavior
+queue behavior
+recovery
+event preservation
+
+Also test:
+
+Filebeat restart
+Logstash restart
+Elasticsearch restart
+
+Do not claim zero loss unless measured.
+
+============================================================
+PHASE 26:
+FIX FILEBEAT COMPATIBILITY
+============================================================
+
+The current Pi Filebeat configuration contains:
+
+queue.spool
+
+Filebeat 8.13.4 reports:
+
+unrecognized queue type 'spool'
+
+Resolve this properly.
+
+Do not simply delete durability.
+
+Determine a supported Filebeat 8.13.4 queue mechanism.
+
+Preserve the intended requirement:
+
+telemetry should not silently disappear during temporary Logstash outages.
+
+Test:
+
+normal operation
+Logstash unavailable
+Logstash restored
+Filebeat restarted
+
+============================================================
+PHASE 27:
+AUDIT THE OPTIONAL COLLECTOR
+============================================================
+
+Inspect:
+
+pi/collector/app.py
+
+The collector currently writes buffered files to its own spool directory.
+
+Verify whether those buffered files are actually consumed by Filebeat.
+
+If not:
+
+the collector currently does NOT provide the reliability guarantee implied by its documentation.
+
+Fix the architecture or explicitly redefine the collector's purpose.
+
+Then test it.
+
+============================================================
+PHASE 28:
+ATTACK SCENARIO VARIATION
+============================================================
+
+Existing attacker scenarios should not be treated as sufficient diversity.
+
+Create safe controlled variants:
+
+different usernames
+different timing
+different request order
+different URI order
+different command order
+different attack intensity
+benign interleaving
+slow attacks
+
+Train on variant family A.
+
+Test on variant family B.
+
+============================================================
+PHASE 29:
+LOW-AND-SLOW ROBUSTNESS
+============================================================
+
+Evaluate:
+
+slow brute force
+slow reconnaissance
+low request rate
+benign-looking padding
+mixed benign + malicious sessions
+
+The goal is to determine whether the detector depends on simple rate thresholds.
+
+Report failure cases.
+
+============================================================
+PHASE 30:
+MULTI-STAGE ATTACKS
+============================================================
+
+Use:
+
+reconnaissance
+credential access
+discovery
+execution
+collection
+
+Measure:
+
+stage detection
+whole-session detection
+final campaign detection
+
+Do not collapse every stage into one label if the telemetry supports stage-level analysis.
+
+============================================================
+PHASE 31:
+CONCEPT DRIFT
+============================================================
+
+If sufficient real telemetry exists:
+
+TRAIN:
+early campaigns
+
+TEST:
+later campaigns
+
+Compare performance.
+
+If degradation occurs:
+
+document it.
+
+Do not hide it.
+
+============================================================
+PHASE 32:
+EXPLAINABILITY
+============================================================
+
+For Random Forest:
+
+permutation importance on held-out data
+
+For Logistic Regression:
+
+coefficients
+
+For Gradient Boosting:
+
+feature importance
+
+For every individual detection expose:
+
+top contributing features
+rule fired
+classifier output
+probability
+anomaly score
+threshold
+final decision
+
+Do not describe model probability as certainty.
+
+============================================================
+PHASE 33:
+DETECTION RECORD
+============================================================
+
+Every detection should store:
+
+detection_id
+session_id
+event_ids
+final_prediction
+decision_source
+rule_prediction
+classifier_prediction
+classifier_probability
+anomaly_score
+anomaly_threshold
+feature_version
+model_version
+rule_version
+timestamp
+explanation
+
+This is essential for forensic reproducibility.
+
+============================================================
+PHASE 34:
+EXPERIMENT IMMUTABILITY
+============================================================
+
+Experiments must never be silently overwritten.
+
+Do not update an old experiment with new metrics.
+
+Every run creates a new experiment artifact.
+
+Old invalid results remain visible as historical records.
+
+============================================================
+PHASE 35:
+ENVIRONMENT CAPTURE
+============================================================
+
+Record:
+
+Git commit
+Python version
+OS
+architecture
+numpy
+pandas
+scikit-learn
+Elastic version
+Filebeat version
+Docker version
+
+Generate:
+
+environment.json
+
+============================================================
+PHASE 36:
+AUTOMATED PAPER TABLES
+============================================================
+
+Generate paper-ready:
+
+classifier comparison
+rule metrics
+anomaly metrics
+hybrid ablation
+cross-honeypot results
+cross-dataset results
+resource usage
+latency
+false positives
+
+The paper must consume generated results.
+
+Do not manually type experimental numbers into documentation.
+
+============================================================
+PHASE 37:
+AUTOMATED FIGURES
+============================================================
+
+Generate:
+
+class distribution
+confusion matrices
+classifier comparison
+hybrid ablation
+PR curves
+ROC curves where meaningful
+FPR vs detection rate
+CPU vs event rate
+RAM vs event rate
+latency distribution
+p95 latency
+feature ablation
+cross-honeypot results
+cross-dataset results
+false positives over time
+multi-stage detection timeline
+
+All figures must be generated from experiment artifacts.
+
+============================================================
+PHASE 38:
+DASHBOARD RESEARCH MODE
+============================================================
+
+The dashboard must distinguish:
+
+LIVE DATA
+SYNTHETIC DATA
+EXTERNAL DATASET
+RESEARCH EXPERIMENT
+
+Never show synthetic metrics as if they were live.
+
+If no real metric exists:
+
+show:
+
+NOT RUN
+
+not:
+
+0
+
+and not:
+
+100%
+
+============================================================
+PHASE 39:
+DEMO REWRITE
+============================================================
+
+The current demo can fall back to training from synthetic data.
+
+That behavior is dangerous for a final research demonstration.
+
+Create two explicit modes:
+
+DEVELOPMENT DEMO
+
+and:
+
+LIVE RESEARCH DEMO
+
+LIVE RESEARCH DEMO must require actual telemetry.
+
+The live demo flow:
+
+1. infrastructure check
+2. honeypot check
+3. generate benign activity
+4. generate controlled attack
+5. observe telemetry
+6. reconstruct session
+7. extract features
+8. evaluate rules
+9. evaluate classifier
+10. evaluate anomaly detector
+11. fuse decisions
+12. display explanation
+13. display latency
+14. display resource usage
+15. show provenance
+
+============================================================
+PHASE 40:
+SECURITY / SAFETY
+============================================================
+
+Audit attacker execution.
+
+The attacker runner must:
+
+- only target approved lab networks
+- reject arbitrary public targets
+- reject malformed targets
+- enforce scenario allow-list
+- log campaign IDs
+- provide explicit dry-run mode
+
+Keep this isolated from research evaluation.
+
+============================================================
+PHASE 41:
+RESEARCH QUESTIONS
+============================================================
+
+Formalize:
+
+RQ1:
+Can the platform reliably collect and normalize IoT honeypot telemetry?
+
+RQ2:
+How accurately can behavioral features classify known attack behaviors?
+
+RQ3:
+Does the hybrid architecture provide measurable value over individual detection tiers?
+
+RQ4:
+Can anomaly detection identify previously unseen attack behavior?
+
+RQ5:
+Do behavioral features generalize across honeypot types?
+
+RQ6:
+How well do the learned representations generalize across external IoT datasets?
+
+RQ7:
+What are the false-positive characteristics?
+
+RQ8:
+What is end-to-end detection latency?
+
+RQ9:
+What is the Raspberry Pi resource cost?
+
+============================================================
+PHASE 42:
+HYPOTHESIS REGISTRY
+============================================================
+
+Create:
+
+research/hypotheses.yaml
+
+Each hypothesis:
+
+id
+research_question
+hypothesis
+primary_metric
+secondary_metrics
+dataset
+split_protocol
+acceptance_criteria
+status
+
+Acceptance criteria must be defined before running the experiment.
+
+============================================================
+PHASE 43:
+INVALID EXPERIMENT DETECTION
+============================================================
+
+Automatically invalidate experiments when:
+
+- train/test overlap exists
+- campaign overlap exists
+- duplicate session IDs exist across splits
+- test set was used during fitting
+- labels are rule-derived without independent ground truth
+- leakage features are included without leakage-analysis mode
+- test set is empty
+- class support is insufficient
+- provenance is missing
+- feature version mismatches
+- model version is missing
+- seed is missing
+
+============================================================
+PHASE 44:
+TESTING
+============================================================
+
+Add tests for:
+
+- train/test isolation
+- campaign isolation
+- temporal split
+- provenance
+- label provenance
+- leakage detection
+- dataset audit
+- rule evaluation
+- hybrid fusion
+- anomaly thresholds
+- experiment validation
+- experiment immutability
+- detection records
+- Filebeat configuration
+- telemetry recovery
+- attacker safety
+
+Existing tests must continue passing.
+
+============================================================
+PHASE 45:
+REPOSITORY CLEANUP
+============================================================
+
+Audit all documentation.
+
+Remove or qualify claims that are not yet experimentally supported.
+
+Especially audit:
+
+"real data"
+"IoT-23"
+"N-BaIoT"
+"zero-day detection"
+"lightweight"
+"high accuracy"
+"held-out evaluation"
+"hybrid IDS evaluation"
+"reproducible"
+
+Every claim must correspond to implemented functionality and actual evidence.
+
+============================================================
+PHASE 46:
+LEGACY EXPERIMENT QUARANTINE
+============================================================
+
+Do NOT delete the existing experiment files.
+
+Add a status explaining:
+
+model-v001:
+LEGACY_INVALID_EVALUATION
+
+Reason:
+leaky feature configuration and invalid post-training test split.
+
+model-v002:
+LEGACY_INVALID_EVALUATION
+
+Reason:
+model was trained on all 210 synthetic samples before evaluation split.
+
+These historical artifacts are useful for the methodological leakage discussion.
+
+============================================================
+PHASE 47:
+WHAT NOT TO DO
+============================================================
+
+DO NOT:
+
+- fabricate results
+- fabricate real telemetry
+- fabricate IoT-23/N-BaIoT results
+- claim zero-day detection
+- artificially balance real data
+- cherry-pick seeds
+- tune on the test set
+- manually alter metrics
+- silently reuse rule labels as ground truth
+- hide failed experiments
+- delete inconvenient results
+- make the dashboard look more successful than the data
+- call an invalid experiment "held-out"
+- call synthetic performance real-world performance
+
+============================================================
+PHASE 48:
+IMPLEMENTATION STRATEGY
+============================================================
+
+Do NOT perform one giant uncontrolled rewrite.
+
+Use phases.
+
+PHASE 1:
+Experiment validity engine
+
+PHASE 2:
+Dataset/label provenance
+
+PHASE 3:
+Proper train/test protocols
+
+PHASE 4:
+Leakage audit
+
+PHASE 5:
+Model benchmark
+
+PHASE 6:
+Rule evaluation
+
+PHASE 7:
+Hybrid fusion
+
+PHASE 8:
+Isolation Forest
+
+PHASE 9:
+Real Pi campaign collection
+
+PHASE 10:
+Resource + latency instrumentation
+
+PHASE 11:
+External dataset adapters
+
+PHASE 12:
+Cross-domain experiments
+
+PHASE 13:
+Dashboard research mode
+
+PHASE 14:
+Paper artifact generation
+
+Do not move to a later phase if the previous phase has unresolved validity failures.
+
+============================================================
+PHASE 49:
+VERIFICATION
+============================================================
+
+After every phase run:
+
+unit tests
+integration tests
+configuration validation
+static checks
+
+For every test report:
+
+PASS
+FAIL
+SKIPPED
+NOT RUN
+
+For experiments report:
+
+VALID
+INVALID
+NOT RUN
+
+Never say "complete" without verification evidence.
+
+============================================================
+PHASE 50:
+FINAL DELIVERABLE
+============================================================
+
+At the end provide:
+
+1. architecture audit
+2. scientific validity audit
+3. critical issues found
+4. files changed
+5. tests added
+6. tests passed
+7. tests failed
+8. experiments implemented
+9. experiments actually run
+10. experiments still NOT RUN
+11. datasets supported
+12. provenance model
+13. leakage controls
+14. split protocols
+15. hybrid decision logic
+16. resource instrumentation
+17. latency instrumentation
+18. external dataset status
+19. reproducibility commands
+20. paper-table generation commands
+21. paper-figure generation commands
+22. remaining limitations
+
+CRITICAL:
+
+Do not claim that the project has real experimental results until real Raspberry Pi telemetry has actually been collected and processed.
+
+Do not claim IoT-23/N-BaIoT validation until those datasets have actually been supplied and processed.
+
+Do not claim publication readiness merely because all tests pass.
+
+The purpose of this iteration is to make the research methodology defensible.
+
+============================================================
+CORE RESEARCH PRINCIPLE
+============================================================
+
+A reviewer should be able to take ANY number in the final paper and trace:
+
+PAPER TABLE
+    ↓
+EXPERIMENT ID
+    ↓
+EXPERIMENT MANIFEST
+    ↓
+GIT COMMIT
+    ↓
+DATASET VERSION
+    ↓
+LABEL PROVENANCE
+    ↓
+SPLIT PROTOCOL
+    ↓
+TRAIN IDS
+    ↓
+TEST IDS
+    ↓
+MODEL VERSION
+    ↓
+SEED
+    ↓
+RAW / DERIVED DATA
+
+If this chain cannot be established, the result is not publication-grade.
+
+Start with the repository audit and the invalid train/evaluate architecture.
+
+Do not start by adding more models.
+
+First make the experiment itself trustworthy.

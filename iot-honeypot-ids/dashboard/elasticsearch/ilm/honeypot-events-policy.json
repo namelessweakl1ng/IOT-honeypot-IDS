@@ -1,0 +1,21 @@
+{
+  "policy": {
+    "description": "Bounded retention for honeypot-events-* indices. Lab-safe for a 256 GB SSD single-node Elasticsearch: delete after 14 days. No rollover — Logstash creates daily indices.",
+    "phases": {
+      "hot": {
+        "min_age": "0ms",
+        "actions": {
+          "set_priority": {
+            "priority": 100
+          }
+        }
+      },
+      "delete": {
+        "min_age": "14d",
+        "actions": {
+          "delete": {}
+        }
+      }
+    }
+  }
+}

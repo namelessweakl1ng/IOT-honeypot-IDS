@@ -1,0 +1,42 @@
+{
+  "index_patterns": ["honeypot-campaigns-*"],
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "index.refresh_interval": "30s"
+    },
+    "mappings": {
+      "dynamic": "false",
+      "properties": {
+        "@timestamp":             { "type": "date" },
+        "campaign_id":            { "type": "keyword" },
+        "session_ids":            { "type": "keyword" },
+        "session_count":          { "type": "integer" },
+        "started_at":             { "type": "date" },
+        "ended_at":               { "type": "date" },
+        "first_seen":             { "type": "date" },
+        "last_seen":              { "type": "date" },
+        "last_session_id":        { "type": "keyword" },
+        "last_session_at":        { "type": "date" },
+        "duration_s":             { "type": "float" },
+        "event_count":            { "type": "integer" },
+        "source": {
+          "properties": {
+            "ip": { "type": "ip" }
+          }
+        },
+        "honeypots":              { "type": "keyword" },
+        "protocols":              { "type": "keyword" },
+        "classifications":        { "type": "keyword" },
+        "correlation_window_minutes": { "type": "integer" },
+        "correlation_criteria":   { "type": "text", "index": false },
+        "campaign_status":        { "type": "keyword" }
+      }
+    }
+  },
+  "priority": 115,
+  "_meta": {
+    "description": "Campaign documents — derived from sessions sharing source IP + temporal proximity. Stateful lifecycle: campaign_status transitions active→closed; last_session_id/at track the campaign's frontier for gap-aware continuation."
+  }
+}

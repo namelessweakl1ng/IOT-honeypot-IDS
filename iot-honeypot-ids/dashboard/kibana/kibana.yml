@@ -1,0 +1,22 @@
+# Kibana settings
+server.name: pc1-kibana
+server.host: 0.0.0.0
+server.port: 5601
+
+# Connect to ES inside the docker network
+elasticsearch.hosts: ["http://elasticsearch:9200"]
+elasticsearch.username: "elastic"
+elasticsearch.password: "${ELASTIC_PASSWORD}"
+
+# Disable phone-home telemetry
+telemetry.enabled: false
+newsfeed.enabled: false
+
+# Security
+xpack.security.loginAssistanceMessage: "Login with elastic / <ELASTIC_PASSWORD> from .env"
+
+# I18N
+i18n.locale: "en"
+
+# Saved objects are imported on first start
+# (see saved-objects/*.ndjson)

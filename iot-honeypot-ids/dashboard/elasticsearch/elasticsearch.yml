@@ -1,0 +1,28 @@
+# Elasticsearch node config
+cluster.name: iot-honeypot
+node.name: pc1-es-01
+network.host: 0.0.0.0
+
+# Single-node lab deployment
+discovery.type: single-node
+
+# Security — required by 8.x defaults
+xpack.security.enabled: true
+xpack.security.authc.api_key.enabled: true
+xpack.security.transport.ssl.enabled: false
+xpack.security.http.ssl.enabled: false
+
+# Index lifecycle management
+xpack.ilm.enabled: true
+
+# We do not need ML or watcher in this lab deployment
+xpack.ml.enabled: false
+xpack.watcher.enabled: false
+xpack.monitoring.enabled: false
+
+# Allow indexing on the data path
+path.data: /usr/share/elasticsearch/data
+path.logs: /usr/share/elasticsearch/logs
+
+# Slower but safer on lab SSDs
+index.gc_deletes: 30d

@@ -1,0 +1,15 @@
+id: camera-default-creds-001
+name: Camera Default Credentials
+description: POST default credential pairs against the camera's /login endpoint.
+protocol: http
+expected_behavior:
+  - authentication_attempts
+  - default_credentials
+  - authentication_success
+severity: high
+mitre:
+  tactic: Credential Access
+  technique: T1078 Valid Accounts
+steps:
+  - id: 1
+    name: post_default_creds

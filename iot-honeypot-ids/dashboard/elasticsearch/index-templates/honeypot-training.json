@@ -1,0 +1,32 @@
+{
+  "index_patterns": ["honeypot-training-*"],
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "index.refresh_interval": "60s"
+    },
+    "mappings": {
+      "dynamic": "false",
+      "properties": {
+        "@timestamp":     { "type": "date" },
+        "session_id":     { "type": "keyword" },
+        "label":          { "type": "keyword" },
+        "label_source":   { "type": "keyword" },
+        "campaign_id":    { "type": "keyword" },
+        "scenario_id":    { "type": "keyword" },
+        "dataset_version": { "type": "keyword" },
+        "feature_version": { "type": "keyword" },
+        "split":          { "type": "keyword" },
+        "features": {
+          "type": "object",
+          "enabled": false
+        }
+      }
+    }
+  },
+  "priority": 140,
+  "_meta": {
+    "description": "Training dataset rows (one document per reconstructed session)."
+  }
+}

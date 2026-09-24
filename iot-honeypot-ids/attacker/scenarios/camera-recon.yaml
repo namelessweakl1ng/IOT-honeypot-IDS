@@ -1,0 +1,15 @@
+id: camera-recon-001
+name: Camera HTTP Reconnaissance
+description: GET across all simulated camera endpoints to map the attack surface.
+protocol: http
+expected_behavior:
+  - http_request_burst
+  - uri_diversity
+  - no_authentication
+severity: low
+mitre:
+  tactic: Discovery
+  technique: T1046 Network Service Scanning
+steps:
+  - id: 1
+    name: enumerate_endpoints

@@ -1,0 +1,2420 @@
+SUPERPOWERS: COMPLETE PRODUCT + UI/UX + WORKFLOW AUDIT
+PRODUCTION-LEVEL IoT HONEYPOT / IDS CONSOLE
+
+STOP MODIFYING THE UI BASED ON THE PREVIOUS DESIGN.
+
+THE CURRENT APPLICATION HAS DRIFTED AWAY FROM THE ACTUAL PRODUCT I AM BUILDING.
+
+I DO NOT WANT ANOTHER COSMETIC REDESIGN.
+
+I WANT YOU TO AUDIT THE ENTIRE EXISTING APPLICATION AGAINST THE ACTUAL SYSTEM WORKFLOW BELOW AND REFACTOR THE UI/UX AND SUPPORTING FRONTEND LOGIC SO THAT THE APPLICATION FEELS LIKE A REAL, PRODUCTION-QUALITY CYBERSECURITY OPERATIONS CONSOLE.
+
+THIS IS MY FINAL-YEAR PROJECT.
+
+DO NOT INVENT FEATURES.
+
+DO NOT ADD MORE DASHBOARD SECTIONS.
+
+DO NOT ADD DUMMY DATA.
+
+DO NOT ADD A REPOSITORY/DOWNLOAD EXPERIENCE.
+
+DO NOT CREATE A GENERIC SAAS DASHBOARD.
+
+DO NOT PRESERVE FEATURES JUST BECAUSE THEY ALREADY EXIST.
+
+IF A FEATURE DOES NOT SERVE THE ACTUAL WORKFLOW, REMOVE IT.
+
+============================================================
+THE ACTUAL PRODUCT
+============================================================
+
+The project is an:
+
+IoT Honeypot + ELK Telemetry + Machine Learning Intrusion Detection System.
+
+Physical topology:
+
+                    ROUTER
+                       |
+          +------------+------------+
+          |                         |
+          v                         v
+   RASPBERRY PI 4              COMPUTER 1
+   Raspberry Pi OS Lite        Windows/Fedora
+   4 GB RAM                   Dashboard + ELK + ML
+          |
+          |
+          v
+      HONEYPOTS
+          |
+          |
+          v
+      TELEMETRY
+          |
+          +-----------------------> COMPUTER 1
+                                     |
+                                  Logstash
+                                     |
+                                Elasticsearch
+                                     |
+                              FastAPI / ML
+                                     |
+                                  Dashboard
+
+
+COMPUTER 2:
+
+Fedora attacker machine.
+
+It runs controlled attack scripts against the Raspberry Pi honeypots.
+
+============================================================
+THE ACTUAL USER WORKFLOW
+============================================================
+
+THIS IS THE MOST IMPORTANT PART OF THIS ENTIRE TASK.
+
+The dashboard must be designed around this exact workflow.
+
+------------------------------------------------------------
+PHASE 1: CONNECT TO THE PI
+------------------------------------------------------------
+
+I open the dashboard on Computer 1.
+
+The dashboard should determine whether the Raspberry Pi is reachable.
+
+If the Pi is NOT reachable:
+
+PI CONNECTION
+STATUS: OFFLINE
+
+Do not pretend that the Pi is connected.
+
+If the Pi IS reachable:
+
+PI CONNECTION
+STATUS: CONNECTED
+
+Show:
+
+Pi IP
+SSH status
+last heartbeat
+OS/device information if available
+
+The dashboard must NOT simply say "online" because the Pi exists in a configuration file.
+
+It should reflect actual connectivity.
+
+------------------------------------------------------------
+PHASE 2: SSH / PI MANAGEMENT
+------------------------------------------------------------
+
+From the dashboard, I need to be able to access/manage the Raspberry Pi.
+
+The intended workflow is:
+
+Dashboard
+    ↓
+Pi connection
+    ↓
+SSH into Pi
+    ↓
+Configure honeypots
+    ↓
+Start/stop/restart selected honeypots
+
+The dashboard should provide a clear Pi management area.
+
+For example:
+
+RASPBERRY PI
+────────────────────────────────
+
+STATUS       CONNECTED
+IP           192.168.x.x
+SSH          READY
+OS           Raspberry Pi OS Lite
+RAM          4 GB
+
+HONEYPOT CONFIGURATION
+
+[✓] Cowrie SSH
+[ ] Camera HTTP
+[✓] IoT TCP
+
+                    [APPLY CONFIGURATION]
+
+Do NOT make the user navigate through a repository page to do this.
+
+Do NOT expose raw project files as the primary configuration mechanism.
+
+The user should be able to configure which honeypots are active.
+
+============================================================
+PHASE 3: HONEYPOT CONFIGURATION
+============================================================
+
+The Pi can run a limited number of containers because it has 4 GB RAM.
+
+Therefore the dashboard should allow selecting which honeypots are active.
+
+Possible honeypots:
+
+Cowrie SSH/Telnet
+Camera HTTP
+IoT TCP Service
+
+The dashboard should show:
+
+ENABLED
+DISABLED
+STARTING
+RUNNING
+STOPPED
+ERROR
+
+The actual state must come from the Pi.
+
+Do not display every honeypot as "ONLINE" simply because it exists.
+
+Example:
+
+HONEYPOT SERVICES
+
+COWRIE
+SSH / TELNET
+PORT 2222
+RUNNING
+
+CAMERA
+HTTP
+PORT 8080
+STOPPED
+
+IOT SERVICE
+TCP
+PORT 9000
+RUNNING
+
+Provide:
+
+START
+STOP
+RESTART
+
+only where appropriate.
+
+============================================================
+PHASE 4: EMPTY INITIAL DASHBOARD
+============================================================
+
+THIS IS A HARD REQUIREMENT.
+
+WHEN THE SYSTEM IS FIRST STARTED:
+
+THERE MUST BE ZERO DUMMY DATA.
+
+ZERO.
+
+Do not automatically load:
+
+synthetic sessions
+fake events
+fake detections
+fake attackers
+fake anomalies
+fake charts
+fake attack classifications
+fake model results
+fake timeline data
+
+The dashboard should start EMPTY.
+
+Example:
+
+EVENTS
+0
+
+SESSIONS
+0
+
+DETECTIONS
+0
+
+ANOMALIES
+0
+
+ATTACKERS
+0
+
+That is acceptable.
+
+Better still, if appropriate:
+
+NO TELEMETRY RECEIVED
+
+rather than artificially filling the dashboard.
+
+============================================================
+PHASE 5: NO DATA UNTIL I EXPLICITLY LOAD DEMO DATA
+============================================================
+
+There may be a demo-data feature.
+
+That is allowed.
+
+But demo data MUST require an explicit user action.
+
+For example:
+
+NO TELEMETRY AVAILABLE
+
+The system is connected and waiting for honeypot activity.
+
+[ LOAD DEMO DATA ]
+
+Only after I explicitly press:
+
+LOAD DEMO DATA
+
+may the demo dataset appear.
+
+The application must never automatically load demo data on startup.
+
+Do not initialize demo data from:
+
+sessions.csv
+
+automatically.
+
+Do not automatically display:
+
+model-v001
+
+because it exists on disk.
+
+Do not automatically populate:
+
+events
+sessions
+detections
+attackers
+
+from bundled fixtures.
+
+============================================================
+PHASE 6: REAL ATTACK
+============================================================
+
+After configuring the honeypots:
+
+I move to Computer 2.
+
+Computer 2 runs Fedora.
+
+I execute an attacker script.
+
+For example:
+
+SSH brute force
+Camera reconnaissance
+HTTP enumeration
+IoT probing
+Multi-stage scenario
+
+The attacker interacts with the Raspberry Pi.
+
+The Raspberry Pi records the activity.
+
+The Raspberry Pi sends telemetry to Computer 1.
+
+============================================================
+PHASE 7: TELEMETRY ARRIVES
+============================================================
+
+The data flow is:
+
+HONEYPOT
+    ↓
+LOG
+    ↓
+FILEBEAT / COLLECTOR
+    ↓
+LOGSTASH
+    ↓
+ELASTICSEARCH
+    ↓
+FASTAPI
+    ↓
+DASHBOARD
+
+The dashboard should show the data as it actually arrives.
+
+No fake events.
+
+No frontend-generated events.
+
+No events reconstructed from the training CSV.
+
+No fabricated timestamps.
+
+============================================================
+PHASE 8: LIVE EVENT VISIBILITY
+============================================================
+
+When telemetry starts arriving:
+
+the dashboard should immediately transition from:
+
+WAITING FOR TELEMETRY
+
+to:
+
+TELEMETRY ACTIVE
+
+Then show actual events.
+
+Example:
+
+00:31:02.104
+10.0.0.24
+→
+cowrie-01
+SSH
+connection
+
+00:31:03.812
+10.0.0.24
+→
+cowrie-01
+SSH
+authentication failure
+
+00:31:04.091
+10.0.0.24
+→
+cowrie-01
+SSH
+authentication failure
+
+This is the primary purpose of the Live Events page.
+
+============================================================
+PHASE 9: SESSION RECONSTRUCTION
+============================================================
+
+The system should group related events into an attack session.
+
+Example:
+
+SESSION sess-0042
+
+SOURCE:
+10.0.0.24
+
+TARGET:
+cowrie-01
+
+START:
+00:31:02
+
+DURATION:
+18.4s
+
+EVENTS:
+47
+
+Then show:
+
+00:31:02 connection
+00:31:03 authentication failure
+00:31:04 authentication failure
+00:31:05 authentication failure
+...
+00:31:15 successful authentication
+00:31:17 command execution
+
+This should be one investigation view.
+
+============================================================
+PHASE 10: NEW PATTERN DETECTION
+============================================================
+
+After telemetry has been collected:
+
+the system should analyze the behavior.
+
+The pipeline is:
+
+EVENTS
+ ↓
+SESSION
+ ↓
+FEATURE EXTRACTION
+ ↓
+RULE ANALYSIS
+ ↓
+ML / ANOMALY ANALYSIS
+
+The dashboard should make this progression understandable.
+
+If a previously unseen behavioral pattern appears:
+
+show:
+
+NEW PATTERN DETECTED
+
+or:
+
+ANOMALOUS BEHAVIOR DETECTED
+
+Do not immediately call it:
+
+ZERO-DAY
+
+unless there is actual evidence for that claim.
+
+============================================================
+PHASE 11: MODEL TRAINING
+============================================================
+
+After collecting the new behavior:
+
+I should be able to train/update the ML model.
+
+This is a research workflow.
+
+The UI should allow:
+
+DATASET
+    ↓
+TRAIN MODEL
+    ↓
+EVALUATE
+    ↓
+MODEL VERSION
+    ↓
+ACTIVATE MODEL
+
+Example:
+
+NEW DATA AVAILABLE
+
+Sessions:
+42
+
+Known classes:
+5
+
+Unknown/anomalous:
+3
+
+[ CREATE DATASET ]
+
+then:
+
+DATASET-V002
+
+[ TRAIN MODEL ]
+
+Then:
+
+MODEL-V002
+
+STATUS:
+EXPERIMENTAL
+
+Then evaluation.
+
+============================================================
+PHASE 12: MODEL USE
+============================================================
+
+After a model has been trained and validated:
+
+the attacker scripts are run again.
+
+The telemetry enters the system.
+
+The model analyzes the behavior.
+
+Then the dashboard shows:
+
+INTRUSION DETECTED
+
+Example:
+
+┌─────────────────────────────────────────────┐
+│ INTRUSION DETECTED                          │
+│                                             │
+│ SOURCE       10.0.0.24                      │
+│ TARGET       camera-01                      │
+│ SESSION      sess-0091                      │
+│                                             │
+│ CLASS        PATH_TRAVERSAL                 │
+│ ENGINE       ML CLASSIFIER                  │
+│ MODEL        model-v002                     │
+│ CONFIDENCE   0.94                           │
+│                                             │
+│ ANOMALY      0.87                           │
+└─────────────────────────────────────────────┘
+
+This is the payoff of the entire project.
+
+============================================================
+THE DASHBOARD MUST SUPPORT THIS STORY
+============================================================
+
+CONNECT PI
+
+↓
+
+CONFIGURE HONEYPOTS
+
+↓
+
+START HONEYPOTS
+
+↓
+
+WAIT FOR TELEMETRY
+
+↓
+
+ATTACKER STARTS SCRIPT
+
+↓
+
+TELEMETRY ARRIVES
+
+↓
+
+LIVE EVENTS
+
+↓
+
+SESSION CREATED
+
+↓
+
+PATTERN ANALYSIS
+
+↓
+
+UNKNOWN / ANOMALOUS PATTERN
+
+↓
+
+CREATE DATASET
+
+↓
+
+TRAIN MODEL
+
+↓
+
+EVALUATE MODEL
+
+↓
+
+ACTIVATE MODEL
+
+↓
+
+RUN ATTACK AGAIN
+
+↓
+
+MODEL DETECTS INTRUSION
+
+↓
+
+ALERT
+
+THIS IS THE PRODUCT.
+
+Everything else is secondary.
+
+============================================================
+REMOVE UNNECESSARY PRODUCT FEATURES
+============================================================
+
+Audit every existing page and ask:
+
+"Does this help me execute or understand the workflow above?"
+
+If not:
+
+REMOVE IT.
+
+Do not preserve a page merely because it already exists.
+
+============================================================
+REMOVE REPOSITORY FROM THE PRODUCT
+============================================================
+
+I DO NOT WANT A REPOSITORY PAGE.
+
+I do not need to browse project files from the IDS dashboard.
+
+I do not need:
+
+Repository
+File tree
+Folder explorer
+Project artifact
+ZIP download
+
+inside the application.
+
+REMOVE:
+
+Repository navigation item.
+
+REMOVE:
+
+Repository page.
+
+REMOVE:
+
+Download ZIP button.
+
+REMOVE:
+
+Project artifact panel.
+
+REMOVE:
+
+folder-tree.json dashboard functionality.
+
+REMOVE any UI that treats the dashboard as a code repository browser.
+
+The source code is the project.
+
+The dashboard is the security product.
+
+Those are different things.
+
+============================================================
+NO ZIP ANYWHERE IN THE IDS PRODUCT
+============================================================
+
+The user should never have to:
+
+"Go to Repository → Download ZIP"
+
+That is completely unrelated to the security workflow.
+
+Remove it.
+
+If the development environment requires a ZIP artifact, that is an external build/delivery concern.
+
+It is NOT an IDS feature.
+
+============================================================
+REMOVE UNNECESSARY PAGES
+============================================================
+
+Audit these existing pages:
+
+Overview
+Live Events
+Attack Sessions
+Detections
+ML / Models
+Experiments
+Honeypots
+Repository
+
+The final navigation should be SMALL.
+
+Preferred:
+
+OVERVIEW
+HONEYPOTS
+LIVE EVENTS
+ATTACK SESSIONS
+DETECTIONS
+ML / MODELS
+
+Potentially:
+
+EXPERIMENTS
+
+only if it is genuinely required for the model-training workflow.
+
+REMOVE:
+
+REPOSITORY.
+
+Do not add:
+
+Settings
+Analytics
+Reports
+Users
+Projects
+Billing
+Notifications
+etc.
+
+unless actually required.
+
+============================================================
+OVERVIEW PAGE
+============================================================
+
+The Overview should be an operational security screen.
+
+It should NOT be a data science dashboard.
+
+When there is no telemetry:
+
+--------------------------------------------------
+
+IOT SENTINEL
+SYSTEM STATUS
+
+PI
+CONNECTED
+
+HONEYPOTS
+2 / 3 RUNNING
+
+TELEMETRY
+WAITING
+
+ELASTICSEARCH
+CONNECTED
+
+ML ENGINE
+READY
+
+--------------------------------------------------
+
+TELEMETRY
+
+NO TELEMETRY RECEIVED
+
+The system is ready and waiting for honeypot activity.
+
+--------------------------------------------------
+
+HONEYPOT STATUS
+
+COWRIE       RUNNING
+CAMERA       STOPPED
+IOT SERVICE  RUNNING
+
+--------------------------------------------------
+
+Do NOT show:
+
+5,988 events
+210 sessions
+8 attackers
+158 attacks
+30 anomalies
+
+unless those values actually exist.
+
+============================================================
+WHEN THERE IS NO DATA
+============================================================
+
+The UI should look intentionally empty.
+
+This is important.
+
+An empty IDS is not a broken IDS.
+
+It means:
+
+the system is ready and waiting.
+
+Use messages such as:
+
+NO TELEMETRY RECEIVED
+
+NO ACTIVE ATTACK SESSIONS
+
+NO DETECTIONS
+
+NO ANOMALIES
+
+NO MODEL SELECTED
+
+WAITING FOR HONEYPOT ACTIVITY
+
+Do NOT populate the empty dashboard with fake charts.
+
+============================================================
+DEMO DATA
+============================================================
+
+Provide ONE explicit demo action.
+
+For example:
+
+[ LOAD DEMO DATA ]
+
+The button can exist in an empty-state or dedicated development/demo
+control.
+
+But:
+
+DO NOT automatically load demo data.
+
+DO NOT load it on page refresh.
+
+DO NOT load it when the server starts.
+
+DO NOT treat the bundled dataset as live telemetry.
+
+Once demo data is loaded:
+
+show:
+
+MODE: DEMO
+
+DATA SOURCE: DEMO DATASET
+
+This must be obvious.
+
+============================================================
+LIVE MODE
+============================================================
+
+When connected to the real environment:
+
+show:
+
+MODE: LIVE
+
+PI: CONNECTED
+
+ELASTICSEARCH: CONNECTED
+
+TELEMETRY: ACTIVE
+
+These values must come from real health checks.
+
+============================================================
+PI CONNECTION
+============================================================
+
+The dashboard needs a real Pi connection status.
+
+Do not infer it from:
+
+"Pi configuration exists."
+
+Do not infer it from:
+
+"honeypot records exist."
+
+Do not infer it from:
+
+"synthetic mode."
+
+Implement an actual health/heartbeat mechanism.
+
+Possible approach:
+
+Dashboard/API
+ ↓
+SSH or lightweight Pi management endpoint
+ ↓
+Pi responds
+
+The exact implementation is yours to determine after auditing the
+existing code.
+
+The important requirement:
+
+CONNECTED means the Pi actually responded.
+
+OFFLINE means it did not.
+
+============================================================
+SSH MANAGEMENT
+============================================================
+
+Audit the current Pi management scripts.
+
+The dashboard should expose the operational functionality without
+requiring me to manually browse source files.
+
+I need to be able to:
+
+connect to Pi
+view status
+select honeypots
+apply configuration
+start
+stop
+restart
+view logs
+
+The actual SSH credentials must NEVER be sent to the browser.
+
+Use a backend control path.
+
+Do not implement raw browser-side SSH.
+
+============================================================
+SECURITY OF PI MANAGEMENT
+============================================================
+
+Do not put:
+
+private SSH keys
+passwords
+DATABASE_URL
+Elasticsearch credentials
+
+into frontend code.
+
+Never expose them to JavaScript running in the browser.
+
+The backend controls the Pi.
+
+============================================================
+HONEYPOT MANAGEMENT UI
+============================================================
+
+The Honeypots page should be one of the most important pages.
+
+It should show:
+
+RASPBERRY PI
+IP
+CONNECTION
+LAST HEARTBEAT
+
+then:
+
+HONEYPOT SERVICES
+
+COWRIE
+STATUS
+PORT
+CONTAINER
+RESOURCE USE
+
+CAMERA
+STATUS
+PORT
+CONTAINER
+RESOURCE USE
+
+IOT
+STATUS
+PORT
+CONTAINER
+RESOURCE USE
+
+Controls:
+
+START
+STOP
+RESTART
+
+and:
+
+APPLY CONFIGURATION
+
+Keep it compact.
+
+Do not create giant cards.
+
+============================================================
+RESOURCE AWARENESS
+============================================================
+
+Because the Pi has 4 GB RAM:
+
+show useful resource information if available:
+
+CPU
+RAM
+CONTAINER STATUS
+
+Example:
+
+PI RESOURCES
+
+RAM
+1.8 GB / 3.8 GB
+
+CPU
+22%
+
+CONTAINERS
+2 / 3
+
+This is useful.
+
+Do not add decorative resource graphs just because graphs look nice.
+
+============================================================
+LIVE EVENTS UI
+============================================================
+
+This should be a serious telemetry console.
+
+Dense table.
+
+Columns:
+
+TIME
+SOURCE
+DESTINATION
+DEVICE
+PROTOCOL
+EVENT
+SESSION
+
+Technical fields use monospace.
+
+Rows should be compact.
+
+Clicking a row opens event details.
+
+============================================================
+ATTACK SESSION UI
+============================================================
+
+This should be investigation-focused.
+
+Show:
+
+SESSION
+SOURCE
+TARGET
+HONEYPOT
+START
+DURATION
+EVENTS
+CLASSIFICATION
+ANOMALY
+
+Click into session.
+
+Then show the chronological event timeline.
+
+============================================================
+DETECTIONS UI
+============================================================
+
+This is the security alert queue.
+
+Show:
+
+SEVERITY
+TIME
+SOURCE
+TARGET
+HONEYPOT
+ATTACK
+ENGINE
+CONFIDENCE
+MODEL
+STATUS
+
+Example:
+
+CRITICAL
+00:31:15
+10.0.0.24
+camera-01
+PATH_TRAVERSAL
+ML
+0.94
+model-v002
+OPEN
+
+============================================================
+ALERT DESIGN
+============================================================
+
+When an intrusion is detected, the dashboard should visually change.
+
+Do not use huge animated banners.
+
+Use a serious security alert:
+
+INTRUSION DETECTED
+
+with:
+
+severity
+source
+target
+session
+attack type
+engine
+model
+confidence
+reason
+
+The alert should be obvious without looking like a video game.
+
+============================================================
+ML / MODELS
+============================================================
+
+This page exists because model training is a real part of the project.
+
+It should show:
+
+CURRENT MODEL
+
+MODEL-V002
+STATUS: ACTIVE
+
+DATASET
+DATASET-V002
+
+FEATURE VERSION
+V003
+
+ALGORITHM
+RANDOM FOREST
+
+HELD-OUT METRICS
+
+PRECISION
+...
+
+RECALL
+...
+
+F1
+...
+
+Then:
+
+TRAIN NEW MODEL
+
+DATASET
+...
+
+MODEL NAME
+...
+
+[ TRAIN ]
+
+Do not show fake models.
+
+Do not show models merely because metadata files exist if the application is
+supposed to be in a clean initial state.
+
+============================================================
+MODEL EMPTY STATE
+============================================================
+
+On a fresh project:
+
+NO ACTIVE MODEL
+
+No model has been trained yet.
+
+[ CREATE DATASET ]
+
+or:
+
+[ LOAD DEMO MODEL ]
+
+only if explicitly requested.
+
+Do not silently activate model-v001.
+
+============================================================
+EXPERIMENTS
+============================================================
+
+Keep this page ONLY if it is necessary for:
+
+dataset
+training
+evaluation
+comparison
+
+If retained, make it a research/ML workspace.
+
+Do not make it a generic analytics page.
+
+If its functionality is duplicated by ML / Models and provides no actual
+workflow value:
+
+REMOVE IT.
+
+============================================================
+DESIGN LANGUAGE
+============================================================
+
+The current UI looks too much like a generic SaaS dashboard.
+
+Completely change the visual language.
+
+The target is:
+
+SECURITY OPERATIONS CONSOLE
+
+NOT:
+
+STARTUP DASHBOARD
+
+NOT:
+
+AI SaaS
+
+NOT:
+
+FINANCE DASHBOARD
+
+NOT:
+
+MARKETING ANALYTICS
+
+============================================================
+HARD VISUAL RULES
+============================================================
+
+NO GRADIENTS.
+
+NO GLASSMORPHISM.
+
+NO FROSTED GLASS.
+
+NO BLURRED PANELS.
+
+NO HUGE ROUNDED CARDS.
+
+NO ROUND EVERYTHING.
+
+NO GIANT PILLS.
+
+NO GRADIENT TEXT.
+
+NO GLOWING GRADIENTS.
+
+NO NEON CYBERPUNK.
+
+NO GIANT DECORATIVE ICONS.
+
+NO MARKETING COPY.
+
+NO EXCESSIVE SHADOWS.
+
+NO FLOATING CARD WALL.
+
+NO GIANT EMPTY CARD SPACES.
+
+============================================================
+SHARP TECHNICAL UI
+============================================================
+
+Use:
+
+square panels
+1px borders
+thin dividers
+compact spacing
+dense tables
+monospace technical values
+subtle semantic colors
+clear hierarchy
+
+Default:
+
+border-radius: 0px
+
+or:
+
+2px maximum.
+
+Do not use:
+
+rounded-xl
+rounded-2xl
+rounded-3xl
+
+throughout the application.
+
+============================================================
+COLOR
+============================================================
+
+Use a restrained palette.
+
+Background:
+near-black / dark navy.
+
+Panels:
+slightly lighter dark.
+
+Borders:
+dark slate.
+
+Text:
+off-white.
+
+Muted:
+slate.
+
+Semantic:
+
+GREEN
+healthy
+
+AMBER
+warning/anomaly
+
+RED
+intrusion/critical
+
+BLUE
+network/informational
+
+Do not make every section a different color.
+
+============================================================
+TYPOGRAPHY
+============================================================
+
+Use monospace for:
+
+IP addresses
+ports
+timestamps
+session IDs
+event IDs
+commands
+paths
+protocols
+model IDs
+dataset IDs
+
+Example:
+
+10.0.0.24
+22/tcp
+sess-0042
+model-v002
+2026-09-09T00:31:15Z
+
+should look like machine telemetry.
+
+============================================================
+HEADER
+============================================================
+
+Header should be compact.
+
+Example:
+
+IoT SENTINEL
+Honeypot & ML Intrusion Detection
+
+MODE: LIVE
+
+PI: CONNECTED
+ELASTIC: CONNECTED
+ML: READY
+
+Do not put:
+
+ZIP
+
+anywhere.
+
+============================================================
+SIDEBAR
+============================================================
+
+Minimal navigation.
+
+Preferred:
+
+OVERVIEW
+
+HONEYPOTS
+
+LIVE EVENTS
+
+ATTACK SESSIONS
+
+DETECTIONS
+
+ML / MODELS
+
+EXPERIMENTS
+only if genuinely necessary.
+
+No:
+
+REPOSITORY.
+
+============================================================
+OVERVIEW INFORMATION HIERARCHY
+============================================================
+
+Top:
+
+SYSTEM STATUS
+
+PI
+TELEMETRY
+ELASTICSEARCH
+ML
+
+Then:
+
+THREAT ACTIVITY
+
+Then:
+
+LIVE EVENTS / ACTIVE SESSIONS
+
+Then:
+
+DETECTIONS
+
+Do not fill the screen with ten unrelated cards.
+
+============================================================
+NO UNNECESSARY ARCHITECTURE DIAGRAM
+============================================================
+
+The ASCII architecture diagram currently displayed on the Overview is
+not necessary as a permanent dashboard widget.
+
+The architecture belongs in:
+
+documentation.
+
+The dashboard should monitor the system.
+
+Remove the giant:
+
+ATTACKER
+↓
+PI
+↓
+FILEBEAT
+↓
+LOGSTASH
+↓
+ELASTICSEARCH
+...
+
+diagram from the main Overview unless there is a specific reason to
+show it.
+
+It wastes dashboard space.
+
+============================================================
+NO "REQUIRES LIVE MODE" PANEL
+============================================================
+
+Do not dedicate a large dashboard panel to explaining what requires
+LIVE mode.
+
+The application itself should handle modes correctly.
+
+Instead:
+
+MODE: SYNTHETIC
+
+or:
+
+MODE: LIVE
+
+and show appropriate data.
+
+Do not clutter the Overview with implementation notes.
+
+============================================================
+NO DEVELOPMENT NOTES IN PRODUCTION UI
+============================================================
+
+Remove UI text such as:
+
+"run python -m model_lab.datasets.bootstrap"
+
+from the main dashboard.
+
+That is developer documentation.
+
+The production UI should tell the user:
+
+NO DATA
+
+and provide the appropriate action.
+
+============================================================
+NO INTERNAL IMPLEMENTATION DETAILS ON OVERVIEW
+============================================================
+
+Do not show:
+
+"canonical API"
+
+"adapter"
+
+"workspace"
+
+"CSV"
+
+"synthetic adapter"
+
+"model-lab path"
+
+unless the user explicitly opens a technical/debug panel.
+
+The SOC overview should describe operational state.
+
+============================================================
+DEMO DATA MUST BE ISOLATED
+============================================================
+
+Audit:
+
+model-lab/datasets/v1/sessions.csv
+
+data/sample-telemetry/
+
+model-v001
+model-v002
+
+and any other bundled fixtures.
+
+They must NOT automatically populate the production/live dashboard.
+
+Create a clean distinction:
+
+PRODUCTION / LIVE STATE
+
+versus:
+
+DEMO FIXTURES.
+
+If necessary:
+
+demo/
+    datasets/
+    telemetry/
+    models/
+
+or another clean structure.
+
+The important thing is:
+
+fresh startup = empty.
+
+============================================================
+CLEAN INITIAL STATE
+============================================================
+
+After installing the project and starting Computer 1:
+
+Dashboard:
+
+PI:
+OFFLINE
+
+Telemetry:
+0
+
+Sessions:
+0
+
+Detections:
+0
+
+Anomalies:
+0
+
+Attackers:
+0
+
+Model:
+NONE
+
+Honeypots:
+UNKNOWN until Pi is contacted
+
+There must be no:
+
+5,988 events
+210 sessions
+30 anomalies
+model-v001
+
+automatically appearing.
+
+============================================================
+PI CONNECTED BUT NO DATA
+============================================================
+
+After the Pi is connected:
+
+PI:
+CONNECTED
+
+HONEYPOTS:
+actual state
+
+TELEMETRY:
+WAITING
+
+EVENTS:
+0
+
+SESSIONS:
+0
+
+DETECTIONS:
+0
+
+ANOMALIES:
+0
+
+MODEL:
+NONE
+
+This is the correct state before an attacker starts.
+
+============================================================
+PI CONNECTED + HONEYPOTS RUNNING + NO ATTACK
+============================================================
+
+Display:
+
+PI
+CONNECTED
+
+COWRIE
+RUNNING
+
+CAMERA
+RUNNING
+
+IOT
+STOPPED
+
+TELEMETRY
+WAITING
+
+NO ACTIVE SESSIONS
+
+NO DETECTIONS
+
+NO ANOMALIES
+
+This is exactly what I want.
+
+============================================================
+ATTACK IN PROGRESS
+============================================================
+
+After attacker scripts start:
+
+TELEMETRY
+ACTIVE
+
+EVENTS
+increasing
+
+ACTIVE SESSION
+sess-...
+
+SOURCE
+10.0.0.x
+
+TARGET
+honeypot
+
+Then:
+
+DETECTION
+
+when the system identifies behavior.
+
+============================================================
+PRODUCTION QUALITY
+============================================================
+
+Audit the UI like you are reviewing a real security product.
+
+Check:
+
+loading
+empty
+error
+offline
+connected
+degraded
+attack
+detection
+model training
+model evaluation
+no model
+no telemetry
+no Pi
+Pi connected
+honeypot stopped
+honeypot running
+Elasticsearch offline
+ML unavailable
+
+Every state should have a deliberate UI.
+
+Do not simply render empty cards.
+
+============================================================
+RESPONSIVE DESIGN
+============================================================
+
+Desktop is the primary environment.
+
+But verify:
+
+Windows desktop
+Fedora desktop
+tablet
+mobile
+
+No:
+
+horizontal page overflow
+clipped tables
+broken sidebar
+giant cards
+overlapping controls
+
+Technical tables can horizontally scroll.
+
+============================================================
+ACCESSIBILITY
+============================================================
+
+Use:
+
+semantic buttons
+keyboard focus
+clear status text
+sufficient contrast
+aria labels where needed
+
+Do not rely only on color.
+
+For example:
+
+● RED + CRITICAL
+
+not just:
+
+red dot.
+
+============================================================
+PERFORMANCE
+============================================================
+
+This is a telemetry application.
+
+Do not poll aggressively.
+
+Use sensible polling intervals.
+
+Do not rerender the entire dashboard for every event.
+
+For live events:
+
+use:
+
+polling
+or
+WebSocket/SSE
+
+only if the existing architecture supports it sensibly.
+
+Do not introduce unnecessary infrastructure.
+
+============================================================
+FRONTEND ARCHITECTURE
+============================================================
+
+The frontend must not:
+
+parse training CSVs
+train models
+generate events
+generate detections
+generate anomaly scores
+reconstruct sessions
+invent telemetry
+
+Frontend:
+
+DISPLAY
+
+Backend:
+
+DATA + SECURITY LOGIC
+
+============================================================
+BACKEND / PI MANAGEMENT
+============================================================
+
+If frontend changes require backend support:
+
+implement the required backend functionality properly.
+
+Do not fake Pi connectivity.
+
+Do not fake honeypot start/stop responses.
+
+Do not simulate SSH success.
+
+If the environment cannot perform a particular action:
+
+show:
+
+NOT AVAILABLE
+
+instead of:
+
+SUCCESS.
+
+============================================================
+DATABASE_URL
+============================================================
+
+Audit DATABASE_URL again.
+
+Do not remove it blindly.
+
+Do not keep it blindly.
+
+Determine whether it serves a real purpose.
+
+If a database remains:
+
+use it for:
+
+model metadata
+experiments
+dataset metadata
+
+if actually needed.
+
+Elasticsearch remains the telemetry store.
+
+============================================================
+ELK
+============================================================
+
+The UI must represent the actual ELK architecture.
+
+LIVE:
+
+Pi
+ ↓
+Filebeat
+ ↓
+Logstash
+ ↓
+Elasticsearch
+ ↓
+FastAPI
+ ↓
+Dashboard
+
+Kibana remains available for raw telemetry analysis.
+
+Do not replace ELK with frontend demo data.
+
+============================================================
+FINAL UI STRUCTURE
+============================================================
+
+Aim for something close to:
+
+IoT SENTINEL
+────────────────────────────────────────────────────────────
+MODE: LIVE      PI: CONNECTED    ELASTIC: OK    ML: READY
+────────────────────────────────────────────────────────────
+
+OVERVIEW
+
+SYSTEM STATUS
+PI             CONNECTED
+HONEYPOTS      2/3 RUNNING
+TELEMETRY      ACTIVE
+ELASTICSEARCH  CONNECTED
+ML             READY
+
+────────────────────────────────────────────────────────────
+
+THREAT ACTIVITY
+
+EVENTS        128
+SESSIONS       4
+ATTACKERS      1
+DETECTIONS     2
+ANOMALIES      1
+
+────────────────────────────────────────────────────────────
+
+LIVE ACTIVITY
+
+TIME       SOURCE       HONEYPOT      EVENT
+00:31:02   10.0.0.24    cowrie-01     connection
+00:31:03   10.0.0.24    cowrie-01     auth failure
+00:31:04   10.0.0.24    cowrie-01     auth failure
+
+────────────────────────────────────────────────────────────
+
+ACTIVE SESSIONS
+
+sess-0042   10.0.0.24   cowrie-01   BRUTE_FORCE   47 events
+
+────────────────────────────────────────────────────────────
+
+RECENT DETECTIONS
+
+CRITICAL   PATH_TRAVERSAL   camera-01   ML   model-v002
+
+This should feel like an actual security console.
+
+============================================================
+EMPTY VERSION OF THE SAME SCREEN
+============================================================
+
+SYSTEM STATUS
+
+PI             CONNECTED
+HONEYPOTS      2/3 RUNNING
+TELEMETRY      WAITING
+ELASTICSEARCH  CONNECTED
+ML             READY
+
+────────────────────────────────────────────────────────────
+
+THREAT ACTIVITY
+
+EVENTS        0
+SESSIONS      0
+ATTACKERS     0
+DETECTIONS    0
+ANOMALIES     0
+
+────────────────────────────────────────────────────────────
+
+LIVE ACTIVITY
+
+NO TELEMETRY RECEIVED
+
+Waiting for honeypot activity.
+
+────────────────────────────────────────────────────────────
+
+ACTIVE SESSIONS
+
+NO ACTIVE ATTACK SESSIONS
+
+────────────────────────────────────────────────────────────
+
+RECENT DETECTIONS
+
+NO DETECTIONS
+
+This is what the dashboard should look like BEFORE I attack it.
+
+============================================================
+IMPORTANT PRODUCT PRINCIPLE
+============================================================
+
+THE DASHBOARD IS NOT A DEMONSTRATION OF PRELOADED DATA.
+
+THE DASHBOARD IS THE OBSERVATION AND CONTROL INTERFACE FOR THE REAL
+LAB.
+
+Therefore:
+
+FIRST:
+connect Pi
+
+THEN:
+configure honeypots
+
+THEN:
+start honeypots
+
+THEN:
+wait
+
+THEN:
+attack
+
+THEN:
+observe telemetry
+
+THEN:
+analyze sessions
+
+THEN:
+detect pattern
+
+THEN:
+train model
+
+THEN:
+run attack again
+
+THEN:
+generate IDS alert.
+
+The UI must make this workflow obvious.
+
+============================================================
+REMOVE ANYTHING THAT DOES NOT SUPPORT THIS
+============================================================
+
+During the audit, aggressively remove unnecessary UI.
+
+If something exists only because a previous agent thought:
+
+"this would look cool"
+
+remove it.
+
+If something exists only to make the dashboard appear populated:
+
+remove it.
+
+If something exists only to show implementation details:
+
+move it to documentation.
+
+If something exists only to allow downloading the project:
+
+remove it from the product.
+
+If something exists only because a template generated it:
+
+remove it if safe.
+
+============================================================
+DO NOT OVERDESIGN
+============================================================
+
+I want:
+
+technical
+professional
+minimal
+dense
+serious
+operational
+
+I do NOT want:
+
+futuristic
+flashy
+neon
+rounded
+gradient-heavy
+marketing
+decorative
+
+============================================================
+FINAL AUDIT
+============================================================
+
+Before saying you are finished, inspect EVERY UI route.
+
+Do not only inspect Overview.
+
+Audit:
+
+Overview
+Honeypots
+Live Events
+Attack Sessions
+Detections
+ML / Models
+Experiments if retained
+all dialogs
+all modals
+all tables
+all empty states
+all error states
+all loading states
+header
+sidebar
+buttons
+badges
+charts
+
+============================================================
+MANDATORY FUNCTIONAL STATE AUDIT
+============================================================
+
+Verify these states:
+
+1. Pi offline
+2. Pi connected
+3. Pi connected with no honeypots running
+4. Pi connected with one honeypot
+5. Pi connected with multiple honeypots
+6. No telemetry
+7. Telemetry arriving
+8. Active session
+9. Detection
+10. Anomaly
+11. No model
+12. Model training
+13. Model trained
+14. Model validated
+15. Model active
+16. Elasticsearch offline
+17. API offline
+18. Demo data not loaded
+19. Demo data explicitly loaded
+20. Replay mode if retained
+
+Every state must be truthful.
+
+============================================================
+MANDATORY DATA RULE
+============================================================
+
+DEFAULT:
+
+ZERO DUMMY DATA.
+
+NO AUTOMATIC DEMO DATA.
+
+NO AUTOMATIC SYNTHETIC DATA.
+
+NO PRELOADED EVENTS.
+
+NO PRELOADED SESSIONS.
+
+NO PRELOADED DETECTIONS.
+
+NO PRELOADED ATTACKERS.
+
+NO PRELOADED ANOMALIES.
+
+NO AUTOMATIC ACTIVE MODEL.
+
+NO FAKE HEALTH.
+
+NO FAKE PI CONNECTION.
+
+NO FAKE HONEYPOT STATUS.
+
+Everything starts empty/unavailable until the real system produces it.
+
+The ONLY exception is explicit:
+
+LOAD DEMO DATA
+
+and even then:
+
+MODE: DEMO
+
+must be visible.
+
+============================================================
+MANDATORY PRODUCT REMOVALS
+============================================================
+
+REMOVE:
+
+[ ] Repository navigation
+[ ] Repository page
+[ ] ZIP button
+[ ] Download ZIP workflow
+[ ] Project artifact panel
+[ ] Folder-tree dashboard functionality
+[ ] Automatic synthetic data
+[ ] Automatic model loading
+[ ] Fake telemetry
+[ ] Fake anomaly scores
+[ ] Fake Pi status
+[ ] Fake honeypot status
+[ ] Architecture diagram from Overview
+[ ] "Requires live mode" implementation panel
+[ ] Developer commands from production UI
+[ ] Unnecessary dashboard cards
+[ ] Unnecessary decorative charts
+[ ] Marketing copy
+
+============================================================
+MANDATORY PRODUCT FEATURES
+============================================================
+
+KEEP / IMPLEMENT:
+
+[ ] Real Pi connection state
+[ ] Pi management
+[ ] Honeypot configuration
+[ ] Honeypot start/stop/restart
+[ ] Honeypot status
+[ ] Telemetry status
+[ ] Live events
+[ ] Session reconstruction
+[ ] Attack session investigation
+[ ] Detections
+[ ] Anomaly detection
+[ ] ML model status
+[ ] Model training workflow
+[ ] Model evaluation
+[ ] Model activation
+[ ] Explicit demo-data loading
+[ ] Live mode
+[ ] Real ELK integration
+[ ] Truthful empty states
+
+============================================================
+FINAL DESIGN TEST
+============================================================
+
+Open the application.
+
+Ask yourself:
+
+"If I knew nothing about the source code and opened this dashboard,
+would I immediately understand that this is a security system
+monitoring honeypots?"
+
+Then ask:
+
+"Would I understand what I should do first?"
+
+The answer should be:
+
+CONNECT TO PI
+→ CONFIGURE HONEYPOTS
+→ START HONEYPOTS
+→ WAIT FOR TELEMETRY
+→ ATTACK THE PI
+→ ANALYZE ACTIVITY
+→ TRAIN MODEL
+→ DETECT ATTACK
+
+If the UI does not communicate this clearly:
+
+KEEP REFACTORING.
+
+============================================================
+FINAL QUALITY BAR
+============================================================
+
+This should look like a serious final-year cybersecurity project.
+
+Not a prototype stuffed with fake metrics.
+
+Not a generic SaaS dashboard.
+
+Not a repository viewer.
+
+Not an AI landing page.
+
+Not a demo filled with preloaded numbers.
+
+It should feel like:
+
+A real local SOC/IDS console attached to a Raspberry Pi honeypot
+laboratory.
+
+============================================================
+START HERE
+============================================================
+
+DO NOT EDIT THE UI IMMEDIATELY.
+
+FIRST:
+
+1. Inspect the entire current repository.
+2. Inspect every existing UI page.
+3. Inspect the existing API/data flow.
+4. Inspect the Pi management implementation.
+5. Inspect the demo-data loading mechanism.
+6. Identify every source of dummy/preloaded data.
+7. Identify every unnecessary dashboard feature.
+8. Identify every fake health/status implementation.
+9. Identify which components are actually needed for the workflow.
+10. Write down the target architecture internally.
+
+THEN:
+
+1. Remove unnecessary product features.
+2. Remove automatic dummy data.
+3. Implement the truthful empty initial state.
+4. Implement real Pi connection status.
+5. Implement Pi/honeypot management UI.
+6. Refactor the navigation around the actual workflow.
+7. Redesign the UI as a serious SOC/IDS console.
+8. Connect live data properly.
+9. Keep demo data strictly opt-in.
+10. Test every state.
+11. Build the application.
+12. Verify every route.
+
+DO NOT CLAIM COMPLETION UNTIL YOU HAVE ACTUALLY TESTED THE STATES.
+
+============================================================
+FINAL RESPONSE
+============================================================
+
+When finished, report:
+
+1. What unnecessary features you removed.
+2. What pages were removed.
+3. How the navigation changed.
+4. How the empty initial state works.
+5. How demo data is loaded.
+6. How Pi connectivity is determined.
+7. How honeypots are configured.
+8. How telemetry flows into the dashboard.
+9. How attack sessions are displayed.
+10. How new patterns are represented.
+11. How model training is triggered.
+12. How the trained model is used for detection.
+13. What visual changes were made.
+14. Confirmation that gradients were removed.
+15. Confirmation that excessive rounded UI was removed.
+16. Confirmation that repository/ZIP functionality was removed from the product.
+17. Confirmation that no dummy data appears before explicit demo loading.
+18. Tests/build checks performed.
+19. Any parts that could not be physically verified.
+
+DO NOT SAY "DONE" WITHOUT VERIFYING THE ACTUAL WORKFLOW.
+
+THE FINAL PRODUCT STORY MUST BE:
+
+CONNECT PI
+→ CONFIGURE HONEYPOTS
+→ START HONEYPOTS
+→ WAIT
+→ ATTACK FROM PC2
+→ TELEMETRY TO PC1
+→ ELK
+→ SESSION
+→ NEW PATTERN
+→ TRAIN MODEL
+→ REPLAY ATTACK
+→ ML DETECTION
+→ IDS ALERT
+
+BUILD THE UI AROUND THAT STORY.

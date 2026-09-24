@@ -1,0 +1,117 @@
+:root {
+  --bg: #0f1115;
+  --panel: #161a22;
+  --panel-border: #232936;
+  --text: #e6e9ef;
+  --text-dim: #8a93a6;
+  --accent: #4ea1ff;
+  --warn: #ffb454;
+  --danger: #ff5c5c;
+  --ok: #57d9a3;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.app {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+}
+
+.sidebar {
+  background: var(--panel);
+  border-right: 1px solid var(--panel-border);
+  padding: 16px 12px;
+}
+
+.sidebar h2 {
+  font-size: 14px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 18px 0 6px;
+}
+
+.sidebar a {
+  display: block;
+  padding: 8px 10px;
+  color: var(--text);
+  text-decoration: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.sidebar a:hover { background: rgba(255,255,255,0.04); }
+.sidebar a.active { background: rgba(78,161,255,0.15); color: var(--accent); }
+
+.main {
+  padding: 24px 32px;
+  overflow: auto;
+}
+
+h1 { margin-top: 0; }
+h2 { margin-top: 32px; }
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.stat {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.stat .label {
+  color: var(--text-dim);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.stat .value {
+  font-size: 24px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th, td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--panel-border);
+}
+th { color: var(--text-dim); font-weight: 500; }
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  background: rgba(255,255,255,0.08);
+  color: var(--text);
+}
+.badge.danger { background: rgba(255,92,92,0.15); color: var(--danger); }
+.badge.warn   { background: rgba(255,180,84,0.15); color: var(--warn); }
+.badge.ok     { background: rgba(87,217,163,0.15); color: var(--ok); }

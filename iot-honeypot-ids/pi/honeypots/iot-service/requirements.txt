@@ -1,0 +1,2 @@
+# IoT service honeypot — no external deps
+# (uses only Python stdlib)

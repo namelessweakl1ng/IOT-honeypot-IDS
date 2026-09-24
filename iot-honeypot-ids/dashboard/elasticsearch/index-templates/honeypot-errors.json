@@ -1,0 +1,30 @@
+{
+  "index_patterns": ["honeypot-errors-*"],
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "index.refresh_interval": "30s"
+    },
+    "mappings": {
+      "dynamic": "false",
+      "properties": {
+        "@timestamp":   { "type": "date" },
+        "error_id":     { "type": "keyword" },
+        "stage":        { "type": "keyword" },
+        "reason":       { "type": "keyword" },
+        "raw_event":    { "type": "object", "enabled": false },
+        "tag":          { "type": "keyword" },
+        "source": {
+          "properties": {
+            "ip":   { "type": "ip" }
+          }
+        }
+      }
+    }
+  },
+  "priority": 130,
+  "_meta": {
+    "description": "Dead-letter index for malformed events."
+  }
+}

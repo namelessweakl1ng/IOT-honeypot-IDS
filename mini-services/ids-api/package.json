@@ -1,0 +1,15 @@
+{
+  "name": "ids-api",
+  "version": "0.2.0",
+  "scripts": {
+    "dev": "bun --hot main.py"
+  },
+  "dependencies": {
+    "fastapi": "*",
+    "uvicorn": "*",
+    "pyyaml": "*",
+    "scikit-learn": "*",
+    "numpy": "*",
+    "pandas": "*"
+  }
+}

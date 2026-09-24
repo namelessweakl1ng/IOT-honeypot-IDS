@@ -1,0 +1,24 @@
+id: multi-stage-001
+name: Multi-Stage Attack Campaign
+description: Recon -> credential attack -> authentication -> command exec -> retrieval.
+protocol: multi
+expected_behavior:
+  - reconnaissance
+  - credential_attack
+  - command_execution
+  - file_retrieval
+severity: high
+mitre:
+  tactic: Multiple
+  technique: Multi-stage intrusion
+steps:
+  - id: 1
+    name: recon
+  - id: 2
+    name: credential_attack
+  - id: 3
+    name: authentication
+  - id: 4
+    name: command_exec
+  - id: 5
+    name: retrieval

@@ -1,0 +1,2593 @@
+SUPERPOWERS: FINAL DEEP ARCHITECTURAL AUDIT + ROOT-CAUSE REFACTOR
+
+THIS IS A CONTINUATION OF THE EXISTING PROJECT.
+
+DO NOT START OVER.
+
+DO NOT CREATE ANOTHER DASHBOARD.
+
+DO NOT CREATE ANOTHER API.
+
+DO NOT CREATE ANOTHER SYNTHETIC DATA ENGINE.
+
+DO NOT SIMPLY POLISH THE UI.
+
+I have already given you multiple correction prompts and the project is STILL architecturally inconsistent.
+
+I have now provided the current project/workspace archive.
+
+You MUST inspect the actual files in the archive and fix EVERYTHING that remains inconsistent with the intended architecture.
+
+This is my final-year project.
+
+Treat this as a software architecture/debugging task, not a UI-design task.
+
+============================================================
+ABSOLUTE PRIORITY
+============================================================
+
+The most important problem is:
+
+THERE ARE MULTIPLE COMPETING IMPLEMENTATIONS OF THE IDS SYSTEM.
+
+You MUST consolidate them.
+
+The current project contains at least:
+
+1. The actual project under:
+
+iot-honeypot-ids/
+
+2. The workspace-level Next.js application under:
+
+src/
+
+3. A workspace-level TypeScript IDS data engine:
+
+src/lib/ids-data/index.ts
+
+4. Workspace Next.js API routes:
+
+src/app/api/ids/
+
+5. Another synthetic FastAPI backend:
+
+mini-services/ids-api/main.py
+
+6. The actual project FastAPI backend:
+
+iot-honeypot-ids/dashboard/api/
+
+7. The actual project frontend:
+
+iot-honeypot-ids/dashboard/frontend/
+
+This is too many competing implementations.
+
+DO NOT add a seventh.
+
+Your job is to understand all of them and consolidate them into a coherent architecture.
+
+============================================================
+PHASE 1 — STOP CODING AND AUDIT
+============================================================
+
+Before changing anything, inspect:
+
+iot-honeypot-ids/
+src/
+mini-services/
+prisma/
+scripts/
+tests/
+public/
+
+Inspect every IDS-related file.
+
+Especially:
+
+src/app/page.tsx
+
+src/lib/ids-data/index.ts
+
+src/app/api/ids/
+
+src/components/ids/
+
+mini-services/ids-api/main.py
+
+iot-honeypot-ids/dashboard/api/
+
+iot-honeypot-ids/dashboard/frontend/
+
+iot-honeypot-ids/dashboard/ml/
+
+iot-honeypot-ids/model-lab/
+
+iot-honeypot-ids/dashboard/elasticsearch/
+
+iot-honeypot-ids/dashboard/logstash/
+
+iot-honeypot-ids/dashboard/kibana/
+
+Do not skim.
+
+Trace imports and data flow.
+
+============================================================
+PHASE 2 — BUILD THE ACTUAL ARCHITECTURE MAP
+============================================================
+
+Before modifying code, determine:
+
+WHO PRODUCES EVENTS?
+
+WHO STORES EVENTS?
+
+WHO RECONSTRUCTS SESSIONS?
+
+WHO EXTRACTS FEATURES?
+
+WHO GENERATES LABELS?
+
+WHO TRAINS MODELS?
+
+WHO EVALUATES MODELS?
+
+WHO GENERATES DETECTIONS?
+
+WHO SERVES THE API?
+
+WHO RENDERS THE DASHBOARD?
+
+WHO OWNS SYNTHETIC DATA?
+
+WHO OWNS REPLAY?
+
+WHO OWNS MODEL METADATA?
+
+Write this down internally before editing.
+
+There must be one answer for each responsibility.
+
+============================================================
+PHASE 3 — TARGET ARCHITECTURE
+============================================================
+
+The final architecture MUST converge toward:
+
+                 COMPUTER 2
+                  ATTACKER
+                     |
+                     |
+                     v
+              ROUTER / LAB LAN
+                     |
+                     v
+              RASPBERRY PI 4
+                     |
+             +-------+-------+
+             |               |
+         Cowrie          IoT/Camera
+             |               |
+             +-------+-------+
+                     |
+                TELEMETRY
+                     |
+                  Filebeat
+                     |
+                     v
+                  Logstash
+                     |
+                     v
+              Elasticsearch
+                     |
+          +----------+----------+
+          |                     |
+          v                     v
+       Kibana                FastAPI
+                                |
+                    +-----------+-----------+
+                    |           |           |
+                    v           v           v
+                 Events      Sessions      ML
+                                            |
+                                      +-----+-----+
+                                      |           |
+                                      v           v
+                                  Classifier   Anomaly
+                                      |           |
+                                      +-----+-----+
+                                            |
+                                            v
+                                       Detections
+                                            |
+                                            v
+                                      IDS Dashboard
+
+OPTIONAL LOCAL DATABASE:
+
+PostgreSQL / SQLite
+        |
+        +--> model metadata
+        +--> experiments
+        +--> dataset metadata
+
+FILESYSTEM:
+
+models/
+datasets/
+reports/
+
+DO NOT put all telemetry into a relational database.
+
+DO NOT make Elasticsearch decorative.
+
+============================================================
+PHASE 4 — THE WORKSPACE DASHBOARD PROBLEM
+============================================================
+
+The current workspace dashboard is under:
+
+src/
+
+It currently gets its IDS data from:
+
+src/lib/ids-data/index.ts
+
+That is WRONG for the final architecture.
+
+The TypeScript data engine reads:
+
+model-lab/datasets/v1/sessions.csv
+
+and generates synthetic-looking raw events.
+
+This is backwards.
+
+The canonical direction is:
+
+RAW TELEMETRY
+    ↓
+SESSION RECONSTRUCTION
+    ↓
+FEATURE EXTRACTION
+    ↓
+DATASET
+    ↓
+ML
+
+NOT:
+
+DATASET
+    ↓
+INVENT RAW EVENTS
+    ↓
+PRETEND THEY ARE TELEMETRY
+
+The workspace dashboard must not use this synthetic event generator as its authoritative IDS backend.
+
+============================================================
+PHASE 5 — CONSOLIDATE THE BACKENDS
+============================================================
+
+There are currently multiple APIs.
+
+At least:
+
+src/app/api/ids/*
+mini-services/ids-api/main.py
+iot-honeypot-ids/dashboard/api/
+
+You MUST decide which is canonical.
+
+The preferred canonical backend is:
+
+iot-honeypot-ids/dashboard/api/
+
+because it already belongs to the actual ELK + ML project.
+
+The workspace dashboard should communicate with the canonical API/data contract.
+
+DO NOT create another API to bridge the APIs.
+
+If the workspace cannot directly access the canonical backend during preview, create ONE clean adapter layer only if necessary.
+
+That adapter must be:
+
+- thin
+- explicit
+- clearly marked
+- not another business-logic implementation
+- not another ML implementation
+- not another session reconstruction implementation
+
+============================================================
+PHASE 6 — WHAT TO DO WITH src/lib/ids-data
+============================================================
+
+Audit:
+
+src/lib/ids-data/index.ts
+
+This is currently doing far too much.
+
+It currently:
+
+- reads CSV
+- constructs synthetic events
+- constructs sessions
+- constructs detections
+- runs rule logic
+- creates ML-style detections
+- creates anomaly scores
+- loads model metadata
+- reports system health
+- provides model data
+
+This is effectively a second IDS backend.
+
+DO NOT keep this as a second source of truth.
+
+Either:
+
+A) remove it and replace it with API client code,
+
+OR
+
+B) reduce it to a clearly isolated SYNTHETIC/DEMO adapter.
+
+Preferred:
+
+The frontend calls:
+
+FastAPI
+
+and FastAPI calls:
+
+Elasticsearch
+ML
+metadata
+
+The frontend does NOT perform IDS business logic.
+
+============================================================
+PHASE 7 — WHAT TO DO WITH mini-services/ids-api
+============================================================
+
+Audit:
+
+mini-services/ids-api/main.py
+
+It currently contains another complete synthetic IDS backend.
+
+It even trains a RandomForest at startup.
+
+This means the project currently has another model implementation.
+
+That is unacceptable.
+
+Do not silently keep this.
+
+Determine whether it is required.
+
+If redundant:
+
+remove it or clearly isolate it as a test fixture/demo adapter.
+
+It must not be presented as the production/canonical IDS backend.
+
+It must not train another authoritative model.
+
+There must be ONE canonical ML pipeline.
+
+============================================================
+PHASE 8 — SYNTHETIC MODE
+============================================================
+
+Synthetic mode is allowed.
+
+I WANT synthetic mode for demonstrating the UI without physical hardware.
+
+But it must be clearly separated from live mode.
+
+Modes:
+
+LIVE
+REPLAY
+SYNTHETIC
+
+Synthetic data may originate from:
+
+model-lab/datasets/v1/sessions.csv
+
+or:
+
+data/sample-telemetry/
+
+But the UI must say:
+
+SYNTHETIC
+
+and documentation must explain exactly what synthetic means.
+
+Do NOT claim:
+
+"real telemetry"
+
+when synthetic data is being used.
+
+============================================================
+PHASE 9 — SYNTHETIC DATA SHOULD NOT PRETEND TO BE RAW CAPTURE
+============================================================
+
+This is extremely important.
+
+If the synthetic dataset contains session-level feature vectors:
+
+DO NOT reconstruct fake raw events from them and imply that those are actual captured events.
+
+Instead distinguish:
+
+SYNTHETIC DATASET
+
+from:
+
+SYNTHETIC TELEMETRY
+
+from:
+
+REAL CAPTURE
+
+from:
+
+REPLAY
+
+Use explicit metadata:
+
+data_source
+mode
+label_source
+
+For example:
+
+mode = SYNTHETIC
+data_source = synthetic_session_dataset
+label_source = SYNTHETIC
+
+or:
+
+mode = LIVE
+data_source = Elasticsearch
+label_source = RULE_ENGINE / ANALYST / SCENARIO
+
+============================================================
+PHASE 10 — CURRENT DASHBOARD DATA SOURCE LABEL
+============================================================
+
+The sidebar currently says:
+
+data_source
+
+model-lab/datasets/v1/sessions.csv
+
+That is misleading.
+
+Do not show the training dataset as the live telemetry source.
+
+Use:
+
+LIVE:
+
+Elasticsearch / honeypot-events-*
+
+SYNTHETIC:
+
+Synthetic dataset v1
+
+REPLAY:
+
+Replay run <id>
+
+Make the label accurate.
+
+============================================================
+PHASE 11 — REMOVE ZIP FROM THE SOC DASHBOARD
+============================================================
+
+The current top bar STILL has:
+
+ZIP
+
+REMOVE IT.
+
+Completely.
+
+The SOC dashboard is not a project packaging tool.
+
+Do not put:
+
+ZIP
+Download ZIP
+Project archive
+
+in the SOC header.
+
+The repository page may provide project packaging.
+
+The workspace may separately expose the artifact.
+
+But the actual IDS interface must remain an IDS interface.
+
+============================================================
+PHASE 12 — REPOSITORY PAGE
+============================================================
+
+Repository may contain:
+
+- project structure
+- file tree
+- documentation
+- project metadata
+- download artifact
+
+That is fine.
+
+But it must be clearly separate from:
+
+Overview
+Live Events
+Sessions
+Detections
+ML
+Experiments
+Honeypots
+
+============================================================
+PHASE 13 — REMOVE STALE/HARDCODED DASHBOARD CLAIMS
+============================================================
+
+The current UI contains things like:
+
+42/42 unit tests passing
+
+Do NOT hardcode test status into the UI.
+
+If test status is shown:
+
+it must come from an actual build/runtime status.
+
+Otherwise remove it.
+
+Likewise do not hardcode:
+
+5988 events
+210 sessions
+8 attackers
+158 attacks
+30 anomalies
+model-v001
+
+unless those values are actually returned by the backend.
+
+============================================================
+PHASE 14 — FIX ATTACK TIMELINE
+============================================================
+
+The screenshot still shows an effectively empty:
+
+Attack Activity Timeline
+
+despite thousands of events.
+
+This MUST be fixed at the data layer.
+
+Trace:
+
+events
+ ↓
+timestamps
+ ↓
+time range
+ ↓
+aggregation
+ ↓
+chart
+
+Do not draw fake lines.
+
+Do not generate random values.
+
+Do not hide the empty result.
+
+If no events exist:
+
+No activity in selected time range
+
+If events exist:
+
+render them.
+
+Test this.
+
+============================================================
+PHASE 15 — TIME HANDLING
+============================================================
+
+Audit all timestamps.
+
+Use UTC internally.
+
+Verify:
+
+- ISO parsing
+- timezone conversion
+- range filtering
+- date boundaries
+- hourly aggregation
+- session start/end
+- event ordering
+
+The current synthetic data uses:
+
+@timestamp
+started_at
+ended_at
+created_at
+
+These must have clearly defined semantics.
+
+Do not use:
+
+created_at
+
+as a fake substitute for actual event time.
+
+============================================================
+PHASE 16 — EVENTS VS SESSIONS VS DETECTIONS
+============================================================
+
+These are three DIFFERENT entities.
+
+EVENT:
+
+one telemetry record.
+
+SESSION:
+
+correlated interaction sequence.
+
+DETECTION:
+
+security finding.
+
+Do not display:
+
+"Detections: 210 total events"
+
+That is semantically wrong.
+
+The dashboard must distinguish:
+
+Events
+Sessions
+Detections
+
+The overview metrics must use the correct underlying entity.
+
+============================================================
+PHASE 17 — KNOWN ATTACK DEFINITION
+============================================================
+
+Define exactly what:
+
+KNOWN ATTACK
+
+means.
+
+Prefer something defensible such as:
+
+unique sessions classified into a known attack class.
+
+Document it.
+
+Do not count arbitrary event rows.
+
+Do not count every rule firing as a separate attack.
+
+Do not count duplicate detections without justification.
+
+============================================================
+PHASE 18 — ANOMALY DEFINITION
+============================================================
+
+The current synthetic engine contains:
+
+anomaly_score = 0.91
+
+This is unacceptable if presented as a genuine model output.
+
+Never hardcode an anomaly score.
+
+An anomaly score must come from:
+
+IsolationForest
+One-Class SVM
+another documented anomaly model
+
+or be explicitly marked:
+
+SYNTHETIC DEMO SCORE
+
+Prefer real anomaly inference.
+
+============================================================
+PHASE 19 — ML MODEL DUPLICATION
+============================================================
+
+There are currently multiple places capable of training or pretending to train models.
+
+Examples include:
+
+dashboard/ml/models.py
+
+model-lab/model_lab/train.py
+
+mini-services/ids-api/main.py
+
+src/lib/ids-data/index.ts
+
+You MUST consolidate this.
+
+The canonical ML pipeline should be:
+
+model-lab/
+
+using:
+
+dashboard/ml/
+
+as the shared ML implementation if that is the existing architecture.
+
+Do not have the frontend train models.
+
+Do not have the synthetic API train its own model.
+
+Do not have multiple model registries.
+
+============================================================
+PHASE 20 — TRAINING METRICS
+============================================================
+
+The current model training code explicitly calculates:
+
+in_sample_accuracy
+in_sample_precision
+in_sample_recall
+in_sample_f1
+
+This is useful diagnostic information.
+
+It is NOT sufficient as the primary evaluation.
+
+The UI currently has:
+
+F1 (in-sample)
+
+That should NOT be the headline metric.
+
+Change the architecture so that:
+
+TRAINING METRICS
+
+are clearly separated from:
+
+HELD-OUT EVALUATION METRICS
+
+The dashboard should primarily show held-out evaluation results.
+
+If no held-out evaluation exists:
+
+show:
+
+NOT EVALUATED
+
+not:
+
+1.000
+
+============================================================
+PHASE 21 — MODEL-V001
+============================================================
+
+Inspect:
+
+model-lab/models/model-v001/
+
+The current metadata contains perfect in-sample metrics.
+
+Do not treat that as proof that the model works.
+
+Run the proper evaluation pipeline.
+
+The model page should show:
+
+Training metrics
+Held-out metrics
+Dataset version
+Feature version
+Algorithm
+Seed
+Train size
+Test size
+Evaluation timestamp
+Status
+
+Separate:
+
+TRAINING
+
+from:
+
+EVALUATION.
+
+============================================================
+PHASE 22 — SESSION-LEVEL SPLITTING
+============================================================
+
+The project already contains:
+
+session_level_split()
+
+Use it.
+
+Ensure training and test sets are separated by session/campaign.
+
+Do not randomly split individual events from the same session into both train and test.
+
+Document this.
+
+This is important for the academic credibility of the project.
+
+============================================================
+PHASE 23 — SYNTHETIC DATASET LIMITATION
+============================================================
+
+The current v1 dataset is synthetic.
+
+That is fine.
+
+But the project must explicitly say:
+
+Synthetic dataset used for pipeline development and controlled experimentation.
+
+Do not imply:
+
+"model was validated against real attacks"
+
+unless real captured data was actually used.
+
+============================================================
+PHASE 24 — REAL DATASET GENERATION
+============================================================
+
+Inspect:
+
+model-lab/model_lab/datasets/from_es.py
+
+This should support:
+
+Elasticsearch
+ ↓
+real telemetry
+ ↓
+session grouping
+ ↓
+feature extraction
+ ↓
+dataset version
+
+Audit it carefully.
+
+Current concerns include:
+
+- limited query size
+- only one search page
+- session labeling via rules
+- assumptions about session_id
+- no robust pagination
+- no explicit capture metadata
+- possible incomplete session retrieval
+
+Fix these.
+
+If there are more than 5,000 events, the command must be capable of retrieving them safely.
+
+Use:
+
+search_after
+scroll
+point-in-time
+
+or another appropriate Elasticsearch mechanism.
+
+Do not silently truncate the dataset.
+
+============================================================
+PHASE 25 — LABEL PROVENANCE
+============================================================
+
+This is academically important.
+
+The current real-data dataset generator labels sessions using:
+
+classify_session()
+
+and writes:
+
+label_source = RULE_ENGINE
+
+That is NOT ground truth.
+
+Keep the provenance.
+
+Use labels such as:
+
+SYNTHETIC
+SCENARIO
+RULE_ENGINE
+ANALYST
+UNLABELED
+
+depending on the source.
+
+Do not call rule-derived labels "ground truth".
+
+Document this limitation.
+
+============================================================
+PHASE 26 — REPLAY BUG
+============================================================
+
+Inspect:
+
+model-lab/model_lab/replay.py
+
+There is a logical problem:
+
+The replay accepts a campaign ID.
+
+But later it queries Elasticsearch for:
+
+the most recent event globally
+
+and uses that session.
+
+That can select a completely unrelated attack.
+
+Fix the replay workflow.
+
+If campaign_id is supplied:
+
+query specifically for that campaign.
+
+If run_id is available:
+
+use that.
+
+If scenario ID is used:
+
+make the association explicit.
+
+The replay must classify the SAME attack it just executed.
+
+Do not simply select the latest event.
+
+============================================================
+PHASE 27 — REPLAY SHOULD BE REPRODUCIBLE
+============================================================
+
+A replay record should contain:
+
+run_id
+campaign_id
+scenario_id
+target
+started_at
+finished_at
+model_id
+dataset_version
+result
+session_id
+detection
+
+Then the dashboard can show:
+
+Replay #123
+
+Attack:
+ssh-bruteforce
+
+Model:
+model-v002
+
+Result:
+brute_force
+
+Confidence:
+...
+
+Anomaly:
+...
+
+============================================================
+PHASE 28 — ATTACKER SAFETY
+============================================================
+
+Preserve the existing safety design.
+
+Every attack requires:
+
+--target
+
+The target must be within:
+
+LAB_SUBNET
+
+Do not weaken this.
+
+Do not make attack scripts target arbitrary public IPs.
+
+============================================================
+PHASE 29 — PI
+============================================================
+
+Raspberry Pi 4
+4 GB
+Raspberry Pi OS Lite
+
+Keep the Pi lightweight.
+
+The Pi runs:
+
+Cowrie
+Camera
+IoT service
+Filebeat/collector
+
+The Pi does NOT run:
+
+Elasticsearch
+Kibana
+ML training
+
+Keep resource limits.
+
+Keep Docker isolation.
+
+============================================================
+PHASE 30 — PI SSH
+============================================================
+
+The Pi must remain easy to administer.
+
+Documentation should support:
+
+ssh user@PI_IP
+
+then:
+
+cd ~/iot-honeypot-ids/pi
+
+and:
+
+./scripts/start.sh
+./scripts/stop.sh
+./scripts/restart.sh
+./scripts/status.sh
+./scripts/logs.sh
+
+Configuration must be externalized.
+
+============================================================
+PHASE 31 — NO ABSOLUTE WORKSPACE PATHS
+============================================================
+
+Search the entire project for:
+
+/home/z/my-project/
+
+Remove all project-runtime dependencies on that path.
+
+The current workspace contains things such as:
+
+src/lib/ids-data/index.ts
+
+and:
+
+scripts/build-folder-tree.py
+
+using:
+
+/home/z/my-project/iot-honeypot-ids
+
+This must not be part of the final portable project.
+
+The project must work when copied to:
+
+Windows
+Fedora
+Raspberry Pi
+
+Use:
+
+environment variables
+relative paths
+config files
+
+where appropriate.
+
+============================================================
+PHASE 32 — WORKSPACE FOLDER TREE
+============================================================
+
+The repository page currently loads:
+
+/folder-tree.json
+
+and the folder tree was generated using an absolute workspace path.
+
+This is a workspace convenience feature, not project architecture.
+
+Keep it only if useful.
+
+Do not let it become part of the project's runtime dependency.
+
+Do not put:
+
+folder-tree.json
+
+inside the actual project merely because the workspace needs it.
+
+============================================================
+PHASE 33 — DATABASE_URL
+============================================================
+
+Audit whether:
+
+DATABASE_URL
+
+is actually used.
+
+Search the entire repository.
+
+If it is not required:
+
+remove the unnecessary dependency.
+
+If it is required:
+
+keep it.
+
+A local PostgreSQL database is acceptable.
+
+A local SQLite database is also acceptable for simple metadata.
+
+But define the responsibility.
+
+Recommended:
+
+Elasticsearch:
+telemetry/events/search
+
+Relational database:
+models/experiments/application metadata
+
+Filesystem:
+model artifacts/datasets/reports
+
+Do not create a database just because a framework generated DATABASE_URL.
+
+============================================================
+PHASE 34 — PRISMA
+============================================================
+
+Inspect:
+
+prisma/schema.prisma
+
+If it contains generic:
+
+User
+Post
+
+boilerplate unrelated to IDS:
+
+do not let it silently become part of the final architecture.
+
+Determine whether it is actually used.
+
+If unused, remove/isolate it safely.
+
+Do not introduce authentication/social application concepts into the IDS unless genuinely required.
+
+============================================================
+PHASE 35 — API CONTRACT
+============================================================
+
+Create one canonical API contract.
+
+At minimum:
+
+GET /health
+GET /overview
+GET /events
+GET /sessions
+GET /sessions/{id}
+GET /detections
+GET /models
+GET /models/{id}
+GET /experiments
+GET /honeypots
+GET /system-status
+
+Optional:
+
+POST /replay
+
+if the deployment architecture safely supports it.
+
+The frontend should consume this contract.
+
+============================================================
+PHASE 36 — API RESPONSE SEMANTICS
+============================================================
+
+Define types/schemas.
+
+Do not return arbitrary dictionaries everywhere.
+
+Use explicit response models where appropriate.
+
+Examples:
+
+OverviewResponse
+Event
+Session
+Detection
+ModelMetadata
+Experiment
+HoneypotStatus
+HealthResponse
+
+This prevents the frontend and backend from silently disagreeing.
+
+============================================================
+PHASE 37 — FRONTEND DATA FETCHING
+============================================================
+
+The frontend should NOT contain:
+
+CSV parsing
+feature extraction
+session reconstruction
+rule evaluation
+ML prediction
+model training
+
+The frontend should only:
+
+request data
+display data
+filter data
+navigate
+trigger allowed actions
+
+Business logic belongs in backend/domain services.
+
+============================================================
+PHASE 38 — LIVE MODE
+============================================================
+
+LIVE means:
+
+actual backend
+actual Elasticsearch
+actual telemetry
+
+The UI must not call something:
+
+LIVE
+
+unless the backend confirms the live infrastructure.
+
+Health should check:
+
+API
+Elasticsearch
+Logstash if practical
+model service/filesystem
+honeypot connectivity if practical
+
+============================================================
+PHASE 39 — SYNTHETIC MODE
+============================================================
+
+SYNTHETIC means:
+
+controlled offline/demo data.
+
+Health should NOT claim:
+
+Elasticsearch ONLINE
+
+if Elasticsearch isn't actually running.
+
+Instead show:
+
+DEMO
+
+or:
+
+SYNTHETIC
+
+for components not actually running.
+
+============================================================
+PHASE 40 — HONEYPOT HEALTH
+============================================================
+
+In LIVE mode:
+
+actual health checks.
+
+In SYNTHETIC mode:
+
+show:
+
+DEMO
+
+not:
+
+ONLINE
+
+unless the actual service is reachable.
+
+Do not make all three honeypots green simply because they exist in the dataset.
+
+============================================================
+PHASE 41 — DASHBOARD OVERVIEW
+============================================================
+
+The dashboard must answer:
+
+What happened?
+
+Who attacked?
+
+What was targeted?
+
+What did they do?
+
+Which sessions were created?
+
+What was detected?
+
+Was it known or anomalous?
+
+Which engine detected it?
+
+Which model was used?
+
+Is the pipeline healthy?
+
+Use:
+
+Events
+Sessions
+Attackers
+Detections
+Anomalies
+Honeypots
+Model
+
+But calculate everything from real backend data.
+
+============================================================
+PHASE 42 — LIVE EVENTS
+============================================================
+
+Show:
+
+timestamp
+event ID
+session
+source
+destination
+honeypot
+protocol
+event type
+action
+classification
+
+Filters:
+
+source
+device
+protocol
+session
+event type
+time
+
+============================================================
+PHASE 43 — ATTACK SESSIONS
+============================================================
+
+Show:
+
+session ID
+source
+target
+honeypot
+protocol
+start
+end
+duration
+events
+classification
+confidence
+anomaly score
+
+Clicking a session should show:
+
+event timeline
+authentication activity
+commands
+HTTP requests
+files
+features
+detections
+
+============================================================
+PHASE 44 — DETECTIONS
+============================================================
+
+Show:
+
+detection ID
+timestamp
+session
+source
+honeypot
+engine
+classification
+confidence
+anomaly score
+model version
+rule ID
+explanation
+
+Distinguish:
+
+RULE
+ML
+ANOMALY
+
+============================================================
+PHASE 45 — ML MODELS
+============================================================
+
+Show:
+
+model ID
+algorithm
+dataset
+feature version
+status
+training samples
+test samples
+training metrics
+held-out metrics
+created
+activated
+feature importance if available
+
+Never label in-sample F1 as the main F1.
+
+============================================================
+PHASE 46 — EXPERIMENTS
+============================================================
+
+Show actual experiment records.
+
+Include:
+
+experiment ID
+model
+dataset
+feature version
+seed
+algorithm
+train size
+test size
+metrics
+timestamp
+notes
+
+============================================================
+PHASE 47 — UNKNOWN PATTERN EXPERIMENT
+============================================================
+
+Implement a defensible experiment.
+
+Training:
+
+known attack families
++
+benign
+
+Testing:
+
+known attacks
++
+previously unseen behavior
+
+The unseen behavior must not be present in training.
+
+Use anomaly detection to flag it.
+
+The dashboard should explain:
+
+UNKNOWN / ANOMALOUS
+
+rather than claiming:
+
+ZERO-DAY
+
+unless independently established.
+
+============================================================
+PHASE 48 — MODEL EVALUATION
+============================================================
+
+The project must provide:
+
+accuracy
+precision
+recall
+F1
+confusion matrix
+false-positive rate
+false-negative rate
+
+where appropriate.
+
+Use held-out evaluation.
+
+Do not present training metrics as test performance.
+
+============================================================
+PHASE 49 — DATASET VERSIONING
+============================================================
+
+Use:
+
+dataset-v001
+dataset-v002
+
+or equivalent.
+
+Every dataset should record:
+
+source
+created_at
+feature_version
+label provenance
+session count
+event count
+description
+
+This is important when the model is retrained after collecting real Pi telemetry.
+
+============================================================
+PHASE 50 — MODEL VERSIONING
+============================================================
+
+Use:
+
+model-v001
+model-v002
+model-v003
+
+Never silently overwrite.
+
+Each model should reference:
+
+dataset version
+feature version
+algorithm
+hyperparameters
+seed
+training metrics
+evaluation metrics
+status
+
+============================================================
+PHASE 51 — MODEL STATUS
+============================================================
+
+Use meaningful states:
+
+experimental
+validated
+active
+retired
+
+Do not automatically mark a newly trained model:
+
+active
+
+without evaluation.
+
+============================================================
+PHASE 52 — REAL CAPTURE TRAINING WORKFLOW
+============================================================
+
+The project must support:
+
+REAL PI ATTACK
+ ↓
+ELK
+ ↓
+Elasticsearch
+ ↓
+dataset extraction
+ ↓
+labeling
+ ↓
+dataset version
+ ↓
+training
+ ↓
+evaluation
+ ↓
+model version
+ ↓
+replay
+ ↓
+detection
+
+This is one of the most important parts of the final-year demonstration.
+
+============================================================
+PHASE 53 — NO FAKE AI
+============================================================
+
+Absolutely prohibit:
+
+hardcoded confidence
+hardcoded anomaly scores
+hardcoded predictions
+random predictions
+label -> prediction shortcuts
+
+Do not do:
+
+if label == "brute_force":
+    confidence = 0.95
+
+and call that ML.
+
+Rules can generate detections.
+
+ML must actually generate ML predictions.
+
+Anomaly detector must actually generate anomaly scores.
+
+============================================================
+PHASE 54 — SYNTHETIC DATA GENERATOR
+============================================================
+
+Inspect:
+
+model-lab/model_lab/datasets/bootstrap.py
+
+It is acceptable as the canonical synthetic dataset generator.
+
+But ensure the synthetic dataset is clearly labeled.
+
+Do not create another synthetic generator in:
+
+src/lib/ids-data
+mini-services/ids-api
+
+If synthetic telemetry is needed for the UI:
+
+implement one canonical adapter/replay mechanism.
+
+============================================================
+PHASE 55 — SAMPLE TELEMETRY
+============================================================
+
+Inspect:
+
+data/sample-telemetry/
+
+Determine whether this should be the canonical synthetic telemetry.
+
+If it already contains realistic ECS-style events:
+
+prefer using it rather than inventing another event format.
+
+Ensure it follows the same schema as live Pi telemetry.
+
+============================================================
+PHASE 56 — SHARED SCHEMA
+============================================================
+
+The project already has:
+
+shared/schemas/
+
+Use that.
+
+Do not create a separate TypeScript-only event schema that disagrees with Python.
+
+If the frontend needs types:
+
+derive them from the API contract or maintain a clearly synchronized schema.
+
+============================================================
+PHASE 57 — ELASTICSEARCH MAPPINGS
+============================================================
+
+Inspect:
+
+dashboard/elasticsearch/index-templates/
+
+Ensure the mappings cover:
+
+@timestamp
+event_id
+session_id
+campaign_id
+source
+destination
+device
+protocol
+event
+authentication
+http
+iot
+honeypot
+attack
+labels
+tags
+
+Avoid uncontrolled dynamic mappings.
+
+============================================================
+PHASE 58 — LOGSTASH
+============================================================
+
+Inspect the real Logstash pipeline.
+
+Verify:
+
+input
+JSON parsing
+normalization
+ECS-style fields
+validation
+enrichment
+routing
+Elasticsearch output
+error/dead-letter handling
+
+Do not silently drop malformed events.
+
+============================================================
+PHASE 59 — FILEBEAT
+============================================================
+
+Inspect Pi Filebeat.
+
+Verify:
+
+log paths
+JSON parsing
+multiline handling if necessary
+destination
+credentials
+TLS if configured
+resource limits
+
+Ensure it actually ships the logs generated by:
+
+Cowrie
+camera
+IoT service
+
+============================================================
+PHASE 60 — PI LOGGING
+============================================================
+
+Inspect:
+
+Cowrie logging
+Camera logging
+IoT service logging
+
+Ensure all services emit consistent enough structured telemetry.
+
+Every event should ideally include:
+
+@timestamp
+event_id
+session_id where available
+source
+destination
+device
+protocol
+event metadata
+
+============================================================
+PHASE 61 — SESSION RECONSTRUCTION
+============================================================
+
+Use ONE canonical implementation.
+
+Prefer:
+
+dashboard/ml/features.py
+
+or another clearly defined domain module.
+
+Do not reconstruct sessions separately in:
+
+TypeScript
+FastAPI
+model-lab
+
+unless one simply consumes the canonical result.
+
+Handle missing session IDs explicitly.
+
+Do not silently lose events.
+
+============================================================
+PHASE 62 — FEATURE EXTRACTION
+============================================================
+
+Use one canonical feature definition.
+
+Current feature names include:
+
+event_count
+duration_s
+bytes_in_total
+bytes_out_total
+auth_attempts
+auth_successes
+auth_failure_ratio
+unique_usernames
+command_count
+command_diversity
+http_request_count
+http_uri_diversity
+http_status_4xx_ratio
+http_status_5xx_ratio
+unique_protocols
+devices_touched
+ports_touched
+time_between_events_mean_s
+time_between_events_stdev_s
+request_rate_per_min
+auth_failure_rate_per_min
+contains_path_traversal
+contains_command_injection
+contains_default_credentials
+is_recon_only
+
+Audit whether these are valid for actual telemetry.
+
+Do not silently change feature ordering without versioning.
+
+============================================================
+PHASE 63 — FEATURE LEAKAGE
+============================================================
+
+Audit the current features.
+
+Features such as:
+
+contains_path_traversal
+contains_command_injection
+contains_default_credentials
+
+are derived from attack classifications/tags.
+
+This can create label leakage.
+
+For example:
+
+if the feature itself contains:
+
+"contains_path_traversal"
+
+and the target label is:
+
+"path_traversal"
+
+then the model can learn a nearly direct shortcut.
+
+That may explain perfect metrics.
+
+This is academically important.
+
+Determine whether these are:
+
+- valid behavioral observables
+- post-classification labels
+- rule-derived features
+
+If they leak the target, remove them from the classifier or clearly separate them for rule-engine use.
+
+Do not hide this problem.
+
+============================================================
+PHASE 64 — MODEL VALIDITY
+============================================================
+
+Investigate why model-v001 has perfect in-sample metrics.
+
+Do not assume the model is excellent.
+
+Investigate:
+
+feature leakage
+synthetic separability
+duplicate sessions
+session split
+class balance
+dataset generation
+
+Report the cause.
+
+Fix the experimental design where appropriate.
+
+============================================================
+PHASE 65 — ANOMALY MODEL
+============================================================
+
+The anomaly detector must be independently trained.
+
+Do not simply label synthetic rows:
+
+anomaly
+
+and call them anomaly detections.
+
+Document:
+
+training distribution
+contamination parameter
+feature preprocessing
+score interpretation
+threshold
+
+============================================================
+PHASE 66 — RULE ENGINE
+============================================================
+
+Rules are acceptable.
+
+Keep them.
+
+But make the architecture explicit:
+
+RULE ENGINE
+    known deterministic patterns
+
+ML CLASSIFIER
+    learned known behavioral patterns
+
+ANOMALY DETECTOR
+    behavior outside learned distribution
+
+Do not blur these.
+
+============================================================
+PHASE 67 — DASHBOARD EXPLANATIONS
+============================================================
+
+For every detection, show enough information to explain:
+
+WHY was this detected?
+
+Example:
+
+Engine:
+RULE_ENGINE
+
+Rule:
+SSH_BRUTE_FORCE
+
+Reason:
+47 authentication attempts with 96% failures in 12 seconds.
+
+OR:
+
+Engine:
+ANOMALY_DETECTOR
+
+Reason:
+behavior differs from training distribution.
+
+OR:
+
+Engine:
+ML_CLASSIFIER
+
+Model:
+model-v002
+
+Prediction:
+reconnaissance
+
+Confidence:
+0.91
+
+Only show information actually generated by the system.
+
+============================================================
+PHASE 68 — DATABASE
+============================================================
+
+Do NOT overcomplicate.
+
+If PostgreSQL is retained:
+
+Use it for:
+
+models
+experiments
+dataset metadata
+application metadata
+
+Do NOT use it as the main event store.
+
+If PostgreSQL isn't necessary:
+
+remove it.
+
+A local database is perfectly acceptable for this final-year lab.
+
+The presence of DATABASE_URL itself is not a problem.
+
+The problem would be an unjustified database architecture.
+
+============================================================
+PHASE 69 — CROSS PLATFORM
+============================================================
+
+Computer 1:
+
+Fedora
+Windows
+
+Use Docker.
+
+Avoid absolute paths.
+
+Avoid Linux-only shell assumptions in core deployment.
+
+Provide:
+
+.sh
+
+and:
+
+.ps1
+
+where appropriate.
+
+============================================================
+PHASE 70 — BUILD/TEST
+============================================================
+
+Do not stop at:
+
+lint passes.
+
+Do not stop at:
+
+unit tests pass.
+
+Run:
+
+unit tests
+integration tests
+frontend build
+API tests
+configuration tests
+ML tests
+
+Then perform actual runtime verification.
+
+============================================================
+PHASE 71 — END-TO-END TEST
+============================================================
+
+If ELK is available:
+
+Generate:
+
+ONE controlled attacker event.
+
+Verify:
+
+Pi
+ ↓
+Filebeat
+ ↓
+Logstash
+ ↓
+Elasticsearch
+ ↓
+FastAPI
+ ↓
+Dashboard
+
+Then:
+
+session
+ ↓
+features
+ ↓
+model
+ ↓
+detection
+ ↓
+dashboard
+
+If the full physical environment cannot run in the workspace:
+
+use the canonical synthetic/replay pipeline.
+
+But clearly document what was actually verified.
+
+============================================================
+PHASE 72 — DASHBOARD WORKSPACE
+============================================================
+
+The workspace landing page must remain:
+
+IoT Sentinel
+
+SOC Overview
+
+The dashboard should show the actual project architecture.
+
+But the workspace must not become another backend.
+
+If the workspace environment cannot run the real ELK stack:
+
+use a thin adapter.
+
+Do not reproduce the entire backend in TypeScript.
+
+============================================================
+PHASE 73 — REPOSITORY PAGE
+============================================================
+
+Repository remains secondary.
+
+It may show:
+
+project tree
+documentation
+download
+
+but NOT:
+
+IDS metrics
+fake ML
+fake telemetry
+
+============================================================
+PHASE 74 — ZIP
+============================================================
+
+Create:
+
+iot-honeypot-ids.zip
+
+ONLY from the actual:
+
+iot-honeypot-ids/
+
+directory.
+
+Exclude:
+
+.git
+node_modules
+.venv
+__pycache__
+.env
+secrets
+temporary logs
+workspace internals
+browser files
+Next.js workspace internals
+
+Verify by extracting it into a clean temporary directory.
+
+Then verify:
+
+README
+Docker Compose
+Pi
+attacker
+model-lab
+dashboard
+tests
+
+are present.
+
+============================================================
+PHASE 75 — DO NOT PUT ZIP IN IDS HEADER
+============================================================
+
+Again:
+
+REMOVE THE ZIP BUTTON FROM THE TOP-LEVEL IDS DASHBOARD.
+
+It is not an IDS feature.
+
+============================================================
+PHASE 76 — DOCUMENTATION
+============================================================
+
+Update documentation to match reality.
+
+Especially:
+
+README.md
+docs/architecture/
+docs/ml/
+docs/deployment/
+docs/demo/
+model-lab/README.md
+dashboard/README.md
+
+Do not claim:
+
+"working"
+
+for things that aren't verified.
+
+Use explicit statuses where appropriate.
+
+============================================================
+PHASE 77 — FINAL DEMONSTRATION
+============================================================
+
+The project must support this final-year presentation:
+
+STEP 1
+
+Show architecture.
+
+STEP 2
+
+Show Raspberry Pi honeypots running.
+
+STEP 3
+
+SSH into the Pi.
+
+STEP 4
+
+Show Docker containers.
+
+STEP 5
+
+Start attacker machine.
+
+STEP 6
+
+Run:
+
+ssh-bruteforce
+
+or:
+
+camera-recon
+
+against the Pi.
+
+STEP 7
+
+Show telemetry arriving.
+
+STEP 8
+
+Open Kibana.
+
+Show raw events.
+
+STEP 9
+
+Open IoT Sentinel.
+
+Show the same activity as:
+
+events
+session
+detection
+
+STEP 10
+
+Open the session.
+
+Show:
+
+timeline
+commands
+authentication
+features
+classification
+
+STEP 11
+
+Show ML model.
+
+STEP 12
+
+Show held-out evaluation.
+
+STEP 13
+
+Introduce a previously unseen behavior.
+
+STEP 14
+
+Show anomaly detector.
+
+STEP 15
+
+Create a new dataset.
+
+STEP 16
+
+Train model-v002.
+
+STEP 17
+
+Evaluate model-v002.
+
+STEP 18
+
+Replay attack.
+
+STEP 19
+
+Show updated detection.
+
+That is the final story.
+
+============================================================
+PHASE 78 — IMPORTANT ACADEMIC CORRECTION
+============================================================
+
+Do NOT claim:
+
+"The ML model detects zero-day attacks."
+
+Instead say:
+
+"The anomaly detector identifies behavioral patterns that differ from the training distribution, which provides a mechanism for flagging previously unseen behavior."
+
+That is technically defensible.
+
+============================================================
+PHASE 79 — FINAL VERIFICATION MATRIX
+============================================================
+
+Before completion, create an internal checklist:
+
+ARCHITECTURE
+
+[ ] One canonical API
+[ ] One canonical ML implementation
+[ ] One canonical session reconstruction implementation
+[ ] One canonical feature definition
+[ ] One canonical synthetic data mechanism
+[ ] Elasticsearch is authoritative for live telemetry
+[ ] PostgreSQL, if retained, has a clear purpose
+
+DATA
+
+[ ] No hardcoded dashboard metrics
+[ ] No fabricated anomaly scores
+[ ] No fake confidence
+[ ] No CSV pretending to be live telemetry
+[ ] Correct event/session/detection semantics
+[ ] Timestamp handling verified
+[ ] Timeline works
+
+ML
+
+[ ] Real classifier
+[ ] Real anomaly detector
+[ ] Held-out evaluation
+[ ] Session-level split
+[ ] Leakage audited
+[ ] Synthetic limitations documented
+[ ] Model versioning works
+
+ELK
+
+[ ] Filebeat
+[ ] Logstash
+[ ] Elasticsearch
+[ ] Kibana
+[ ] API integration
+
+PI
+
+[ ] Docker isolation
+[ ] Resource limits
+[ ] SSH management
+[ ] Honeypots
+[ ] Telemetry forwarding
+
+ATTACKER
+
+[ ] Fedora
+[ ] Explicit target
+[ ] LAB_SUBNET enforcement
+[ ] Reproducible scenarios
+[ ] Campaign/run IDs
+
+DASHBOARD
+
+[ ] Overview
+[ ] Live Events
+[ ] Sessions
+[ ] Detections
+[ ] Models
+[ ] Experiments
+[ ] Honeypots
+[ ] Repository
+[ ] No ZIP in SOC header
+[ ] No stale test claims
+[ ] Correct data source display
+
+PORTABILITY
+
+[ ] No /home/z/my-project paths
+[ ] Windows supported
+[ ] Fedora supported
+[ ] Pi supported
+[ ] .env.example
+[ ] No secrets
+
+PACKAGING
+
+[ ] ZIP contains actual project
+[ ] ZIP excludes workspace internals
+[ ] ZIP extracts successfully
+[ ] ZIP verified
+
+============================================================
+PHASE 80 — VERY IMPORTANT: DO NOT CLAIM SUCCESS
+============================================================
+
+Do NOT say:
+
+"Everything is fixed"
+
+until you have actually verified it.
+
+If something cannot be verified because the physical Pi/ELK environment is unavailable:
+
+say:
+
+NOT VERIFIED IN THIS ENVIRONMENT
+
+Do not pretend.
+
+============================================================
+PHASE 81 — FINAL RESPONSE
+============================================================
+
+When finished, report:
+
+1. The duplicate architectures you found.
+2. The root causes.
+3. What you removed.
+4. What you consolidated.
+5. The final data flow.
+6. The final API.
+7. The final ML pipeline.
+8. How synthetic mode works.
+9. How live mode works.
+10. How replay works.
+11. What happened to DATABASE_URL.
+12. Whether PostgreSQL remains.
+13. How model evaluation was corrected.
+14. What happened to model-v001.
+15. What happened to the hardcoded/fake values.
+16. What tests passed.
+17. What runtime checks passed.
+18. What could not be physically verified.
+19. Where the verified project ZIP is available.
+
+============================================================
+FINAL INSTRUCTION
+============================================================
+
+DO NOT PATCH THE SCREENSHOT.
+
+FIX THE SYSTEM.
+
+The project must ultimately have ONE coherent story:
+
+ATTACKER
+    ↓
+RASPBERRY PI
+    ↓
+HONEYPOT
+    ↓
+TELEMETRY
+    ↓
+FILEBEAT
+    ↓
+LOGSTASH
+    ↓
+ELASTICSEARCH
+    ↓
+SESSION RECONSTRUCTION
+    ↓
+FEATURE EXTRACTION
+    ↓
+RULE ENGINE + ML CLASSIFIER + ANOMALY DETECTOR
+    ↓
+DETECTION
+    ↓
+IDS DASHBOARD
+    ↓
+DATASET
+    ↓
+TRAINING
+    ↓
+EVALUATION
+    ↓
+NEW MODEL
+    ↓
+REPLAY
+    ↓
+DETECTION
+
+The workspace dashboard is only the presentation interface.
+
+It must NOT become a second IDS backend.
+
+START BY INSPECTING THE CURRENT FILES.
+
+DO NOT EDIT FIRST.
+
+TRACE THE DATA FLOW FIRST.
+
+THEN FIX THE ROOT CAUSES.
+
+THEN TEST.
+
+THEN VERIFY.
+
+THEN PACKAGE.
+
+DO NOT STOP UNTIL THE ARCHITECTURE IS ACTUALLY COHERENT.

@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://iot-honeypot-ids/schemas/event.json",
+  "title": "Honeypot Event",
+  "description": "ECS-shaped event emitted by honeypots (cowrie, camera, iot-service) and consumed by Logstash.",
+  "type": "object",
+  "required": ["@timestamp", "event_id", "session_id", "source", "device", "event", "honeypot"],
+  "properties": {
+    "@timestamp": { "type": "string", "format": "date-time" },
+    "event_id":   { "type": "string", "description": "UUID — unique per event" },
+    "session_id": { "type": "string", "description": "UUID — groups events into one attacker session" },
+    "ingested_at": { "type": "string", "format": "date-time" },
+    "source": {
+      "type": "object",
+      "required": ["ip"],
+      "properties": {
+        "ip":   { "type": "string", "format": "ipv4" },
+        "port": { "type": "integer", "minimum": 0, "maximum": 65535 },
+        "scope": { "type": "string", "enum": ["private", "public"] }
+      }
+    },
+    "destination": {
+      "type": "object",
+      "properties": {
+        "ip":   { "type": "string", "format": "ipv4" },
+        "port": { "type": "integer" }
+      }
+    },
+    "device": {
+      "type": "object",
+      "required": ["id", "type"],
+      "properties": {
+        "id":        { "type": "string" },
+        "type":      { "type": "string", "enum": ["ssh", "camera", "iot_service"] },
+        "hostname":  { "type": "string" },
+        "container": { "type": "string" }
+      }
+    },
+    "protocol": { "type": "string", "enum": ["ssh", "telnet", "http", "tcp_iot"] },
+    "event": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type":     { "type": "string" },
+        "category": { "type": "string" },
+        "action":   { "type": "string" },
+        "note":     { "type": "string" }
+      }
+    },
+    "authentication": {
+      "type": "object",
+      "properties": {
+        "attempted": { "type": "boolean" },
+        "username":  { "type": "string" },
+        "success":   { "type": "boolean" }
+      }
+    },
+    "http": {
+      "type": "object",
+      "properties": {
+        "method":       { "type": "string" },
+        "uri":          { "type": "string" },
+        "status":       { "type": "integer" },
+        "user_agent":   { "type": "string" },
+        "bytes_in":     { "type": "integer" },
+        "bytes_out":    { "type": "integer" },
+        "body_preview": { "type": "string" }
+      }
+    },
+    "network": {
+      "type": "object",
+      "properties": {
+        "bytes_in":  { "type": "integer" },
+        "bytes_out": { "type": "integer" }
+      }
+    },
+    "honeypot": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name":      { "type": "string" },
+        "container": { "type": "string" }
+      }
+    },
+    "attack": {
+      "type": "object",
+      "properties": {
+        "session_id":     { "type": "string" },
+        "stage":          { "type": "string" },
+        "classification": { "type": "string" },
+        "confidence":     { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "tags":  { "type": "array", "items": { "type": "string" } },
+    "labels": { "type": "object" }
+  }
+}

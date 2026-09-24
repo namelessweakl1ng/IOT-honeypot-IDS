@@ -1,0 +1,3 @@
+# TRAPSIG Attack Simulator Python dependencies
+# Uses only stdlib + PyYAML for config parsing.
+pyyaml==6.0.1
