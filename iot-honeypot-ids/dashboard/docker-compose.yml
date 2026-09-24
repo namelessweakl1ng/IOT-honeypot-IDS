@@ -61,7 +61,6 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
   # -----------------------------------------------------------------
   # Logstash — receives Beats from Pi, parses JSON, normalizes ECS,
   # indexes into appropriate indices, and routes malformed events
@@ -156,7 +155,7 @@ services:
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - API_SECRET_KEY=${API_SECRET_KEY}
       - API_ALLOWED_CIDRS=${API_ALLOWED_CIDRS:-192.168.1.0/24,127.0.0.0/8}
-      - MODEL_PATH=${MODEL_PATH:-/app/models}
+      - MODEL_PATH=${MODEL_PATH:-/app/model-lab/models}
       - DATA_PATH=${DATA_PATH:-/app/data}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - DEFAULT_RANDOM_SEED=${DEFAULT_RANDOM_SEED:-42}
@@ -180,28 +179,3 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
-  # -----------------------------------------------------------------
-  # React + TS custom dashboard (dev server)
-  # In production, build static assets and serve via the API or nginx.
-  # -----------------------------------------------------------------
-  frontend:
-    profiles: ["dev"]
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    image: iot-honeypot/frontend:local
-    container_name: pc1-frontend
-    restart: unless-stopped
-    depends_on:
-      - api
-    environment:
-      - VITE_API_URL=http://localhost:8000
-      - VITE_KIBANA_URL=http://localhost:5601
-    ports:
-      - "${FRONTEND_PORT:-3000}:3000"
-    networks:
-      - analysis
-    volumes:
-      # Bind-mount source so HMR works during development
-      - ./frontend/src:/app/src

@@ -58,15 +58,12 @@ curl http://localhost:8000/health
 xdg-open http://localhost:5601
 ```
 
-### 6. (Optional) Frontend dev server
+### 6. Dashboard
 
-```bash
-cd dashboard/frontend
-docker compose --profile dev up -d frontend
-xdg-open http://localhost:3000
-```
+The authoritative dashboard is the workspace-root Next.js application. Start it
+from the workspace root with `bun run dev` after the FastAPI service is ready.
 
-## PC2 (Attacker)
+## Computer 3 (Attacker)
 
 ### 1. Install required tools
 

@@ -110,8 +110,9 @@ def require_api_key(request: Request):
     import os as _os
     expected = _os.environ.get("API_SECRET_KEY", "") or settings.api_secret_key
     if not expected:
-        # No key configured at all — fail closed.
-        raise HTTPException(503, "API_SECRET_KEY not configured on server")
+        # No key configured at all — fail closed using the same unauthenticated
+        # response as a missing or invalid caller key.
+        raise HTTPException(401, "missing or invalid API key")
     key = request.headers.get("X-API-Key", "")
     if not key or key != expected:
         raise HTTPException(401, "missing or invalid API key")

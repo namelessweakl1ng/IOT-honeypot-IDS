@@ -121,6 +121,7 @@ if [ -z "$CAMPAIGN_ID" ]; then
   CAMPAIGN_ID="campaign-$(date -u +%Y%m%dT%H%M%SZ)-$(printf '%06x' $((RANDOM % 16777215)))"
 fi
 RUN_ID="run-$(date -u +%Y%m%dT%H%M%SZ)-$(printf '%06x' $((RANDOM % 16777215)))"
+export TARGET SCENARIO CAMPAIGN_ID RUN_ID
 
 echo "==============================================================="
 echo " Campaign: $CAMPAIGN_ID"

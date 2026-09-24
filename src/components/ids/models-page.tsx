@@ -136,11 +136,12 @@ export function ModelsPage() {
           {models.find(m => m.status === 'active')?.metrics.feature_importances && (() => {
             const fi = models.find(m => m.status === 'active')!.metrics.feature_importances
             const entries = Object.entries(fi).sort((a: any, b: any) => b[1] - a[1]).slice(0, 12)
-            const max = entries[0]?.[1] || 1
+            const max = Number(entries[0]?.[1] || 1)
             return (
               <Panel title="FEATURE IMPORTANCES" right="RANDOM_FOREST">
                 <div className="space-y-0.5">
-                  {entries.map(([name, imp]: any) => {
+                  {entries.map(([name, rawImportance]: any) => {
+                    const imp = Number(rawImportance)
                     const isLeaky = LEAKY.includes(name)
                     return (
                       <div key={name} className="flex items-center gap-2 text-[11px] font-mono">

@@ -37,7 +37,7 @@ ssh_attempt() {
       -o UserKnownHostsFile=/dev/null \
       -o ConnectTimeout=3 \
       -o NumberOfPasswordPrompts=1 \
-      "root@${TARGET}" \
+      "${user}@${TARGET}" \
       'echo LOGGED_IN' 2>/dev/null || true
   else
     # Without sshpass we just attempt and let SSH prompt-timeout
@@ -48,7 +48,7 @@ ssh_attempt() {
       -o ConnectTimeout=2 \
       -o NumberOfPasswordPrompts=0 \
       -o BatchMode=yes \
-      "root@${TARGET}" 2>/dev/null || true
+      "${user}@${TARGET}" 2>/dev/null || true
   fi
   delay
 }

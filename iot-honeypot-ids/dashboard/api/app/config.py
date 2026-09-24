@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     elastic_password: str = "changeme-elastic"
 
     # ---- API ---------------------------------------------------------
-    api_secret_key: str = "dev-only-insecure-key"
+    api_secret_key: str = ""
     api_allowed_cidrs: str = "192.168.1.0/24,127.0.0.0/8"
 
     # ---- Pi control plane -------------------------------------------

@@ -13,10 +13,6 @@ echo "=== Python type check (best-effort) ==="
 mypy dashboard/api/app --ignore-missing-imports 2>&1 || echo "(mypy found issues — non-fatal)"
 
 echo "=== Frontend type check ==="
-if [ -d dashboard/frontend/node_modules ]; then
-  (cd dashboard/frontend && npx tsc --noEmit) || echo "(tsc found issues — non-fatal)"
-else
-  echo "  (frontend node_modules missing — run 'npm install' in dashboard/frontend)"
-fi
+echo "  (authoritative frontend is the workspace-root Next.js app; run 'bun run lint' and 'bun run build' there)"
 
 echo "=== Done ==="

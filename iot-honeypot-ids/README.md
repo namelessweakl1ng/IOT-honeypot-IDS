@@ -13,10 +13,10 @@ behavioral features, trains interpretable ML baselines, and detects both
 
 ## 1. What This Project Is
 
-A working, reproducible pipeline:
+A software-defined research pipeline with an explicitly unverified physical deployment:
 
 ```
-Attacker (PC2, Fedora)
+Computer 3: Attacker
    |
    | controlled attack
    v
@@ -24,7 +24,7 @@ Raspberry Pi 4 Honeypot Fleet (Cowrie SSH, Camera HTTP, IoT service)
    |
    | structured JSON telemetry
    v
-Computer 1 (Fedora OR Windows)
+Computer 2: Fedora analysis host
    |
    +--> Filebeat / Logstash ingestion
    +--> Elasticsearch indexing
@@ -36,7 +36,8 @@ Computer 1 (Fedora OR Windows)
    +--> dataset versioning
    +--> model training / evaluation / registry
    v
-Replay an attack -> model detects it -> demo complete
+Replay an attack -> telemetry is correlated -> the configured detector evaluates it.
+Physical delivery and latency remain unverified until the lab is run.
 ```
 
 The system never fakes results. When a feature is incomplete, it is labeled as
@@ -59,9 +60,9 @@ such (e.g. `INSUFFICIENT DATA`), never silently fabricated.
 
 | Machine  | OS                         | Role                                            |
 |----------|----------------------------|-------------------------------------------------|
-| Pi 4     | Raspberry Pi OS Lite 64-bit | Deception + telemetry + forwarding             |
-| PC1      | Fedora Linux OR Windows    | ELK + ML + dataset + dashboard + API           |
-| PC2      | Fedora Linux              | Reproducible attacker scenarios                 |
+| Computer 1 | Raspberry Pi OS Lite 64-bit | Deception + telemetry + forwarding           |
+| Computer 2 | Fedora Linux                | ELK + ML + FastAPI + Next.js dashboard        |
+| Computer 3 | Configured lab host         | Reproducible attacker scenarios                |
 
 See [`docs/architecture/network.md`](docs/architecture/network.md) for required
 ports and [`docs/deployment/`](docs/deployment/) for per-OS setup.
@@ -77,17 +78,18 @@ iot-honeypot-ids/
 ├── .gitignore
 ├── .env.example
 ├── pi/                # Raspberry Pi: honeypots, collector, filebeat, scripts
-├── dashboard/         # PC1: ELK + FastAPI + React + ML pipeline
-├── attacker/          # PC2: reproducible attack scenarios
-├── model-lab/         # PC1: ML research workspace (CLI + datasets + models)
+├── dashboard/         # Computer 2: ELK + FastAPI + runtime ML
+├── attacker/          # Computer 3: reproducible attack scenarios
+├── model-lab/         # Computer 2: ML research workspace
 ├── shared/            # ECS-style schema, attack-type taxonomy, docs
 ├── docs/              # architecture / deployment / security / ml / demo
 ├── scripts/           # setup / dev / deployment / testing / demo entry points
 └── tests/             # unit + integration + e2e
 ```
 
-Each top-level folder is the responsibility of one machine, but lives in a
-single repo so the whole system stays reproducible.
+The runtime and research tooling live in this nested project directory. The
+workspace root contains the authoritative Next.js dashboard shell; it is the
+only production UI. Physical deployment remains a separate verification step.
 
 ---
 

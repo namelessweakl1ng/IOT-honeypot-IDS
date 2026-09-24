@@ -11,7 +11,7 @@ from app.config import Settings  # type: ignore  # noqa: E402
 def test_settings_defaults():
     s = Settings()
     assert s.elasticsearch_url.startswith("http://")
-    assert s.api_secret_key  # non-empty
+    assert s.api_secret_key == ""  # missing deployment secret must fail closed
     assert s.default_random_seed == 42
     assert 0 < s.default_train_test_split < 1
 

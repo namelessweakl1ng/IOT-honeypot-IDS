@@ -14,7 +14,7 @@ Every container that runs in the platform, grouped by host.
 
 **Steady-state total:** ~280 MB. Leaves ~3.7 GB headroom on a 4 GB Pi 4.
 
-## PC1 (Fedora or Windows) — `dashboard/docker-compose.yml`
+## Computer 2 (Fedora analysis host) — `dashboard/docker-compose.yml`
 
 | Container        | Image                                              | Purpose                       |
 |------------------|----------------------------------------------------|-------------------------------|
@@ -22,7 +22,6 @@ Every container that runs in the platform, grouped by host.
 | `pc1-logstash`   | `docker.elastic.co/logstash/logstash:8.13.4`       | Telemetry pipeline             |
 | `pc1-kibana`     | `docker.elastic.co/kibana/kibana:8.13.4`           | Visualization                  |
 | `pc1-api`        | built from `dashboard/api`                         | FastAPI service                |
-| `pc1-frontend`   | built from `dashboard/frontend`                    | React dev server (optional)    |
 
 PC1 RAM sizing:
 
@@ -32,7 +31,7 @@ PC1 RAM sizing:
 | 16 GB | Comfortable. ES heap 4 GB, LS heap 2 GB                     |
 | 32 GB | Generous. Can train larger models, run experiments in parallel |
 
-## PC2 (Fedora) — `attacker/`
+## Computer 3 (configured attacker host) — `attacker/`
 
 PC2 does not run any long-lived containers. It runs `./run-scenario.sh`
 on demand. The runner is a Bash script that invokes `ssh`, `curl`, `nc`,

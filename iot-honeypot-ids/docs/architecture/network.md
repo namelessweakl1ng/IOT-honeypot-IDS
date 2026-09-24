@@ -8,9 +8,10 @@
         +-----------+-----------+
         |           |           |
         v           v           v
-       Pi 4        PC1         PC2
-   192.168.1.50  192.168.1.10  192.168.1.20
-   Honeypot fleet ELK + ML    Attacker
+    Computer 1      Computer 2      Computer 3
+    Raspberry Pi    Fedora analysis  Attacker
+    configured IP   configured IP    configured IP
+    Honeypots       ELK + API + UI   Scenarios
 ```
 
 All three machines are on the same subnet. No special router features
@@ -24,14 +25,14 @@ OpenWrt, the system can use them optionally — see
 
 | Port  | Protocol | Direction        | Purpose                              |
 |-------|----------|------------------|--------------------------------------|
-| 2222  | TCP      | inbound (from PC2) | Cowrie SSH honeypot               |
-| 2223  | TCP      | inbound (from PC2) | Cowrie Telnet honeypot            |
-| 8080  | TCP      | inbound (from PC2) | Camera HTTP honeypot              |
-| 9000  | TCP      | inbound (from PC2) | IoT service honeypot              |
-| 22    | TCP      | inbound (from PC1) | SSH administration (host, NOT honeypot) |
-| 5044  | TCP      | outbound (to PC1)  | Filebeat → Logstash              |
+| 2222  | TCP      | inbound (from Computer 3) | Cowrie SSH honeypot          |
+| 2223  | TCP      | inbound (from Computer 3) | Cowrie Telnet honeypot       |
+| 8080  | TCP      | inbound (from Computer 3) | Camera HTTP honeypot         |
+| 9000  | TCP      | inbound (from Computer 3) | IoT service honeypot          |
+| 22    | TCP      | inbound (from Computer 2) | SSH administration (host)    |
+| 5044  | TCP      | outbound (to Computer 2)  | Filebeat -> Logstash         |
 
-### Computer 1 (192.168.1.10)
+### Computer 2 (configured analysis-host address)
 
 | Port  | Protocol | Direction        | Purpose                              |
 |-------|----------|------------------|--------------------------------------|
@@ -39,9 +40,9 @@ OpenWrt, the system can use them optionally — see
 | 9200  | TCP      | inbound (lab only)| Elasticsearch HTTP API             |
 | 5601  | TCP      | inbound (lab only)| Kibana                              |
 | 8000  | TCP      | inbound (lab only)| FastAPI dashboard API              |
-| 3000  | TCP      | inbound (lab only)| React dev server (optional)        |
+| 3000  | TCP      | inbound (lab only)| Next.js dashboard                  |
 
-### Computer 2 (192.168.1.20)
+### Computer 3 (configured attacker address)
 
 | Port  | Protocol | Direction        | Purpose                              |
 |-------|----------|------------------|--------------------------------------|
