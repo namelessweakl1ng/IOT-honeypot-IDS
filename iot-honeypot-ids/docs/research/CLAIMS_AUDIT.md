@@ -12,7 +12,13 @@
 | Models require activation status | Model registry and tests | PASS | Activation is explicit and status-gated |
 | E2E verifies event/session/detection lineage | E2E script and contract tests | SOFTWARE CONTRACT VERIFIED | Software E2E is lineage-aware when services are available |
 | The physical lab delivered telemetry | No physical run in this pass | NOT VERIFIED | Do not claim |
-| Detection latency is low/real-time | No physical latency measurement | NOT VERIFIED | Use “runtime detection pipeline” only |
+| Detection latency is low/real-time | No physical latency measurement | NOT VERIFIED | Use Ã¢â‚¬Å“runtime detection pipelineÃ¢â‚¬Â only |
 | The system is production ready | No production validation/security deployment evidence | NOT VERIFIED | Do not claim |
-| External datasets are comparable | Adapters/semantics not fully verified in this pass | NOT VERIFIED | Do not claim cross-dataset comparability |
-| 869 tests pass | Current environment cannot collect missing dependencies | NOT VERIFIED | Do not claim until rerun in compatible environment |
+| IoT-23 is a complementary public benchmark | Official dataset card and flow adapter; actual content not present | DOCUMENTED, NOT EXECUTED | Describe intended flow benchmark; do not claim measured performance |
+| IoT-23 adapter parses real IoT-23 content | Local deterministic fixture only; public download unavailable here | NOT VERIFIED AGAINST REAL ARCHIVE | State DATASET DOWNLOAD NOT RUN |
+| IoT-23 model performance | No real dataset experiment artifacts | NOT VERIFIED | Do not report metrics |
+| Scenario-level IoT-23 generalization | Deterministic split helper; no real execution | NOT VERIFIED | Describe protocol only |
+| Pi/Filebeat/ELK controlled detection | No physical execution | NOT VERIFIED | State PHYSICAL LAB NOT RUN |
+| Detection latency or Raspberry Pi resource use | No physical measurements | NOT VERIFIED | State NOT RUN; do not claim real-time or resource figures |
+| Synthetic results are research evidence | Research runner rejects synthetic/demo/fixture label sources | REJECTED BY SOFTWARE CONTRACT | Synthetic is fixture/demo only |
+| Current software checks pass | Python unit suite: 874 passed, 2 warnings; integration suite: 5 skipped; frontend lint/build and compose validation passed | PASS WITH SERVICE-DEPENDENT CHECKS SKIPPED | Report exact results; do not imply runtime or physical validation |

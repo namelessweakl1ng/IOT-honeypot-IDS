@@ -31,16 +31,14 @@ pip install --quiet -r dashboard/api/requirements.txt
 pip install --quiet pytest
 echo "  python deps installed"
 
-# 4. Create the synthetic dataset if missing
-mkdir -p model-lab/datasets/v1
-if [ ! -f model-lab/datasets/v1/sessions.csv ]; then
-  python -m model_lab.datasets.bootstrap --out model-lab/datasets/v1/sessions.csv
-fi
+# Setup does not generate or select research data. Use an identified external
+# dataset or independently recorded controlled-campaign labels.
 
 echo
 echo "=== Setup complete ==="
 echo "Next:"
 echo "  - Edit .env files (root, pi/, dashboard/, attacker/)"
+echo "  - No dataset was generated; synthetic fixtures are development-only."
 echo "  - PC1: cd dashboard && docker compose up -d"
 echo "  - Pi:  ssh to Pi, cd pi/ && ./scripts/configure.sh && ./scripts/start.sh"
 echo "  - PC2: cd attacker && ./run-scenario.sh --target <PI_IP> --scenario ssh-bruteforce"

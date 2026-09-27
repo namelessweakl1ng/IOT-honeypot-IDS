@@ -46,7 +46,7 @@ export function OverviewPage({ onNavigate }: { onNavigate: (p: any) => void }) {
     finally { setLoading(false) }
   }, [])
 
-  useEffect(() => { fetchAll() }, [fetchAll])
+  useEffect(() => { void Promise.resolve().then(fetchAll) }, [fetchAll])
 
   const loadDemo = async () => {
     setDemoLoading(true)

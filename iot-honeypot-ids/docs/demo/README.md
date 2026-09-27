@@ -3,7 +3,7 @@
 The single entry point is:
 
 ```bash
-./scripts/demo/run-demo.sh --target 192.168.1.50
+See the repository-root [DEMO.md](../../../DEMO.md) for the single authoritative demonstration procedure. This historical note is not an alternate procedure.
 ```
 
 ## What the demo does

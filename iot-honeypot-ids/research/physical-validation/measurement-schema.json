@@ -1,0 +1,17 @@
+{
+  "status": "NOT RUN",
+  "latency_timestamps": [
+    {"name":"T0","meaning":"attacker generated request"},
+    {"name":"T1","meaning":"honeypot received request"},
+    {"name":"T2","meaning":"honeypot telemetry record emitted"},
+    {"name":"T3","meaning":"Filebeat acknowledged/forwarded event"},
+    {"name":"T4","meaning":"Logstash accepted and normalized event"},
+    {"name":"T5","meaning":"Elasticsearch indexed event"},
+    {"name":"T6","meaning":"session reconstruction completed"},
+    {"name":"T7","meaning":"feature extraction completed"},
+    {"name":"T8","meaning":"detector decision completed"},
+    {"name":"T9","meaning":"API response returned detection"}
+  ],
+  "required_context": ["campaign_id", "event_id", "session_id", "detection_id", "clock_source", "clock_sync_status", "host_id", "software_commit"],
+  "warning": "Do not compute end-to-end latency across unsynchronized clocks. Empty timestamps mean not measured, not zero."
+}

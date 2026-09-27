@@ -29,6 +29,7 @@ from model_lab.datasets.import_iot23 import (
     parse_zeek_line, parse_zeek_ts, DEFAULT_ZEEK_FIELDS,
     discover_zeek_files, import_iot23,
 )
+from model_lab.datasets.iot23_features import audit_feature_names, feature_vector, scenario_split
 
 FIXTURE_DIR = REPO_ROOT / "tests" / "fixtures" / "iot23"
 
@@ -195,6 +196,9 @@ class TestImportEndToEnd:
         assert "source_scenario" in first
         assert first["source_scenario"] == "test-scenario"
         assert "native_label" in first
+        assert "original_label" in first
+        assert "original_detailed_label" in first
+        assert "project_label" in first
         assert "canonical_label" in first
         assert "binary_label" in first
 
@@ -215,3 +219,35 @@ class TestSecurity:
         import_iot23(fixture_dir, out, "v1")
         assert out.exists()
         assert (out / "dataset_manifest.json").exists()
+
+    def test_iot23_feature_registry_rejects_label_and_scenario_leakage(self):
+        with pytest.raises(ValueError, match="leakage audit"):
+            audit_feature_names(["duration", "project_label"])
+        with pytest.raises(ValueError, match="leakage audit"):
+            audit_feature_names(["source_scenario"])
+
+    def test_iot23_feature_vector_uses_only_measured_flow_fields(self):
+        vector = feature_vector({"duration": 1.5, "bytes_in": 10, "bytes_out": 20, "packets_in": 1, "packets_out": 2, "source_scenario": "scenario-DDoS", "original_label": "DDoS"})
+        assert set(vector) == {"duration", "bytes_in", "bytes_out", "packets_in", "packets_out"}
+        assert vector["duration"] == 1.5
+
+    def test_iot23_missing_measures_remain_unavailable(self):
+        vector = feature_vector({"duration": None, "bytes_in": 0, "bytes_out": None, "packets_in": 1, "packets_out": 1})
+        assert vector["duration"] is None
+        assert vector["bytes_out"] is None
+
+    def test_iot23_missing_measures_remain_unavailable(self):
+        vector = feature_vector({"duration": None, "bytes_in": 0, "bytes_out": None, "packets_in": 1, "packets_out": 1})
+        assert vector["duration"] is None
+        assert vector["bytes_out"] is None
+
+    def test_iot23_scenario_split_has_three_nonoverlapping_partitions(self):
+        result = scenario_split([f"scenario-{i}" for i in range(10)], seed=17)
+        assert all(result[k] for k in ("train", "validation", "test"))
+        assert not (set(result["train"]) & set(result["validation"]))
+        assert not (set(result["train"]) & set(result["test"]))
+        assert not (set(result["validation"]) & set(result["test"]))
+
+    def test_iot23_scenario_split_fails_when_not_scenario_heldout(self):
+        with pytest.raises(ValueError, match="at least 3 scenarios"):
+            scenario_split(["one", "two"], seed=1)

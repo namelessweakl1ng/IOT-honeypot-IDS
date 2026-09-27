@@ -25,12 +25,14 @@ bun install
 bun run dev
 ```
 
-The FastAPI and ELK deployment instructions are in [iot-honeypot-ids/README.md](iot-honeypot-ids/README.md). The final architecture and research baseline are documented in:
+The single operator demonstration path is [DEMO.md](DEMO.md). The FastAPI and ELK deployment instructions are in [iot-honeypot-ids/README.md](iot-honeypot-ids/README.md). The final architecture and research baseline are documented in:
 
 - [Final architecture decision](iot-honeypot-ids/docs/finalization/FINAL_ARCHITECTURE_DECISION.md)
 - [API source of truth](iot-honeypot-ids/docs/finalization/API_SOURCE_OF_TRUTH.md)
 - [Research baseline](iot-honeypot-ids/docs/research/RESEARCH_BASELINE.md)
 - [Claims audit](iot-honeypot-ids/docs/research/CLAIMS_AUDIT.md)
 - [Verification report](iot-honeypot-ids/docs/research/FINAL_VERIFICATION_REPORT.md)
+- [IoT-23 dataset card](iot-honeypot-ids/docs/research/datasets/IOT23_DATASET_CARD.md)
+- [Final research freeze report](iot-honeypot-ids/docs/research/FINAL_FREEZE_REPORT.md)
 
 Physical-lab validation is not implied by local builds or unit tests. The current baseline must explicitly report physical status and measured results.

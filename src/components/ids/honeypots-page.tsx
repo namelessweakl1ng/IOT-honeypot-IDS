@@ -137,7 +137,7 @@ export function HoneypotsPage() {
     finally { setLoading(false) }
   }, [])
 
-  useEffect(() => { fetchAll() }, [fetchAll])
+  useEffect(() => { void Promise.resolve().then(fetchAll) }, [fetchAll])
 
   const honeypotAction = async (id: string, action: 'start' | 'stop' | 'restart') => {
     setActionLoading(`${id}-${action}`)

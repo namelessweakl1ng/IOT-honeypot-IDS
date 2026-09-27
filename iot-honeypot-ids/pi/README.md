@@ -6,16 +6,18 @@ telemetry. It never runs Elasticsearch, Kibana, or ML workloads.
 
 ## What runs here
 
-| Container            | Image / build        | Purpose                                   | Approx RAM |
-|----------------------|----------------------|-------------------------------------------|------------|
-| `cowrie`             | `cowrie/cowrie:latest` | SSH/Telnet honeypot, structured JSON   | ~120 MB    |
-| `camera`             | built from `./honeypots/camera` | HTTP camera/DVR simulator     | ~40 MB     |
-| `iot-service`        | built from `./honeypots/iot-service` | Lightweight TCP IoT mgmt   | ~25 MB     |
-| `filebeat`           | `docker.elastic.co/beats/filebeat:8.13.4` | Ships JSON logs to PC1 | ~60 MB     |
-| `collector` (opt.)   | built from `./collector` | Local spool/buffer if PC1 is down     | ~30 MB     |
+| Container | Image / build | Purpose |
+|---|---|---|
+| `cowrie` | `cowrie/cowrie:latest` | SSH/Telnet honeypot, structured JSON |
+| `camera` | built from `./honeypots/camera` | HTTP camera/DVR simulator |
+| `iot-service` | built from `./honeypots/iot-service` | Lightweight TCP IoT management service |
+| `filebeat` | `docker.elastic.co/beats/filebeat:8.13.4` | Ships JSON logs to analysis host |
+| `collector` (optional) | built from `./collector` | Local spool/buffer if analysis host is down |
 
-Total steady-state RAM ~280 MB — comfortably under the 4 GB Pi 4 budget while
-leaving headroom for SSH administration and burst traffic.
+Actual resource usage has not been measured. Run `scripts/research/measure-pi.sh`
+on the Pi under a documented workload; preserve the resulting CSV with hardware,
+software, and campaign context. Compose limits are configuration ceilings, not
+measured consumption.
 
 ## Setup (one time)
 

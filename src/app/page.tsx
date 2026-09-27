@@ -85,7 +85,11 @@ export default function Home() {
     finally { setLoading(false) }
   }, [])
 
-  useEffect(() => { fetchHealth(); const i = setInterval(fetchHealth, 10000); return () => clearInterval(i) }, [fetchHealth])
+  useEffect(() => {
+    void Promise.resolve().then(fetchHealth)
+    const i = setInterval(fetchHealth, 10000)
+    return () => clearInterval(i)
+  }, [fetchHealth])
 
   const mode = displayMode
   const modeColor = mode === 'LIVE' ? 'text-emerald-400' : mode === 'DEMO' ? 'text-amber-400' : mode === 'UNKNOWN' ? 'text-rose-400' : 'text-slate-500'

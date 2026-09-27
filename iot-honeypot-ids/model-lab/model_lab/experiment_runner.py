@@ -75,7 +75,7 @@ class ExperimentSpec:
     seed: int = 42
     feature_version: str = "v2"
     test_ratio: float = 0.2
-    label_source: str = "synthetic"  # must be ground truth source
+    label_source: str = "external_dataset"  # must identify independent ground truth
     notes: str = ""
     # Optional: held-out scenario for unknown-family evaluation
     held_out_scenarios: List[str] = field(default_factory=list)
@@ -230,6 +230,26 @@ class ExperimentRunner:
             # 2. Validate label provenance
             # Rule-engine labels CANNOT be used as ground truth for training
             label_source = spec.label_source
+            if label_source.strip().lower() in {"synthetic", "demo", "mock", "fixture"}:
+                result.status = ExperimentStatus.INVALID
+                result.invalid_reasons.append(
+                    f"label_source={label_source} is development-only; research experiments require "
+                    "external dataset labels or independently recorded campaign ground truth"
+                )
+                result.end_time = _now_iso()
+                return result
+
+            if "label_source" in df.columns:
+                sources = {str(value).strip().lower() for value in df["label_source"].dropna().unique()}
+                prohibited = sources & {"synthetic", "demo", "mock", "fixture"}
+                if prohibited:
+                    result.status = ExperimentStatus.INVALID
+                    result.invalid_reasons.append(
+                        "dataset contains development-only label_source value(s): "
+                        + ", ".join(sorted(prohibited))
+                    )
+                    result.end_time = _now_iso()
+                    return result
             if label_source == "rule_engine":
                 result.status = ExperimentStatus.INVALID
                 result.invalid_reasons.append(
@@ -467,7 +487,7 @@ def run_multi_seed(
     algorithm: str = "random_forest",
     split_protocol: SplitProtocol = SplitProtocol.SESSION_LEVEL,
     feature_version: str = "v2",
-    label_source: str = "synthetic",
+    label_source: str = "external_dataset",
     seeds: List[int] = None,
 ) -> List[ExperimentResult]:
     """Run multiple seeds and return all results.

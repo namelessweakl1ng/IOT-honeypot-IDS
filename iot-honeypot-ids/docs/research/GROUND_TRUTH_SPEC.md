@@ -13,7 +13,7 @@ as ground truth. Ground truth comes from independent sources.
 | SCENARIO_GROUND_TRUTH | YES | Controlled attacker campaign manifest (highest reliability) |
 | ANALYST_LABELED | YES | Human analyst annotation |
 | EXTERNAL_DATASET | YES | Labels from IoT-23, N-BaIoT, or other external datasets |
-| SYNTHETIC | YES | Programmatically generated labels (for development only) |
+| SYNTHETIC | DEVELOPMENT FIXTURE ONLY | Generated labels may exercise software behavior; experiments using them are INVALID as research evidence and cannot produce a research-active model |
 | RULE_ENGINE | **NO** | Rule detector output — a PREDICTION, not ground truth |
 | UNLABELED | **NO** | No label available — remains UNKNOWN |
 

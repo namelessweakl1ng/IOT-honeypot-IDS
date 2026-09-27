@@ -140,7 +140,7 @@ describe('Frontend/backend mode coherence (Pass 5.4)', () => {
           ok: true, status: 200,
           json: async () => ({ mode: 'EMPTY' }),
           text: async () => '{"mode":"EMPTY"}',
-        } as Response)
+        } as unknown as Response)
       }
       // POST /mode/demo → 409
       if (method === 'POST' && urlStr.includes('/mode/demo')) {
@@ -722,7 +722,7 @@ describe('Frontend/backend mode coherence (Pass 5.4)', () => {
           ok: true, status: 200,
           json: async () => { throw new SyntaxError('malformed JSON') },
           text: async () => 'not json',
-        } as Response)
+        } as unknown as Response)
       }
       return Promise.reject(new TypeError('unexpected fetch'))
     }) as any
@@ -819,7 +819,7 @@ describe('Frontend/backend mode coherence (Pass 5.4)', () => {
       const method = init?.method || 'GET'
       const urlStr = typeof url === 'string' ? url : url.toString()
       if (method === 'POST' && urlStr.includes('/mode/reset')) {
-        return Promise.resolve({ ok: true, status: 200, json: async () => { throw new SyntaxError('bad json') }, text: async () => 'not json' } as Response)
+        return Promise.resolve({ ok: true, status: 200, json: async () => { throw new SyntaxError('bad json') }, text: async () => 'not json' } as unknown as Response)
       }
       return Promise.reject(new TypeError('unexpected'))
     }) as any

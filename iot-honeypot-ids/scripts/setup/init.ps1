@@ -29,16 +29,14 @@ python -m pip install --quiet -r dashboard/api/requirements.txt
 python -m pip install --quiet pytest
 Write-Host "  python deps installed"
 
-# 4. Create the synthetic dataset if missing
-New-Item -ItemType Directory -Force -Path model-lab/datasets/v1 | Out-Null
-if (-not (Test-Path model-lab/datasets/v1/sessions.csv)) {
-  python -m model_lab.datasets.bootstrap --out model-lab/datasets/v1/sessions.csv
-}
+# Setup does not generate or select research data. Use an identified external
+# dataset or independently recorded controlled-campaign labels.
 
 Write-Host ""
 Write-Host "=== Setup complete ==="
 Write-Host "Next:"
 Write-Host "  - Edit .env files (root, pi/, dashboard/, attacker/)"
+Write-Host "  - No dataset was generated; synthetic fixtures are development-only."
 Write-Host "  - PC1: cd dashboard; docker compose up -d"
 Write-Host "  - Pi:  ssh to Pi, cd pi/ && ./scripts/configure.sh && ./scripts/start.sh"
 Write-Host "  - PC2: cd attacker && ./run-scenario.sh --target <PI_IP> --scenario ssh-bruteforce"

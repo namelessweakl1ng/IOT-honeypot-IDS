@@ -1,10 +1,9 @@
 # TRAPSIG — IoT Honeypot + ELK + Machine-Learning IDS Research Platform
 
-A controlled cybersecurity laboratory for final-year research / demonstration.
-It captures real attacker telemetry from a Raspberry Pi-based honeypot fleet,
-normalizes it through an ELK stack, reconstructs attack sessions, extracts
-behavioral features, trains interpretable ML baselines, and detects both
-**known** and **previously unseen** anomalous behavior.
+A cybersecurity research platform with a Raspberry Pi honeypot design,
+network-flow benchmark tooling, and a hybrid detection implementation. Public
+dataset evaluation and physical lab validation are separate workstreams; no
+unrun measurements or unseen-attack performance are claimed by this baseline.
 
 > This is a defensive research platform. All attacker tooling targets **only**
 > the user's isolated lab honeypots. It refuses arbitrary internet targets.
@@ -129,10 +128,10 @@ cp .env.example .env                 # set HONEYPOT_IP / LAB_SUBNET
 
 The runner refuses any target outside the configured lab subnet.
 
-### 4.4 Full demo (PC1 orchestrator)
+### 4.4 Demonstration
 
 ```bash
-./scripts/demo/run-demo.sh --target 192.168.1.X
+See the repository-root `DEMO.md` for the single demonstration path. Setup does not generate a dataset. Legacy `run-demo.sh` is retired because it mixed generated synthetic training with physical demonstration.
 ```
 
 This walks through system check -> honeypot check -> ELK check -> attack ->
@@ -200,7 +199,7 @@ trained model artifacts, and SSH keys.
 
 - Rules handle obvious deterministic patterns.
 - Classifier handles known attack classes.
-- Anomaly detector flags previously-unseen behavior.
+- Anomaly detector assigns scores to deviations from its training distribution; this alone does not demonstrate unseen-attack generalization.
 
 See [`docs/ml/architecture.md`](docs/ml/architecture.md) and
 [`model-lab/README.md`](model-lab/README.md).
@@ -270,7 +269,7 @@ This is a working final-year project skeleton that contains:
 - Real attacker scenarios with safety checks
 - Real replay / demo orchestrator
 - Tests for parsers, normalizers, features, sessions, serialization, config
-- Offline development mode using clearly-labeled synthetic sample data
+- Offline development fixtures are explicit and clearly marked; they are not research evidence
 
 Anything still marked `TODO` or `INSUFFICIENT DATA` is the genuine state of
 that subsystem — no fake metrics are produced to hide gaps.

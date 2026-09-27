@@ -36,7 +36,7 @@ export function SessionsPage() {
     finally { setLoading(false) }
   }, [])
 
-  useEffect(() => { fetchSessions() }, [fetchSessions])
+  useEffect(() => { void Promise.resolve().then(fetchSessions) }, [fetchSessions])
 
   useEffect(() => {
     if (!selected) return

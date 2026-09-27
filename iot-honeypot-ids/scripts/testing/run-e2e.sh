@@ -26,6 +26,9 @@ RUN_ID="run-$(date -u +%Y%m%dT%H%M%SZ)-$(printf '%06x' $((RANDOM % 16777215)))"
 ES_URL="${ELASTICSEARCH_URL:-http://localhost:9200}"
 ES_PASS="${ELASTIC_PASSWORD:-}"
 API_URL="${API_URL:-http://localhost:8000}"
+API_KEY="${API_SECRET_KEY:-}"
+[ -n "$API_KEY" ] || { echo "ERROR: API_SECRET_KEY is required for LIVE detection" >&2; exit 2; }
+export ES_URL ES_PASS TEST_START_ISO API_URL
 
 echo "=== E2E: $SCENARIO against $TARGET (expect honeypot: auto-detected) ==="
 echo "campaign_id: $CAMPAIGN_ID"
@@ -183,6 +186,38 @@ except Exception as e:
     sys.exit(1)
 PY
 
+echo ">> requesting LIVE hybrid detection and verifying persisted lineage"
+export API_KEY
+python3 - <<'PY'
+import json, os, sys, urllib.error, urllib.request
+base = os.environ.get("API_URL", "http://localhost:8000")
+sid = os.environ["SESSION_ID"]
+headers = {"X-API-Key": os.environ["API_KEY"]}
+def request(url, method="GET"):
+    req = urllib.request.Request(url, headers=headers, method=method)
+    with urllib.request.urlopen(req, timeout=20) as response:
+        return json.loads(response.read())
+try:
+    result = request(f"{base}/detect/hybrid/{sid}", "POST")
+    detection_id = result.get("detection_id")
+    if not detection_id or not result.get("persisted"):
+        raise RuntimeError("hybrid detector did not persist a detection; scenario must trigger a signal")
+    if result.get("session_id") != sid:
+        raise RuntimeError("detection session_id does not match the generated session")
+    lineage = request(f"{base}/detections/{detection_id}/lineage")
+    chain = lineage.get("lineage_chain", [])
+    if lineage.get("session_id") != sid or lineage.get("detection_id") != detection_id:
+        raise RuntimeError("lineage endpoint returned mismatched detection/session identity")
+    if "session" not in chain or lineage.get("session_event_count", 0) < 1:
+        raise RuntimeError("lineage does not connect detection to a session containing events")
+    print(json.dumps({"detection_id": detection_id, "session_id": sid,
+                      "campaign_id": lineage.get("campaign_id"), "lineage_chain": chain,
+                      "session_event_count": lineage["session_event_count"]}))
+    print("OK: persisted detection lineage links the detection, session, and events")
+except (urllib.error.URLError, RuntimeError, KeyError, ValueError) as exc:
+    print(f"FAIL: detection lineage verification: {exc}", file=sys.stderr)
+    sys.exit(1)
+PY
 echo "=== E2E PASSED ==="
 echo "  campaign_id: $CAMPAIGN_ID"
 echo "  run_id:      $RUN_ID"

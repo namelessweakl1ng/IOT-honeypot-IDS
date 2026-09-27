@@ -12,7 +12,9 @@ Every container that runs in the platform, grouped by host.
 | `pi-collector` | built from `collector`               | 64 MB     | 0.2     | collector (optional) |
 | `pi-filebeat`  | `docker.elastic.co/beats/filebeat:8.13.4` | 96 MB  | 0.3     | default     |
 
-**Steady-state total:** ~280 MB. Leaves ~3.7 GB headroom on a 4 GB Pi 4.
+These are configured container resource limits, not measured use. Measured
+steady-state or attack-load RAM/CPU remain NOT RUN; capture them with
+`scripts/research/measure-pi.sh` during physical validation.
 
 ## Computer 2 (Fedora analysis host) — `dashboard/docker-compose.yml`
 

@@ -17,7 +17,9 @@ NOT raw ground truth. We record this as label_source = external_analyst_derived.
 """
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Dict, Tuple
+import yaml
 
 
 LABEL_MAPPING: Dict[str, Dict[str, str]] = {
@@ -303,3 +305,16 @@ def get_mapping_dict() -> Dict[str, Dict[str, str]]:
 def get_label_source() -> str:
     """IoT-23 labels are analyst-derived, not raw ground truth."""
     return "external_analyst_derived"
+
+
+def get_project_mapping(native_label: str) -> Tuple[str, str]:
+    """Apply the versioned, repository-tracked mapping contract."""
+    mapping_path = Path(__file__).resolve().parents[2] / "research" / "datasets" / "iot23" / "mappings.yaml"
+    if not mapping_path.is_file():
+        raise FileNotFoundError(f"IoT-23 mapping contract missing: {mapping_path}")
+    config = yaml.safe_load(mapping_path.read_text(encoding="utf-8")) or {}
+    entry = (config.get("labels") or {}).get(native_label)
+    if entry is None:
+        fallback = config.get("unlisted") or {}
+        return str(fallback.get("project_label", "UNMAPPED")), str(fallback.get("binary_label", "UNKNOWN"))
+    return str(entry["project_label"]), str(entry["binary_label"])

@@ -1,5 +1,17 @@
 # Feature Provenance and Leakage Audit
 
+## IoT-23 network-flow compatibility
+
+IoT-23 uses the separate explicit registry at
+`model-lab/model_lab/datasets/iot23_features.py`. Its initial common numeric
+view uses only measured flow duration, originator/responder bytes, and packet
+counts. It does not map Pi session event counts, authentication, commands, or
+URI diversity. Scenario IDs, scenario-bearing paths, UIDs, addresses, ports,
+protocol, timestamps, all labels, and the three label-derived Pi features are
+excluded or prohibited. See `research/datasets/iot23/schema.json` and
+`mappings.yaml`; the IoT-23 importer preserves source and mapped labels in
+separate fields. No feature value is synthesized to fill an unavailable field.
+
 ## Overview
 
 TRAPSIG uses two feature versions:

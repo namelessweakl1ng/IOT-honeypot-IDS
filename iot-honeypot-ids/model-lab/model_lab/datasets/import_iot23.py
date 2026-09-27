@@ -21,6 +21,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import sys
 import time
 from datetime import datetime, timezone
@@ -40,12 +41,12 @@ except (ImportError, ValueError):
 
 try:
     from model_lab.canonical_schema import DatasetManifest, RawManifest, ProvenanceRecord
-    from model_lab.label_mapping_iot23 import map_label, get_mapping_version, get_mapping_dict, get_label_source
+    from model_lab.label_mapping_iot23 import map_label, get_mapping_version, get_mapping_dict, get_label_source, get_project_mapping
 except ImportError:
     _ml_root = Path(__file__).resolve().parents[2]
     sys.path.insert(0, str(_ml_root))
     from model_lab.canonical_schema import DatasetManifest, RawManifest, ProvenanceRecord
-    from model_lab.label_mapping_iot23 import map_label, get_mapping_version, get_mapping_dict, get_label_source
+    from model_lab.label_mapping_iot23 import map_label, get_mapping_version, get_mapping_dict, get_label_source, get_project_mapping
 
 
 # Default Zeek conn.log fields — used as fallback if #fields not in file
@@ -173,28 +174,39 @@ def stream_flows(
                 yield (None, f"column_count_mismatch")
                 continue
 
+            raw_label = parsed.get("label")
+            if raw_label is None or raw_label.strip() in ("", "-"):
+                yield (None, "missing_label")
+                continue
+
             try:
                 ts = parse_zeek_ts(parsed.get("ts", ""))
                 src_ip = parsed.get("id.orig_h", "")
                 dst_ip = parsed.get("id.resp_h", "")
-                src_port = int(float(parsed.get("id.orig_p", 0) or 0))
-                dst_port = int(float(parsed.get("id.resp_p", 0) or 0))
+                src_ip = None if src_ip == "-" else src_ip
+                dst_ip = None if dst_ip == "-" else dst_ip
+                src_port = int(float(parsed["id.orig_p"])) if parsed.get("id.orig_p", "-") != "-" else None
+                dst_port = int(float(parsed["id.resp_p"])) if parsed.get("id.resp_p", "-") != "-" else None
                 proto = parsed.get("proto", "")
+                proto = None if proto == "-" else proto
 
                 # Handle Zeek missing values ("-")
                 duration_str = parsed.get("duration", "-")
-                duration = float(duration_str) if duration_str != "-" else 0.0
+                duration = float(duration_str) if duration_str != "-" else None
                 orig_bytes_str = parsed.get("orig_bytes", "-")
-                orig_bytes = int(float(orig_bytes_str)) if orig_bytes_str != "-" else 0
+                orig_bytes = int(float(orig_bytes_str)) if orig_bytes_str != "-" else None
                 resp_bytes_str = parsed.get("resp_bytes", "-")
-                resp_bytes = int(float(resp_bytes_str)) if resp_bytes_str != "-" else 0
+                resp_bytes = int(float(resp_bytes_str)) if resp_bytes_str != "-" else None
                 orig_pkts_str = parsed.get("orig_pkts", "-")
-                orig_pkts = int(float(orig_pkts_str)) if orig_pkts_str != "-" else 0
+                orig_pkts = int(float(orig_pkts_str)) if orig_pkts_str != "-" else None
                 resp_pkts_str = parsed.get("resp_pkts", "-")
-                resp_pkts = int(float(resp_pkts_str)) if resp_pkts_str != "-" else 0
+                resp_pkts = int(float(resp_pkts_str)) if resp_pkts_str != "-" else None
+                for field_name, value in (("duration", duration), ("orig_bytes", orig_bytes), ("resp_bytes", resp_bytes), ("orig_pkts", orig_pkts), ("resp_pkts", resp_pkts)):
+                    if value is not None and (not math.isfinite(value) or value < 0):
+                        raise ValueError(f"invalid {field_name}")
 
                 # Labels
-                native_label = parsed.get("label", "Benign").strip()
+                native_label = raw_label.strip()
                 native_detail = parsed.get("detailed_label", parsed.get("detailed-label", "-")).strip()
                 if native_detail == "-":
                     native_detail = ""
@@ -202,6 +214,7 @@ def stream_flows(
                 # Use detailed_label for mapping if available
                 label_to_map = native_detail if native_detail else native_label
                 canonical_family, binary, canonical_label, conf, reason = map_label(label_to_map)
+                project_label, project_binary = get_project_mapping(label_to_map)
 
                 # Preserve Zeek uid for provenance
                 zeek_uid = parsed.get("uid", "")
@@ -226,19 +239,23 @@ def stream_flows(
                     "packets_in": orig_pkts,
                     "packets_out": resp_pkts,
                     "native_label": label_to_map if label_to_map else native_label,
+                    # Keep dataset truth and project taxonomy as independent fields.
+                    "original_label": native_label,
+                    "project_label": project_label,
+                    "original_detailed_label": native_detail,
                     "native_label_detail": native_detail,
-                    "canonical_label": canonical_label,
+                    "canonical_label": project_label,
                     "canonical_attack_family": canonical_family,
-                    "binary_label": binary,
+                    "binary_label": project_binary.lower(),
                     "label_source": get_label_source(),
                     "label_mapping_confidence": conf,
                     "label_mapping_reason": reason,
                     "label_mapping_version": get_mapping_version(),
-                    "feature_version": "v2",
+                    "feature_version": "iot23-flow-v1",
                 }
                 yield (flow, None)
 
-            except (ValueError, TypeError) as e:
+            except (ValueError, TypeError, OverflowError) as e:
                 yield (None, f"parse_error: {str(e)[:80]}")
 
 
@@ -343,7 +360,7 @@ def import_iot23(input_dir: Path, output_dir: Path, dataset_version: str = "v1",
                 canonical_families_seen[cf] = canonical_families_seen.get(cf, 0) + 1
                 bl = flow["binary_label"]
                 label_distribution[bl] = label_distribution.get(bl, 0) + 1
-                if flow["label_mapping_confidence"] == 0.0:
+                if flow["label_mapping_confidence"] == 0.0 or flow["project_label"] == "UNMAPPED":
                     unmapped_labels.append(nl)
 
                 # Write batch when full
@@ -412,13 +429,15 @@ def import_iot23(input_dir: Path, output_dir: Path, dataset_version: str = "v1",
         dataset_version=dataset_version,
         source="Stratosphere Research Laboratory",
         source_url="https://www.stratosphereips.org/datasets-iot23",
-        license="Creative Commons Attribution 4.0",
+        license="See official dataset landing page and Zenodo record; not asserted by this adapter",
         source_format="zeek_conn_labeled",
         download_timestamp="",
         source_checksum=source_checksum,
         importer_version="2.0",
         normalization_version="2.0",
-        feature_version="v2",
+        feature_version="iot23-flow-v1",
+        label_mapping_version="trapsig-iot23-v1",
+        normalized_file="normalized/flows.jsonl",
         record_count=total_rows_imported,
         scenario_count=len(scenarios_seen),
         label_count=len(canonical_families_seen),
@@ -495,6 +514,10 @@ def import_iot23(input_dir: Path, output_dir: Path, dataset_version: str = "v1",
         "records_imported": total_rows_imported,
         "records_rejected": total_rows_rejected,
         "scenarios": len(scenarios_seen),
+        "source_checksum": source_checksum,
+        "rows_seen": total_rows_seen,
+        "label_distribution": label_distribution,
+        "canonical_families": canonical_families_seen,
         "output_dir": str(output_dir),
         "unmapped_labels": list(set(unmapped_labels)),
         "streaming": True,

@@ -16,7 +16,9 @@ class Settings(BaseSettings):
     # ---- ES -----------------------------------------------------------
     elasticsearch_url: str = "http://elasticsearch:9200"
     elastic_user: str = "elastic"
-    elastic_password: str = "changeme-elastic"
+    # Empty is deliberately nonfunctional until an operator configures a local
+    # lab secret; never use a reusable fallback credential.
+    elastic_password: str = ""
 
     # ---- API ---------------------------------------------------------
     api_secret_key: str = ""

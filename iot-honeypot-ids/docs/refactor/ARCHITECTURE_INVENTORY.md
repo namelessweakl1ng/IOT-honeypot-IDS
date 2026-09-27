@@ -64,7 +64,7 @@ This inventory is based on source, configuration, documentation, and test refere
 
 ### P-Q: sample data and configuration
 
-- Demo/sample paths include `model-lab/datasets`, `data/sample-telemetry`, `scripts/development/import-sample-data.sh`, and root adapter demo loading.
+- Demo/sample paths include `model-lab/datasets`, `examples/demo/sample-telemetry`, `scripts/development/import-sample-data.sh`, and root adapter demo loading.
 - The root adapter and FastAPI runtime both express `EMPTY`, `DEMO`, and `LIVE` semantics. The backend documents itself as authoritative; this must be retained during consolidation.
 - Configuration exists at root/inner, dashboard, Pi, and attacker levels. Runtime values such as `FASTAPI_URL`, `VITE_API_URL`, `PI_IP`, and `CENTRAL_SERVER_IP` are configuration-driven in the inspected paths, though documentation and test fixtures contain localhost/private examples.
 

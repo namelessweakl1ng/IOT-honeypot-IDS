@@ -86,6 +86,12 @@ model-lab/models/*/model.h5
 model-lab/datasets/raw/
 model-lab/datasets/*.parquet
 model-lab/datasets/*.csv.gz
+research/datasets/iot23/raw/
+research/datasets/iot23/archive/
+research/datasets/iot23/prepared/
+research/datasets/iot23/manifest.json
+research/datasets/iot23/summary.md
+research/experiments/iot23/
 
 # ------------------------------------------------------------------
 # Logs

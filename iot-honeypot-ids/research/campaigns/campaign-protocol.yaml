@@ -1,0 +1,16 @@
+version: 1
+ground_truth_source: SCENARIO_GROUND_TRUTH
+record_fields:
+  required: [campaign_id, scenario, target, source, start_time, end_time, intended_behavior, ground_truth_label, ground_truth_source]
+  detector_output_fields_are_separate: [detector, detector_version, prediction, confidence, anomaly_score, decision_source, decision_reason]
+campaigns:
+  - {scenario: BENIGN, attacker_scenario: null, status: PREPARED_NOT_RUN, intended_behavior: "Documented benign requests only"}
+  - {scenario: RECONNAISSANCE, attacker_scenario: camera-recon, status: PREPARED_NOT_RUN, intended_behavior: "Bounded camera endpoint discovery"}
+  - {scenario: BRUTE_FORCE, attacker_scenario: ssh-bruteforce, status: PREPARED_NOT_RUN, intended_behavior: "Bounded synthetic credential attempts against Cowrie"}
+  - {scenario: DEFAULT_CREDENTIALS, attacker_scenario: camera-default-creds, status: PREPARED_NOT_RUN, intended_behavior: "Default credential checks against camera honeypot"}
+  - {scenario: PATH_TRAVERSAL, attacker_scenario: http-enumeration, status: PREPARED_NOT_RUN, intended_behavior: "Bounded traversal probes; scenario may also include injection probes"}
+  - {scenario: COMMAND_INJECTION, attacker_scenario: http-enumeration, status: PREPARED_NOT_RUN, intended_behavior: "Bounded injection probes; retain distinct request evidence where possible"}
+  - {scenario: MULTI_STAGE, attacker_scenario: multi-stage, status: PREPARED_NOT_RUN, intended_behavior: "Scenario steps supported by the selected honeypot configuration"}
+notes:
+  - "Generated campaign_id and actual timestamps are recorded by each run; this file is a protocol, not evidence of execution."
+  - "No scenario runs against systems outside the configured isolated lab subnet."

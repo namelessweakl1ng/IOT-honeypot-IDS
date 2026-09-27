@@ -1,0 +1,13 @@
+{
+  "dataset_name": "IoT-23",
+  "dataset_version": "1.0.0",
+  "source_format": "Zeek conn.log.labeled TSV",
+  "record_granularity": "network flow",
+  "required_provenance": ["source_scenario", "source_file", "source_row_id", "zeek_uid"],
+  "labels": ["original_label", "original_detailed_label", "project_label", "binary_label", "label_source"],
+  "flow_fields": ["timestamp", "source_ip", "destination_ip", "source_port", "destination_port", "protocol", "duration", "bytes_in", "bytes_out", "packets_in", "packets_out"],
+  "feature_version": "iot23-flow-v1",
+  "labels_are_features": false,
+  "scenario_id_is_feature": false,
+  "source_paths_are_features": false
+}

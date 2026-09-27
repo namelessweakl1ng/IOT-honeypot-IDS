@@ -4,6 +4,7 @@ We import the same Python snippet that the bash runner uses to validate
 --target, and verify it refuses obvious non-lab IPs.
 """
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -76,7 +77,11 @@ def test_runner_refuses_no_target():
     # Should refuse without --target (either by demanding --target, or by
     # requiring a .env file first — either is an acceptable "refuse to run"
     # behaviour that proves the runner does not blindly fire at the world).
-    result = subprocess.run([str(runner)], capture_output=True, text=True)
+    if os.name == "nt":
+        bash = shutil.which("bash") or r"C:\Program Files\Git\bin\bash.exe"
+        result = subprocess.run([bash, "attacker/run-scenario.sh"], cwd=runner.parents[1], capture_output=True, text=True)
+    else:
+        result = subprocess.run([str(runner)], cwd=ROOT, capture_output=True, text=True)
     assert result.returncode != 0
     assert ("target" in result.stderr.lower()
             or ".env" in result.stderr.lower()

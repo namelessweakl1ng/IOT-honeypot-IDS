@@ -13,6 +13,8 @@ Covers:
 from __future__ import annotations
 
 import sys
+import os
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -571,7 +573,11 @@ class TestESBootstrapExists:
     def test_bootstrap_script_exists(self):
         p = ROOT / "scripts" / "deployment" / "bootstrap-elasticsearch.sh"
         assert p.exists(), "bootstrap-elasticsearch.sh must exist"
-        assert p.stat().st_mode & 0o111, "bootstrap-elasticsearch.sh must be executable"
+        if os.name == "nt":
+            entry = subprocess.check_output(["git", "-C", str(ROOT.parent), "ls-files", "--stage", "--", "iot-honeypot-ids/scripts/deployment/bootstrap-elasticsearch.sh"], text=True)
+            assert entry.startswith("100755 "), "bootstrap-elasticsearch.sh must be executable in Git"
+        else:
+            assert p.stat().st_mode & 0o111, "bootstrap-elasticsearch.sh must be executable"
 
     def test_ilm_policy_file_exists(self):
         p = ROOT / "dashboard" / "elasticsearch" / "ilm" / "honeypot-events-policy.json"
@@ -944,7 +950,7 @@ class TestLogstashProductionParity:
         this — production must match."""
         beats_conf = (ROOT / "dashboard" / "logstash" / "pipelines" / "beats.conf").read_text()
         fingerprint_pos = beats_conf.find('fingerprint {')
-        validation_pos = beats_conf.find('Validation — required fields')
+        validation_pos = beats_conf.find("# Validation")
         assert fingerprint_pos > 0, "fingerprint block not found"
         assert validation_pos > 0, "Validation block not found"
         assert fingerprint_pos < validation_pos, (

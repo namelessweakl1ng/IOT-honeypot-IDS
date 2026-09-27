@@ -22,7 +22,7 @@ except ImportError:
     from common import datasets_dir, experiments_dir, models_dir, setup_paths  # type: ignore
     setup_paths()
 
-from features import FEATURE_NAMES  # type: ignore  # noqa: E402
+from features import FEATURE_NAMES_V2  # type: ignore  # noqa: E402
 from models import train as train_model  # type: ignore  # noqa: E402
 
 
@@ -34,11 +34,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--dataset-version", default="v1")
     parser.add_argument("--dataset-path", default=None,
                         help="Override dataset path (default: datasets/<version>/sessions.csv)")
-    parser.add_argument("--feature-version", default="v1")
+    parser.add_argument("--feature-version", default="v2", choices=["v2"])
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--model-id", default=None,
                         help="Override model id (default: model-v<timestamp>)")
     parser.add_argument("--notes", default="")
+    parser.add_argument("--allow-development-data", action="store_true",
+                        help="explicitly allow synthetic/demo fixtures for local development only")
     parser.add_argument("--test-ratio", type=float, default=0.2)
     args = parser.parse_args(argv)
 
@@ -46,16 +48,21 @@ def main(argv: list[str] | None = None) -> int:
     ds_path = Path(args.dataset_path) if args.dataset_path else datasets_dir() / args.dataset_version / "sessions.csv"
     if not ds_path.exists():
         print(f"ERROR: dataset not found: {ds_path}", file=sys.stderr)
-        print("  Run `python -m model_lab.datasets.bootstrap --out <path>` first.", file=sys.stderr)
+        print("  Prepare an identified dataset first. Synthetic bootstrap is a development-only fixture and is never run automatically.", file=sys.stderr)
         return 2
 
     df = pd.read_csv(ds_path)
+    if "label_source" in df.columns:
+        sources = {str(value).strip().lower() for value in df["label_source"].dropna().unique()}
+        if sources & {"synthetic", "demo", "mock", "fixture"} and not args.allow_development_data:
+            print("ERROR: synthetic/demo/fixture labels cannot enter model training without explicit --allow-development-data; such models are not research evidence.", file=sys.stderr)
+            return 5
     if "label" not in df.columns:
         print("ERROR: dataset missing 'label' column", file=sys.stderr)
         return 3
 
     # Build feature dicts + labels
-    X = df[FEATURE_NAMES].to_dict(orient="records")
+    X = df[FEATURE_NAMES_V2].to_dict(orient="records")
     y = df["label"].astype(str).tolist()
 
     # Model id
@@ -72,7 +79,7 @@ def main(argv: list[str] | None = None) -> int:
         model_id=model_id,
         dataset_version=args.dataset_version,
         feature_version=args.feature_version,
-        notes=args.notes,
+        notes=(args.notes + " [DEVELOPMENT-ONLY SYNTHETIC DATA; NOT RESEARCH VALIDATED]" if args.allow_development_data else args.notes),
     )
 
     if isinstance(meta, dict) and meta.get("status") == "INSUFFICIENT DATA":

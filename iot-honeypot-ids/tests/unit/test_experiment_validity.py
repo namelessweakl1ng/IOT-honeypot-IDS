@@ -89,12 +89,11 @@ class TestTrainTestIsolation:
                 feature_version="v2",
                 label_source="synthetic",
             )
-            result = ExperimentRunner.run(spec)
-
-            assert result.status == ExperimentStatus.COMPLETED
-            # CRITICAL: train and test session IDs must NOT overlap
-            train_set = set(result.train_ids)
-            test_set = set(result.test_ids)
+            train_idx, test_idx = ExperimentRunner._split(df, spec)
+            # Synthetic fixtures exercise split mechanics only; the research
+            # runner separately rejects their provenance.
+            train_set = set(df.iloc[train_idx]["session_id"])
+            test_set = set(df.iloc[test_idx]["session_id"])
             assert train_set.isdisjoint(test_set), \
                 "train/test session overlap detected — model saw test data during training"
 
@@ -111,9 +110,9 @@ class TestTrainTestIsolation:
                 seed=42,
                 feature_version="v2",
             )
-            result = ExperimentRunner.run(spec)
-            assert result.test_count > 0, "test set must not be empty"
-            assert result.train_count > 0, "train set must not be empty"
+            train_idx, test_idx = ExperimentRunner._split(df, spec)
+            assert test_idx, "test set must not be empty"
+            assert train_idx, "train set must not be empty"
 
     def test_train_count_plus_test_count_equals_total(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -127,8 +126,8 @@ class TestTrainTestIsolation:
                 seed=42,
                 feature_version="v2",
             )
-            result = ExperimentRunner.run(spec)
-            assert result.train_count + result.test_count <= len(df)
+            train_idx, test_idx = ExperimentRunner._split(df, spec)
+            assert len(train_idx) + len(test_idx) <= len(df)
 
     def test_experiment_records_git_commit(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -178,23 +177,14 @@ class TestExperimentValidity:
 
     def test_leaky_features_rejected(self):
         """Leaky features must be rejected unless explicitly allowed."""
-        with tempfile.TemporaryDirectory() as tmp:
-            df = _make_synthetic_dataset(n_per_class=10)
-            ds_path = Path(tmp) / "sessions.csv"
-            df.to_csv(ds_path, index=False)
+        from features import FEATURE_NAMES  # type: ignore
+        from schemas.leakage_audit import validate_features_for_training
 
-            spec = ExperimentSpec(
-                dataset_path=str(ds_path),
-                feature_version="v1",  # v1 includes leaky features
-            )
-            result = ExperimentRunner.run(spec)
-            # v1 features include the 3 known leaky ones
-            # The experiment should either be INVALID or have limitations
-            if result.status == ExperimentStatus.INVALID:
-                assert any("leaky" in r.lower() for r in result.invalid_reasons)
+        with pytest.raises(ValueError, match="LEAKY"):
+            validate_features_for_training(FEATURE_NAMES, allow_leaky=False)
 
-    def test_synthetic_data_limitation_recorded(self):
-        """Synthetic datasets must be flagged as NOT real-world evidence."""
+    def test_synthetic_data_rejected_for_research(self):
+        """Synthetic fixtures cannot enter the research experiment path."""
         with tempfile.TemporaryDirectory() as tmp:
             df = _make_synthetic_dataset(n_per_class=10)
             ds_path = Path(tmp) / "sessions.csv"
@@ -206,7 +196,8 @@ class TestExperimentValidity:
                 feature_version="v2",
             )
             result = ExperimentRunner.run(spec)
-            assert any("SYNTHETIC" in l for l in result.limitations)
+            assert result.status == ExperimentStatus.INVALID
+            assert any("development-only" in reason for reason in result.invalid_reasons)
 
     def test_empty_test_set_invalidated(self):
         """An empty test set must be marked INVALID."""
@@ -246,9 +237,8 @@ class TestMultiSeedEvaluation:
 
             agg = aggregate_results(results)
             assert agg["total_runs"] == 2
-            assert "f1_macro" in agg.get("metrics", {})
-            assert "mean" in agg["metrics"]["f1_macro"]
-            assert "std" in agg["metrics"]["f1_macro"]
+            assert all(r.status == ExperimentStatus.INVALID for r in results)
+            assert agg["valid_runs"] == 0
 
     def test_default_seeds_are_pre_registered(self):
         """Default seeds must be [42, 123, 456, 789, 1337] — defined
@@ -268,6 +258,7 @@ class TestMultiSeedEvaluation:
             )
             assert len(results) == 1
             assert results[0].spec["seed"] == 42
+            assert results[0].status == ExperimentStatus.INVALID
 
 
 class TestLegacyExperimentQuarantine:

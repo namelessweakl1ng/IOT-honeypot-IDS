@@ -15,7 +15,7 @@ Status: inventory-stage map. Entries are proposed migrations; no migration or de
 | `model-lab/model_lab` training/evaluation | Remains research-only boundary | Research scripts, experiment docs/tests | RETAIN | Verify no request-time training dependency |
 | `model-lab/models/*` | Classify into active/validated/experimental/retired/invalid metadata categories | Registry, experiments, docs, tests | PROPOSED | Read metadata and activation gate before moves |
 | `attacker/_deprecated` | Archive or remove only after proof | Search required; no active import established | PROPOSED | Import and script reference audit |
-| `data/sample-telemetry` and import script | Explicit DEMO/REPLAY fixtures | Demo/development tooling | RETAIN WITH LABELS | Confirm synthetic markers cannot enter LIVE |
+| `examples/demo/sample-telemetry` and import script | Explicit DEMO/REPLAY fixtures | Demo/development tooling | RETAIN WITH LABELS | Confirm synthetic markers cannot enter LIVE |
 | `tool-results`, `upload`, `download`, `.next`, local dependency/build output | Generated/local artifact policy | Workspace tooling | CLASSIFY | Git tracking and useful research asset audit |
 
 ## Preservation constraints

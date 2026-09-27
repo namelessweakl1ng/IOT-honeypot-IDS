@@ -51,10 +51,10 @@ export function DetectionsPage() {
     finally { setLoading(false) }
   }, [])
 
-  useEffect(() => { fetchAll() }, [fetchAll])
+  useEffect(() => { void Promise.resolve().then(fetchAll) }, [fetchAll])
 
   useEffect(() => {
-    if (!selected) { setLineage(null); return }
+    if (!selected) return
     let cancelled = false
     fetch(`/api/ids/detections/${encodeURIComponent(selected)}`)
       .then(r => r.json())

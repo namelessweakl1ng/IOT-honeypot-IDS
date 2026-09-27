@@ -1,0 +1,43 @@
+dataset: IoT-23
+mapping_version: trapsig-iot23-v1
+label_source: EXTERNAL_DATASET
+# Mappings preserve original_label. The project taxonomy is intentionally
+# coarse where the native label denotes behavior rather than a Pi attack class.
+labels:
+  Benign: { project_label: BENIGN, binary_label: BENIGN }
+  PartOfAHorizontalPortScan: { project_label: RECONNAISSANCE, binary_label: MALICIOUS }
+  PartOfAHorizontalPortScan-Attack: { project_label: RECONNAISSANCE, binary_label: MALICIOUS }
+  DDoS: { project_label: DOS, binary_label: MALICIOUS }
+  Attack: { project_label: OTHER_ATTACK, binary_label: MALICIOUS }
+  Malicious: { project_label: OTHER_ATTACK, binary_label: MALICIOUS }
+  C&C: { project_label: COMMAND_AND_CONTROL, binary_label: MALICIOUS }
+  C&C-Attack: { project_label: COMMAND_AND_CONTROL, binary_label: MALICIOUS }
+  C&C-Mirai: { project_label: COMMAND_AND_CONTROL, binary_label: MALICIOUS }
+  C&C-Torii: { project_label: COMMAND_AND_CONTROL, binary_label: MALICIOUS }
+  C&C-HeartBeat: { project_label: COMMAND_AND_CONTROL, binary_label: MALICIOUS }
+  C&C-HeartBeat-Attack: { project_label: COMMAND_AND_CONTROL, binary_label: MALICIOUS }
+  C&C-HeartBeat-FileDownload: { project_label: COMMAND_AND_CONTROL, binary_label: MALICIOUS }
+  C&C-TCP: { project_label: COMMAND_AND_CONTROL, binary_label: MALICIOUS }
+  C&C-FileDownload: { project_label: COMMAND_AND_CONTROL, binary_label: MALICIOUS }
+  Mirai-CC: { project_label: COMMAND_AND_CONTROL, binary_label: MALICIOUS }
+  Mirai: { project_label: OTHER_ATTACK, binary_label: MALICIOUS }
+  Mirai-Scan: { project_label: RECONNAISSANCE, binary_label: MALICIOUS }
+  Mirai-Ack: { project_label: DOS, binary_label: MALICIOUS }
+  Mirai-Syn: { project_label: DOS, binary_label: MALICIOUS }
+  Mirai-UDP: { project_label: DOS, binary_label: MALICIOUS }
+  Mirai-UDPPlain: { project_label: DOS, binary_label: MALICIOUS }
+  C&C-Mirai-Ack: { project_label: COMMAND_AND_CONTROL, binary_label: MALICIOUS }
+  C&C-Mirai-Syn: { project_label: COMMAND_AND_CONTROL, binary_label: MALICIOUS }
+  C&C-Mirai-UDP: { project_label: COMMAND_AND_CONTROL, binary_label: MALICIOUS }
+  C&C-Mirai-UDPPlain: { project_label: COMMAND_AND_CONTROL, binary_label: MALICIOUS }
+  Okiru: { project_label: OTHER_ATTACK, binary_label: MALICIOUS }
+  Okiru-Attack: { project_label: OTHER_ATTACK, binary_label: MALICIOUS }
+  Torii: { project_label: OTHER_ATTACK, binary_label: MALICIOUS }
+  UnknownBotnet: { project_label: OTHER_ATTACK, binary_label: MALICIOUS }
+  FileDownload: { project_label: OTHER_ATTACK, binary_label: MALICIOUS }
+  HeartBeat: { project_label: COMMAND_AND_CONTROL, binary_label: MALICIOUS }
+  Zebro: { project_label: OTHER_ATTACK, binary_label: MALICIOUS }
+  Antares-1: { project_label: UNMAPPED, binary_label: MALICIOUS, note: "Scenario-associated name without sufficiently specific behavior mapping." }
+  LuminusHTTPProxy: { project_label: OTHER_ATTACK, binary_label: MALICIOUS }
+# Unlisted native labels must remain UNMAPPED; never infer from scenario name.
+unlisted: { project_label: UNMAPPED, binary_label: UNKNOWN }
