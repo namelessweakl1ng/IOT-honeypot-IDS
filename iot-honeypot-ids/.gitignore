@@ -92,6 +92,8 @@ research/datasets/iot23/prepared/
 research/datasets/iot23/manifest.json
 research/datasets/iot23/summary.md
 research/experiments/iot23/
+research/measurements/resources-*.csv
+research/measurements/latency-[0-9]*.json
 
 # ------------------------------------------------------------------
 # Logs

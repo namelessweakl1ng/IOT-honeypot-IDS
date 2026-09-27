@@ -18,6 +18,8 @@ FastAPI is the domain API and Elasticsearch is the telemetry source of truth. Th
 
 `EMPTY`, `DEMO`, and `LIVE` are explicit backend-owned modes. Synthetic data is labeled and never silently used as live telemetry. Rule predictions remain separate from ground truth; `NO_RULE` is not benign; unlabeled data remains unknown. Leakage-safe feature version `v2` excludes the audited label-derived features.
 
+Research evidence has separate categories: `PUBLIC_DATASET` (IoT-23 network flows), `CONTROLLED_LAB` (scenario ground truth and physical telemetry), `LIVE_TELEMETRY` (current backend observations), and `SYNTHETIC` (explicit demo/test fixtures). These categories are never silently merged. The public-data experiments are offline; they do not validate Pi deployment.
+
 ## Start locally
 
 ```bash
@@ -34,5 +36,9 @@ The single operator demonstration path is [DEMO.md](DEMO.md). The FastAPI and EL
 - [Verification report](iot-honeypot-ids/docs/research/FINAL_VERIFICATION_REPORT.md)
 - [IoT-23 dataset card](iot-honeypot-ids/docs/research/datasets/IOT23_DATASET_CARD.md)
 - [Final research freeze report](iot-honeypot-ids/docs/research/FINAL_FREEZE_REPORT.md)
+- [Canonical architecture](iot-honeypot-ids/docs/architecture/CANONICAL_ARCHITECTURE.md)
+- [Implementation audit](iot-honeypot-ids/docs/research/FINAL_IMPLEMENTATION_AUDIT.md)
+- [Research reproducibility](iot-honeypot-ids/docs/research/REPRODUCIBILITY.md)
+- [IoT-23 feature mapping](iot-honeypot-ids/docs/research/datasets/IOT23_FEATURE_MAPPING.md)
 
 Physical-lab validation is not implied by local builds or unit tests. The current baseline must explicitly report physical status and measured results.

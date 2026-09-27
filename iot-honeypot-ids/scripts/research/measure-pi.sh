@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Capture real host/container readings; no estimates or synthesized values.
 set -euo pipefail
-OUT="${1:-}"
-[[ -n "$OUT" ]] || { echo "Usage: $0 <output.csv> [samples] [interval-seconds]" >&2; exit 2; }
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+OUT="${1:-$ROOT/research/measurements/resources-$(date -u +%Y%m%dT%H%M%SZ)-$(hostname).csv}"
 SAMPLES="${2:-60}"
 INTERVAL="${3:-1}"
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then echo "Usage: $0 [output.csv] [samples] [interval-seconds]"; exit 0; fi
 [[ "$SAMPLES" =~ ^[1-9][0-9]*$ && "$INTERVAL" =~ ^[1-9][0-9]*$ ]] || { echo "samples and interval must be positive integers" >&2; exit 2; }
 mkdir -p "$(dirname "$OUT")"
 printf 'timestamp_utc,host,cpu_busy_pct,ram_used_bytes,ram_total_bytes,temperature_c,load1,disk_root_used_bytes,disk_root_total_bytes,rx_bytes,tx_bytes,container_stats\n' > "$OUT"

@@ -82,10 +82,11 @@ def main() -> int:
         total = stats.pop("sum")
         stats["mean"] = total / count if count else None
     manifest = {
-        "dataset_name": "IoT-23", "dataset_version": version,
+        "dataset_name": "IoT-23", "dataset_version": version, "data_category": "PUBLIC_DATASET",
         "source": "https://www.stratosphereips.org/datasets-iot23",
         "citation": "Sebastian Garcia, Agustin Parmisano, & Maria Jose Erquiaga. (2020). IoT-23: A labeled dataset with malicious and benign IoT network traffic (Version 1.0.0) [Data set]. Zenodo. https://doi.org/10.5281/zenodo.4743746",
         "source_file_count": len(files), "source_checksum": imported.get("source_checksum"),
+        "source_import_rejected_rows": imported.get("records_rejected", 0),
         "prepared_jsonl_sha256": flow_hash.hexdigest(), "record_count": sum(labels.values()),
         "scenario_count": len(scenarios), "scenario_distribution": dict(sorted(scenarios.items())),
         "class_distribution": dict(sorted(binary_labels.items())),

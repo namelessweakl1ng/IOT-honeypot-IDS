@@ -1,24 +1,23 @@
-# Claims Audit
+# Claims audit
 
-| Claim | Evidence | Verified? | Permitted wording |
-|---|---|---|---|
-| TRAPSIG has a Pi -> Filebeat/Logstash -> Elasticsearch -> FastAPI -> dashboard architecture | Compose, Pi Filebeat, Logstash pipeline, FastAPI, root UI source | PARTIAL | Implemented software architecture; physical flow not validated |
-| The root Next.js console is the authoritative UI | Feature coverage, root tests, route consumers | PASS for repository decision | Authoritative UI candidate/frozen UI |
-| FastAPI is the domain API authority | `dashboard/api/app/main.py` routes and integrations | PASS for architecture decision | Canonical API implementation |
-| The dashboard uses real backend data in LIVE mode | Root adapter forwards to FastAPI; live mode gates exist | SOFTWARE VERIFIED | Live mode is backend-backed when services are available |
-| Demo data is synthetic and explicit | Mode adapter and sample import script | SOFTWARE VERIFIED | Explicit synthetic DEMO mode |
-| Rules are independent ground truth | Label provenance module and tests | PASS | Rule output is detector output, not ground truth |
-| v2 excludes known leaky features | Runtime feature registry and leakage audit | PASS | v2 is the leakage-safe feature vector for the known audited fields |
-| Models require activation status | Model registry and tests | PASS | Activation is explicit and status-gated |
-| E2E verifies event/session/detection lineage | E2E script and contract tests | SOFTWARE CONTRACT VERIFIED | Software E2E is lineage-aware when services are available |
-| The physical lab delivered telemetry | No physical run in this pass | NOT VERIFIED | Do not claim |
-| Detection latency is low/real-time | No physical latency measurement | NOT VERIFIED | Use Ã¢â‚¬Å“runtime detection pipelineÃ¢â‚¬Â only |
-| The system is production ready | No production validation/security deployment evidence | NOT VERIFIED | Do not claim |
-| IoT-23 is a complementary public benchmark | Official dataset card and flow adapter; actual content not present | DOCUMENTED, NOT EXECUTED | Describe intended flow benchmark; do not claim measured performance |
-| IoT-23 adapter parses real IoT-23 content | Local deterministic fixture only; public download unavailable here | NOT VERIFIED AGAINST REAL ARCHIVE | State DATASET DOWNLOAD NOT RUN |
-| IoT-23 model performance | No real dataset experiment artifacts | NOT VERIFIED | Do not report metrics |
-| Scenario-level IoT-23 generalization | Deterministic split helper; no real execution | NOT VERIFIED | Describe protocol only |
-| Pi/Filebeat/ELK controlled detection | No physical execution | NOT VERIFIED | State PHYSICAL LAB NOT RUN |
-| Detection latency or Raspberry Pi resource use | No physical measurements | NOT VERIFIED | State NOT RUN; do not claim real-time or resource figures |
-| Synthetic results are research evidence | Research runner rejects synthetic/demo/fixture label sources | REJECTED BY SOFTWARE CONTRACT | Synthetic is fixture/demo only |
-| Current software checks pass | Python unit suite: 874 passed, 2 warnings; integration suite: 5 skipped; frontend lint/build and compose validation passed | PASS WITH SERVICE-DEPENDENT CHECKS SKIPPED | Report exact results; do not imply runtime or physical validation |
+| Claim | Evidence source | Dataset | Experiment | Verified now? | Verification required | Allowed wording |
+|---|---|---|---|---|---|---|
+| Root Next.js is the production operator UI | `docs/architecture/CANONICAL_ARCHITECTURE.md`, root source and route tests | N/A | Software architecture | YES — repository decision | Recheck route contracts on changes | “The root Next.js UI is the documented production dashboard.” |
+| Nested FastAPI is the single IDS-domain API | `dashboard/api/app/main.py`; root routes are proxy/facade | LIVE_TELEMETRY | Architecture review | YES — source reviewed | Physical request path still requires lab | “FastAPI is the authoritative IDS API implementation.” |
+| Root proxy uses backend data in LIVE and keeps errors distinct from empty | `src/lib/ids-data/index.ts`, route handlers, UI states | LIVE_TELEMETRY | Unit/build checks | SOFTWARE ONLY | Run against online API/Elasticsearch and inspect empty/outage states | “The software has explicit LIVE, EMPTY, DEMO, and backend-unavailable handling.” |
+| IoT-23 adapter preserves native labels/scenarios and rejects malformed structure | importer, mapping contract, validator tests | PUBLIC_DATASET fixture only | Dataset adapter unit tests | SOFTWARE FIXTURE ONLY | Download/reprepare official archive, validate all 23 scenarios | “The adapter and validator are implemented; no claim about a real local archive yet.” |
+| IoT-23 source labels are ground truth | Dataset card and label provenance specification | PUBLIC_DATASET | Not applicable | NO | N/A | “Analyst-derived external dataset labels,” never independent TRAPSIG ground truth |
+| IoT-23 models generalize to unseen scenarios | split helper and runner artifacts contract | PUBLIC_DATASET | No real dataset experiment | NO | Run scenario-held-out experiments and examine actual held-out metrics | “Scenario holdout is implemented; measured generalization is not established.” |
+| Train-only preprocessing and untouched test flow are enforced | runner pipeline construction and split tests | PUBLIC_DATASET fixtures | Experiment validity tests | SOFTWARE VERIFIED | Audit each real experiment artifact and commit | “Preprocessing is fit within the training pipeline; the test split is evaluated after fit and not tuned.” |
+| Isolation Forest means malicious | code and methodology explicitly retain anomaly signal semantics | PUBLIC_DATASET / runtime sessions | Score evaluation implemented; no data run | NO | Evaluate scores against declared external/campaign truth separately | “Isolation Forest emits an anomaly score; it is not itself a malicious label.” |
+| Hybrid detection exposes contributing signals and reasons | `hybrid_detector.py`, detection schema, UI lineage source | LIVE_TELEMETRY | Software contract | SOFTWARE VERIFIED | Verify a persisted chain in the physical E2E | “Hybrid records retain detector/version, evidence, explanation and lineage when persisted.” |
+| E2E proves campaign/event/session/features/detection lineage | bounded `scripts/testing/run-e2e.sh` asserts; no live services used here | CONTROLLED_LAB | Service E2E | NOT RUN | Run against configured physical lab; retain IDs and output | “The E2E procedure checks these links when run; no physical result is claimed.” |
+| Synthetic data can enter research by default | research runner rejects non-public data category/provenance; fixtures are explicit | SYNTHETIC | Negative contract/unit tests | REJECTED BY SOFTWARE CONTRACT | Continue provenance audit | “Synthetic records are test/demo fixtures, not research evidence.” |
+| Physical lab delivered telemetry or detection | No physical run report | CONTROLLED_LAB | NOT RUN | NO | Execute `DEMO.md` and archive actual telemetry/IDs | Do not claim delivery, detection, or deployment validation |
+| Raspberry Pi resource use or detection latency is low/real-time | measurement tools/schema only | CONTROLLED_LAB | NOT RUN | NO | Capture `research/measurements/` artifacts on lab hosts with clock context | “Measurement tooling is prepared; no resource/latency result exists.” |
+| System is production ready or discovers zero-days | No production validation or zero-day ground-truth experiment | N/A | NOT RUN | NO | A distinct scoped evaluation and deployment review would be required | Do not claim production readiness or zero-day detection |
+| Current software checks pass | `FINAL_VERIFICATION_REPORT.md` | Fixtures/source only | Unit, lint, build, compose, syntax | YES — exact results in report; service tests skipped | Re-run before a future code release | “The listed software checks passed; integration/physical evidence remains unverified.” |
+
+## Claim rule
+
+The presence of code, a schema, an empty manifest template, or a passing fixture test does not mean real IoT-23 was verified. The presence of a physical procedure does not mean the lab ran. Detector predictions, external analyst labels, and controlled scenario metadata stay separate in storage, artifacts, UI, and paper claims.

@@ -95,3 +95,45 @@ def scenario_split(scenarios: list[str], seed: int = 42,
     if any(sets[i] & sets[j] for i in range(3) for j in range(i + 1, 3)):
         raise AssertionError("internal error: scenario split overlap")
     return result
+
+
+def temporal_split(rows: list[Mapping[str, Any]], train_ratio: float = 0.6,
+                   validation_ratio: float = 0.2) -> dict[str, Any]:
+    """Chronologically split flows; metadata describes intentional scenario overlap."""
+    from datetime import datetime, timezone
+    if len(rows) < 3:
+        raise ValueError("temporal train/validation/test split requires at least 3 flows")
+    if not (0 < train_ratio < 1 and 0 < validation_ratio < 1 and train_ratio + validation_ratio < 1):
+        raise ValueError("train_ratio and validation_ratio must be positive and sum to less than 1")
+    ordered = []
+    for row in rows:
+        stamp = row.get("timestamp")
+        if not stamp:
+            raise ValueError("temporal split requires a timestamp on every flow")
+        try:
+            parsed = datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
+        except ValueError as exc:
+            raise ValueError(f"temporal split has invalid timestamp: {stamp!r}") from exc
+        if parsed.tzinfo is None:
+            raise ValueError("temporal split timestamps must include a timezone")
+        ordered.append((parsed.astimezone(timezone.utc), str(row.get("record_id", "")), row))
+    ordered.sort(key=lambda item: (item[0], item[1]))
+    n_train = max(1, int(len(ordered) * train_ratio))
+    n_validation = max(1, int(len(ordered) * validation_ratio))
+    if n_train + n_validation >= len(ordered):
+        n_train, n_validation = len(ordered) - 2, 1
+    train = ordered[:n_train]
+    validation = ordered[n_train:n_train + n_validation]
+    test = ordered[n_train + n_validation:]
+    return {
+        "indices": {"train": [x[2] for x in train], "validation": [x[2] for x in validation], "test": [x[2] for x in test]},
+        "metadata": {
+            "protocol": "TEMPORAL_SPLIT",
+            "train_time_end_utc": train[-1][0].isoformat(),
+            "validation_time_start_utc": validation[0][0].isoformat(),
+            "validation_time_end_utc": validation[-1][0].isoformat(),
+            "test_time_start_utc": test[0][0].isoformat(),
+            "scenario_overlap_is_expected": True,
+            "scenario_disjointness_claimed": False,
+        },
+    }

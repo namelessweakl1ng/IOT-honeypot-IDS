@@ -1,28 +1,49 @@
-# Research methodology and status
+# Research methodology
 
-## Questions and benchmarks
+## Research questions
 
-1. How does a flow-level classifier distinguish the published IoT-23 behavior labels under a scenario-held-out protocol? **Not yet evaluated.**
-2. Can TRAPSIG ingest and trace controlled campaigns against the physical Pi honeypot through the API? **Physical validation NOT RUN.**
+1. **RQ1 — ingestion and reconstruction:** can controlled activity produce indexed events linked to sessions and campaigns? Evaluate only with `CONTROLLED_LAB` campaign records and event/session/campaign IDs.
+2. **RQ2 — public flow classification:** how do Logistic Regression, Random Forest, and Gradient Boosting classify IoT-23 behavior labels on a held-out test scenario set? `PUBLIC_DATASET` only.
+3. **RQ3 — flow anomaly scoring:** how does an Isolation Forest fit on benign training flows score held-out benign and malicious IoT-23 flows? External labels remain the evaluation reference; an anomaly score is not a TRAPSIG ground-truth label.
+4. **RQ4 — operational cost:** what Pi host/container resources and stage timestamps occur during a declared controlled workload? `CONTROLLED_LAB` only.
 
-Benchmark A uses only the external IoT-23 dataset. Benchmark B uses only campaign records with campaign/scenario ground truth. The two datasets are not merged.
+These questions correspond to present tools. Campaign ablation or universal cross-dataset transfer is not claimed as implemented by the current runner.
 
-## Data, platform, and ground truth
+## Data categories and provenance
 
-IoT-23 is Zeek network-flow data labeled through the dataset authors' analysis workflow; normalized rows use `label_source=EXTERNAL_DATASET`. Controlled campaigns use `ground_truth_source=SCENARIO_GROUND_TRUTH`; detector outputs are predictions and never labels. Synthetic fixtures use `SYNTHETIC` and the experiment runner rejects them for research use. The intended hardware topology is Raspberry Pi sensor, Linux analysis host for ELK/FastAPI, and a dedicated attacker host. Physical versions and actual resource measurements are NOT RUN / NOT RECORDED here.
+- **PUBLIC_DATASET:** IoT-23 flow rows from the cited external source. `label_source=EXTERNAL_DATASET`; provenance detail states that labels are analyst-derived external annotations. Original labels, detailed labels, project taxonomy, scenario IDs, timestamp, and source-file provenance remain separate.
+- **CONTROLLED_LAB:** actual Pi honeypot telemetry and attacker-run summary. A scenario manifest provides `ground_truth_source=SCENARIO_GROUND_TRUTH`; rule, classifier, anomaly, and hybrid output are predictions.
+- **LIVE_TELEMETRY:** observations returned from currently configured backend services. LIVE is a runtime mode, not a ground-truth label and not proof of a physical experiment.
+- **SYNTHETIC:** explicit fixtures under `examples/demo/` and test fixtures. They are not permitted in research experiments or physical-evidence claims.
 
-## Features and methods
+IoT-23 network flows and Pi honeypot sessions are not merged into one dataset. They differ in granularity, features, capture protocol, and label source.
 
-The IoT-23 compatibility contract restricts the common flow feature view to measured duration, directional bytes, and directional packet counts. Flow identities, source paths, labels, label-derived values, scenario IDs, addresses, ports, protocol, and timestamps are metadata or excluded in the conservative cross-scenario view. Pi feature extraction remains session-based and must not be represented as equivalent to those flow measurements.
+## IoT-23 validation, labels, and features
 
-The project runtime has rule, supervised, anomaly, and hybrid paths. IoT-23 supports a separately evaluated classifier/anomaly path only when appropriate. Pi-specific rules do not apply to public flow data by default. Candidate classifier families are Logistic Regression, Random Forest, and Gradient Boosting; anomaly detection is a separate task with its own assumptions. No selected models, thresholds, or results are reported by this document.
+The importer reads `#fields` from each `conn.log.labeled`, preserves native labels and scenario IDs, normalizes Zeek epoch timestamps to UTC, and leaves absent numeric counters null. `validate_iot23` checks row shape, provenance category, timestamp validity, expected 23 scenarios, duplicate record IDs, exact measured-flow duplicate count, source importer rejection count, and label/missingness distributions. Structural corruption returns nonzero.
 
-## Splits, metrics, and reproducibility
+`iot23-flow-v1` uses duration, originator/responder bytes, and originator/responder packet counts. Preprocessing imputation/scaling is inside the scikit-learn pipeline and is fit only on training flows. IDs, scenario names, IPs, ports, protocol, labels, label-derived behavior fields, file paths, and timestamps are metadata or excluded. The detailed mapping is documented in `datasets/IOT23_FEATURE_MAPPING.md`.
 
-Hold out whole IoT-23 scenarios into train/validation/test, with zero scenario overlap. A temporal split may be added only within captures for which chronology and the research question support it. Leave-one-scenario-out can be reported as a separate generalization analysis. Fit preprocessing on training data only. Do not tune on the final test set. Report per-class precision/recall/F1, macro F1, confusion matrix, FPR/FNR, and accuracy; add balanced accuracy and ROC/PR-AUC only when class support and score semantics permit. Record data and code hashes, split membership, algorithm, seed, feature version, environment, and git commit.
+## Splits and models
 
-The current preparation adapter emits provenance and flow-level audit files. The scenario-split helper is deterministic and checks overlap. Actual dataset download, benchmark training, test evaluation, and result artifacts remain NOT RUN until a real copy is prepared and the experiment is executed. No synthetic fixture performance is research evidence.
+- **SCENARIO_HOLDOUT** is the principal protocol: whole scenarios are partitioned into train/validation/test, with zero scenario intersection. The split is deterministic for a fixed seed and sorted scenario inventory.
+- **TEMPORAL_SPLIT** chronologically partitions timestamped rows. Scenario overlap is expected, so this protocol does not support a claim of unseen-scenario generalization. State this limitation with every result.
+- A seeded per-scenario reservoir cap bounds memory; seen and retained counts are part of artifacts. Unmapped project labels are excluded and counted; they are never imputed from scenario names.
+- Logistic Regression, Random Forest, and Gradient Boosting are supervised alternatives. Isolation Forest is fit only on benign training flows and evaluated against external binary labels. It reports an anomaly score and is not automatically a malicious verdict.
+- Runtime Pi rules/classifier/anomaly/hybrid operate on reconstructed honeypot sessions. A rule prediction remains `RULE_PREDICTION`; detector output never becomes ground truth.
 
-## Threat model and limitations
+The runner performs **validate → split → fit preprocessing on train → fit model → save/freeze artifact → evaluate validation descriptively → evaluate test once**. It performs no hyperparameter tuning. The test partition is not used to select a model or threshold.
 
-The system studies hostile interactions directed at intentionally exposed lab honeypots and public IoT malware flow captures. Attacker activity stays in an isolated, authorized lab. Dataset labels may be incomplete or noisy; captures are historically and scenariowise limited. An anomaly score does not prove zero-day exploitation. Public dataset performance does not prove production deployment performance. Controlled lab attacks do not represent the whole Internet. Resource/latency claims need timestamped physical measurements and remain NOT RUN.
+## Metrics and artifacts
+
+Report accuracy, balanced accuracy, macro and per-class precision/recall/F1, binary FPR/FNR, and confusion matrices from actual predictions. Report PR-AUC/ROC-AUC only when score semantics and test class support make them defined; otherwise artifact value is null. Do not copy values into documentation as defaults.
+
+Each experiment directory writes manifest, dataset, split, model metadata, metrics, predictions, confusion matrix, environment, README, and serialized model. Each artifact is wrapped with experiment context including ID, category, dataset/version/hash, label source, feature version, algorithm/parameters, seed, split, row counts, validity, code commit, and creation time.
+
+## Physical measurements
+
+Resource samples and T0-T9 timestamp captures are `CONTROLLED_LAB`. CPU, memory, temperature, load, disk, network and Docker statistics are collected as actual readings. The latency recorder leaves missing timestamps as `NOT MEASURED` and computes cross-host durations only when clock synchronization is declared verified. The physical demo and measured experiments have NOT RUN in this environment.
+
+## Limitations
+
+IoT-23 is historically and scenario limited, imbalanced, and analyst labeled; flows within captures are correlated. The scenario split reduces capture leakage but does not guarantee broad IoT generalization. The temporal split can include the same scenario on both sides. Network-flow results do not validate honeypot/session detection. Anomaly detection does not establish zero-day discovery. Controlled honeypot campaigns do not represent the whole Internet. No physical resource, latency, or end-to-end results are claimed before their actual execution.

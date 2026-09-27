@@ -1,77 +1,35 @@
-# TRAPSIG Research Hypotheses
-#
-# Each hypothesis is defined BEFORE seeing results. Acceptance criteria
-# are pre-registered to prevent post-hoc metric selection bias.
-
-hypotheses:
+version: 2
+status: PRE-REGISTRATION TEMPLATE; ALL EXPERIMENTS NOT RUN
+principle: >-
+  These are questions and analysis plans, not results. There are no fabricated
+  expected metric values or pass thresholds. Freeze question, split, metric,
+  and analysis before acquiring/evaluating evidence.
+research_questions:
   - id: RQ1
-    question: "Can the honeypot fleet reliably collect and normalize IoT attack telemetry?"
-    hypothesis: "The Pi honeypot fleet + Filebeat + Logstash + Elasticsearch pipeline can reliably collect, normalize, and index honeypot telemetry from Cowrie, camera, and IoT-service honeypots."
-    metric: "event_delivery_rate (events_indexed / events_generated)"
-    dataset: "TRAPSIG live telemetry"
-    evaluation_protocol: "controlled attack scenarios, measure event delivery + session reconstruction"
-    acceptance_criteria: "event_delivery_rate >= 0.95, session reconstruction success >= 0.90"
-    status: "NOT_RUN"
-
+    question: Can the system ingest and reconstruct controlled IoT honeypot telemetry?
+    dataset: CONTROLLED_LAB
+    experiment: One bounded scenario per run; trace event -> session -> features -> detector -> API.
+    metric: indexed/generated event linkage, session/event linkage, invalid or duplicate record counts.
+    analysis: Report numerator, denominator, time window, excluded runs, and confidence limits where meaningful.
+    status: NOT_RUN
   - id: RQ2
-    question: "How accurately can behavioral features classify known attack behaviors?"
-    hypothesis: "Session-level behavioral features extracted from honeypot telemetry can classify known attack types with macro F1 >= 0.80 under campaign-level splitting."
-    metric: "macro F1"
-    dataset: "TRAPSIG live telemetry (development dataset for prototyping)"
-    evaluation_protocol: "campaign-level split, 5 seeds (42, 123, 456, 789, 1337), macro F1 mean ± std"
-    acceptance_criteria: "macro F1 mean >= 0.80, std < 0.10"
-    status: "NOT_run"
-
+    question: How do supported supervised models classify IoT-23 flow labels on held-out scenarios?
+    dataset: PUBLIC_DATASET
+    experiment: Logistic Regression, Random Forest, Gradient Boosting; SCENARIO_HOLDOUT; train-only preprocessing; validation descriptive; test once.
+    metric: accuracy, balanced accuracy, macro/per-class precision-recall-F1, FPR/FNR, confusion matrix, PR-AUC/ROC-AUC where defined.
+    analysis: Compare model outputs on the same recorded split; disclose classes absent from partitions and unmapped exclusions.
+    status: NOT_RUN
   - id: RQ3
-    question: "Does the hybrid architecture provide measurable value over individual detection tiers?"
-    hypothesis: "The hybrid detector (rules + supervised + anomaly) achieves higher detection rate or lower false-positive rate than any individual tier alone."
-    metric: "detection_rate AND false_positive_rate"
-    dataset: "TRAPSIG live telemetry"
-    evaluation_protocol: "ablation: A=rules, B=supervised, C=anomaly, D=hybrid; same held-out test set"
-    acceptance_criteria: "hybrid detection_rate >= max(individual) AND hybrid FPR <= min(individual)"
-    status: "NOT_RUN"
-
+    question: How does benign-trained Isolation Forest flag malicious IoT-23 flows on held-out data?
+    dataset: PUBLIC_DATASET
+    experiment: Isolation Forest fit on benign training flows only; report scenario-held-out and/or explicitly labeled chronological split.
+    metric: binary FPR/FNR, per-class precision-recall-F1, ROC-AUC and PR-AUC where test labels support them.
+    analysis: Treat anomaly as a score/prediction; do not equate anomaly with malicious ground truth beyond the external dataset labels.
+    status: NOT_RUN
   - id: RQ4
-    question: "Can anomaly detection identify attack behavior excluded from supervised training?"
-    hypothesis: "The IsolationForest anomaly detector, trained on benign + known-attack traffic, can flag previously unseen attack behavior with TPR >= 0.50 at FPR <= 0.10."
-    metric: "TPR at FPR=0.10"
-    dataset: "TRAPSIG live telemetry"
-    evaluation_protocol: "leave-one-attack-type-out: train without class X, test on class X"
-    acceptance_criteria: "mean TPR >= 0.50 at FPR <= 0.10"
-    status: "NOT_RUN"
-
-  - id: RQ5
-    question: "How well do behavioral features generalize across honeypot types?"
-    hypothesis: "A classifier trained on Cowrie + camera telemetry can detect attacks on the IoT-service honeypot with macro F1 >= 0.60."
-    metric: "macro F1 on held-out honeypot type"
-    dataset: "TRAPSIG live telemetry"
-    evaluation_protocol: "cross-honeypot: train on Cowrie+camera, test on IoT-service"
-    acceptance_criteria: "macro F1 >= 0.60"
-    status: "NOT_RUN"
-
-  - id: RQ6
-    question: "How well does the detector generalize across external IoT datasets?"
-    hypothesis: "NOT FORMED — depends on whether IoT-23 and N-BaIoT datasets are available and whether canonical feature spaces are compatible."
-    metric: "macro F1 on cross-dataset test"
-    dataset: "IoT-23, N-BaIoT (if available)"
-    evaluation_protocol: "train IoT-23, test N-BaIoT (and vice versa)"
-    acceptance_criteria: "TBD — depends on feature compatibility"
-    status: "NOT_RUN"
-
-  - id: RQ7
-    question: "What are the false-positive and latency characteristics of the system?"
-    hypothesis: "The system achieves false positives per hour <= 5 and median detection latency <= 30 seconds under controlled attack conditions."
-    metric: "FP/hour AND median latency"
-    dataset: "TRAPSIG live telemetry"
-    evaluation_protocol: "run benign traffic + controlled attacks, measure FP rate + end-to-end latency"
-    acceptance_criteria: "FP/hour <= 5, median latency <= 30s"
-    status: "NOT_RUN"
-
-  - id: RQ8
-    question: "Is the system lightweight enough for Raspberry Pi deployment?"
-    hypothesis: "The Pi honeypot fleet (Cowrie + camera + IoT-service + Filebeat) operates within 512MB RAM and 50% CPU under moderate attack load."
-    metric: "peak RAM + peak CPU%"
-    dataset: "physical Pi measurement"
-    evaluation_protocol: "run moderate attack (100 events/min), measure Pi resource usage"
-    acceptance_criteria: "peak RAM <= 512MB, peak CPU <= 50%"
-    status: "NOT_RUN"
+    question: What operational resources and stage latencies occur on the physical Pi-to-analysis pipeline?
+    dataset: CONTROLLED_LAB
+    experiment: Predeclared bounded campaign with synchronized clocks and repeated resource samples.
+    metric: CPU, RAM, temperature, load, disk, network/container resources and T0-T9 stage timestamps.
+    analysis: Report host, hardware, workload, repetitions, missing stages, clock synchronization, and observed variability.
+    status: NOT_RUN

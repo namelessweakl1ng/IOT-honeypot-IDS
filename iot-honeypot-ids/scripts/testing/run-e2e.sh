@@ -22,47 +22,65 @@ done
 if [ -z "$CAMPAIGN_ID" ]; then
   CAMPAIGN_ID="campaign-$(date -u +%Y%m%dT%H%M%SZ)-$(printf '%06x' $((RANDOM % 16777215)))"
 fi
-RUN_ID="run-$(date -u +%Y%m%dT%H%M%SZ)-$(printf '%06x' $((RANDOM % 16777215)))"
-ES_URL="${ELASTICSEARCH_URL:-http://localhost:9200}"
-ES_PASS="${ELASTIC_PASSWORD:-}"
 API_URL="${API_URL:-http://localhost:8000}"
 API_KEY="${API_SECRET_KEY:-}"
 [ -n "$API_KEY" ] || { echo "ERROR: API_SECRET_KEY is required for LIVE detection" >&2; exit 2; }
-export ES_URL ES_PASS TEST_START_ISO API_URL
+export TEST_START_ISO API_URL API_KEY SCENARIO
+
+case "$SCENARIO" in
+  ssh-*) EXPECTED_HONEYPOT="cowrie" ;;
+  camera-*) EXPECTED_HONEYPOT="camera" ;;
+  iot-*) EXPECTED_HONEYPOT="iot-service" ;;
+  *) EXPECTED_HONEYPOT="" ;;
+esac
+export EXPECTED_HONEYPOT
 
 echo "=== E2E: $SCENARIO against $TARGET (expect honeypot: auto-detected) ==="
-echo "campaign_id: $CAMPAIGN_ID"
-echo "run_id:      $RUN_ID"
+echo "attacker_campaign_tag: $CAMPAIGN_ID"
 echo "test_start:  $TEST_START_ISO"
 
 echo ">> launching attacker scenario"
-./attacker/run-scenario.sh --target "$TARGET" --scenario "$SCENARIO" --campaign-id "$CAMPAIGN_ID" || true
+command -v timeout >/dev/null 2>&1 || { echo "ERROR: timeout is required to bound the attacker run" >&2; exit 2; }
+if ! ATTACK_OUTPUT="$(timeout "${ATTACK_TIMEOUT_SECONDS:-180}" ./attacker/run-scenario.sh --target "$TARGET" --scenario "$SCENARIO" --campaign-id "$CAMPAIGN_ID" 2>&1)"; then
+  printf '%s\n' "$ATTACK_OUTPUT" >&2
+  echo "FAIL: attacker scenario failed or exceeded ${ATTACK_TIMEOUT_SECONDS:-180}s" >&2
+  exit 1
+fi
+printf '%s\n' "$ATTACK_OUTPUT"
+RUN_ID="$(printf '%s\n' "$ATTACK_OUTPUT" | sed -n 's/^[[:space:]]*Run:[[:space:]]*//p' | tail -n 1)"
+if [ -z "$RUN_ID" ]; then echo "FAIL: attacker output did not include its run_id" >&2; exit 1; fi
 
-echo ">> polling ES for new event (timeout 60s, every 2s)"
+echo ">> polling FastAPI/Elasticsearch for the new event (timeout 60s, every 2s)"
 NEW_EVENT_DOC=""
 elapsed=0
 while [ "$elapsed" -lt 60 ]; do
-  NEW_EVENT_DOC="$(python3 - "$@" <<PY || true
-import os, sys, json
+  NEW_EVENT_DOC="$(python3 - <<'PY' || true
+import datetime, json, os, urllib.request
+url = os.environ.get("API_URL", "http://localhost:8000") + "/events?size=200"
 try:
-    from elasticsearch import Elasticsearch
-except ImportError:
-    sys.exit(2)
-es = Elasticsearch(os.environ.get("ES_URL", "http://localhost:9200"), basic_auth=("elastic", os.environ.get("ES_PASS", "")), request_timeout=10)
-test_start = os.environ.get("TEST_START_ISO", "")
-q = {"query": {"bool": {"filter": [{"range": {"@timestamp": {"gte": test_start}}}]}}, "sort": [{"@timestamp": "desc"}], "size": 5}
-resp = es.search(index="honeypot-events-*", body=q)
-body = resp.body if hasattr(resp, "body") else resp
-hits = body.get("hits", {}).get("hits", [])
-if hits:
-    print(json.dumps(hits[0]["_source"]))
-    sys.exit(0)
-sys.exit(2)
+    with urllib.request.urlopen(url, timeout=10) as response:
+        rows = json.loads(response.read()).get("events", [])
+    # This is the API-side equivalent of an Elasticsearch @timestamp gte filter.
+    gte = datetime.datetime.fromisoformat(os.environ["TEST_START_ISO"].replace("Z", "+00:00"))
+    expected = os.environ.get("EXPECTED_HONEYPOT", "")
+    candidates = []
+    for event in rows:
+        stamp = event.get("@timestamp")
+        try:
+            parsed = datetime.datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
+        except (TypeError, ValueError):
+            continue
+        if parsed >= gte and (not expected or (event.get("honeypot") or {}).get("name") == expected):
+            candidates.append(event)
+    if candidates:
+        candidates.sort(key=lambda row: row.get("@timestamp", ""), reverse=True)
+        print(json.dumps(candidates[0]))
+except Exception:
+    pass
 PY
 )"
-  rc=$?
-  if [ "$rc" -eq 0 ] && [ -n "$NEW_EVENT_DOC" ]; then
-    echo ">> found new event in ES"
+  if [ -n "$NEW_EVENT_DOC" ]; then
+    echo ">> found new event through FastAPI"
     break
   fi
   sleep 2
@@ -108,7 +126,8 @@ print('OK: event has all required leaf fields')
 
 SESSION_ID="$(echo "$NEW_EVENT_DOC" | python3 -c "import sys,json; print(json.load(sys.stdin).get('session_id',''))")"
 EVENT_ID="$(echo "$NEW_EVENT_DOC" | python3 -c "import sys,json; print(json.load(sys.stdin).get('event_id',''))")"
-export API_URL EVENT_ID SESSION_ID
+SOURCE_IP="$(echo "$NEW_EVENT_DOC" | python3 -c "import sys,json; print((json.load(sys.stdin).get('source') or {}).get('ip',''))")"
+export API_URL EVENT_ID SESSION_ID SOURCE_IP
 if [ -z "$SESSION_ID" ] || [ -z "$EVENT_ID" ]; then
   echo "FAIL: extracted session_id or event_id is empty" >&2; exit 1
 fi
@@ -186,6 +205,53 @@ except Exception as e:
     sys.exit(1)
 PY
 
+echo ">> verifying runtime features are extracted from this session"
+python3 - <<'PY'
+import json, os, sys, urllib.request
+base = os.environ.get("API_URL", "http://localhost:8000")
+sid = os.environ["SESSION_ID"]
+try:
+    req = urllib.request.Request(f"{base}/features/{sid}")
+    with urllib.request.urlopen(req, timeout=15) as response:
+        features = json.loads(response.read())
+    if features.get("session_id") != sid or not features.get("feature_schema_version") or not isinstance(features.get("features"), dict):
+        raise RuntimeError("feature response does not identify the session and versioned feature object")
+    print(json.dumps({"session_id": sid, "feature_schema_version": features["feature_schema_version"],
+                      "feature_count": len(features["features"]), "source": features.get("source")}))
+except Exception as exc:
+    print(f"FAIL: feature extraction verification: {exc}", file=sys.stderr)
+    sys.exit(1)
+PY
+
+echo ">> correlating and verifying the backend campaign contains this session"
+python3 - <<'PY'
+import json, os, sys, urllib.parse, urllib.request
+base = os.environ.get("API_URL", "http://localhost:8000")
+sid = os.environ["SESSION_ID"]
+source_ip = os.environ.get("SOURCE_IP", "")
+headers = {"X-API-Key": os.environ["API_KEY"]}
+try:
+    req = urllib.request.Request(f"{base}/campaigns/correlate?lookback_minutes=240", headers=headers, method="POST")
+    with urllib.request.urlopen(req, timeout=30) as response:
+        correlation = json.loads(response.read())
+    query = urllib.parse.urlencode({"source_ip": source_ip, "size": 100})
+    with urllib.request.urlopen(f"{base}/campaigns?{query}", timeout=15) as response:
+        campaigns = json.loads(response.read()).get("campaigns", [])
+    campaign = next((item for item in campaigns if sid in (item.get("session_ids") or [])), None)
+    if not campaign or not campaign.get("campaign_id"):
+        raise RuntimeError("campaign correlator did not link the observed session; inspect its status and source-IP/time grouping")
+    os.environ["BACKEND_CAMPAIGN_ID"] = campaign["campaign_id"]
+    print(json.dumps({"campaign_id": campaign["campaign_id"], "session_id": sid,
+                      "session_ids": campaign.get("session_ids"), "source_ip": source_ip,
+                      "correlation_result": correlation}))
+except Exception as exc:
+    print(f"FAIL: campaign lineage verification: {exc}", file=sys.stderr)
+    sys.exit(1)
+PY
+
+BACKEND_CAMPAIGN_ID="$(python3 -c 'import json,os,urllib.parse,urllib.request; u=os.environ.get("API_URL","http://localhost:8000"); sid=os.environ["SESSION_ID"]; ip=os.environ.get("SOURCE_IP",""); q=urllib.parse.urlencode({"source_ip":ip,"size":100}); c=json.loads(urllib.request.urlopen(f"{u}/campaigns?{q}",timeout=10).read()).get("campaigns",[]); print(next((x.get("campaign_id","") for x in c if sid in (x.get("session_ids") or [])),""))')"
+export BACKEND_CAMPAIGN_ID
+
 echo ">> requesting LIVE hybrid detection and verifying persisted lineage"
 export API_KEY
 python3 - <<'PY'
@@ -208,18 +274,24 @@ try:
     chain = lineage.get("lineage_chain", [])
     if lineage.get("session_id") != sid or lineage.get("detection_id") != detection_id:
         raise RuntimeError("lineage endpoint returned mismatched detection/session identity")
-    if "session" not in chain or lineage.get("session_event_count", 0) < 1:
-        raise RuntimeError("lineage does not connect detection to a session containing events")
+    if "session" not in chain or "features" not in chain or lineage.get("session_event_count", 0) < 1:
+        raise RuntimeError("lineage does not connect detection to a session containing events and features")
+    if lineage.get("campaign_id") != os.environ.get("BACKEND_CAMPAIGN_ID") or "campaign" not in chain:
+        raise RuntimeError("detection lineage does not link the correlated backend campaign")
     print(json.dumps({"detection_id": detection_id, "session_id": sid,
-                      "campaign_id": lineage.get("campaign_id"), "lineage_chain": chain,
+                      "campaign_id": lineage.get("campaign_id"), "detector": result.get("detector_version", result.get("engine")),
+                      "prediction": result.get("label"), "decision_source": (result.get("evidence") or {}).get("contributed_signals"),
+                      "decision_reason": result.get("explanation"), "ground_truth_label": os.environ.get("SCENARIO", "ssh-bruteforce"),
+                      "ground_truth_source": "SCENARIO_GROUND_TRUTH", "lineage_chain": chain,
                       "session_event_count": lineage["session_event_count"]}))
-    print("OK: persisted detection lineage links the detection, session, and events")
+    print("OK: persisted detection lineage links campaign, session, events, features, and detector output")
 except (urllib.error.URLError, RuntimeError, KeyError, ValueError) as exc:
     print(f"FAIL: detection lineage verification: {exc}", file=sys.stderr)
     sys.exit(1)
 PY
 echo "=== E2E PASSED ==="
-echo "  campaign_id: $CAMPAIGN_ID"
+echo "  attacker_campaign_tag: $CAMPAIGN_ID"
+echo "  backend_campaign_id: $BACKEND_CAMPAIGN_ID"
 echo "  run_id:      $RUN_ID"
 echo "  event_id:    $EVENT_ID"
 echo "  session_id:  $SESSION_ID"

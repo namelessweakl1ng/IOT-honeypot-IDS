@@ -42,12 +42,17 @@ export function DetectionsPage() {
   const [selected, setSelected] = useState<string | null>(null)
   const [lineage, setLineage] = useState<Lineage | null>(null)
   const [loading, setLoading] = useState(true)
+  const [mode, setMode] = useState<string>('EMPTY')
+  const [backendUnavailable, setBackendUnavailable] = useState(false)
 
   const fetchAll = useCallback(async () => {
     try {
-      const d = await fetch('/api/ids/detections?size=100').then(r => r.json())
+      const response = await fetch('/api/ids/detections?size=100')
+      const d = await response.json()
       setDetections(d?.detections || [])
-    } catch (e) { console.error(e) }
+      setMode(d?.mode || 'EMPTY')
+      setBackendUnavailable(!response.ok || Boolean(d?.error))
+    } catch (e) { console.error(e); setBackendUnavailable(true) }
     finally { setLoading(false) }
   }, [])
 
@@ -82,16 +87,18 @@ export function DetectionsPage() {
     <div className="p-4 space-y-3">
       <div className="flex items-baseline gap-3 border-b border-border pb-2">
         <h2 className="text-sm font-semibold tracking-wider text-foreground">DETECTIONS</h2>
-        <span className="text-[10px] font-mono text-muted-foreground ml-auto">{detections.length} DETECTIONS</span>
+        <span className="text-[10px] font-mono text-muted-foreground ml-auto">{mode} · {detections.length} DETECTIONS</span>
       </div>
 
-      {detections.length === 0 ? (
+      {backendUnavailable ? (
+        <Panel title="DETECTION QUEUE"><div className="py-8 text-center text-sm font-mono text-rose-400">BACKEND UNAVAILABLE</div></Panel>
+      ) : detections.length === 0 ? (
         <Panel title="DETECTION QUEUE">
           <div className="py-8 text-center">
             <Radio className="w-4 h-4 text-muted-foreground mx-auto mb-2" />
-            <div className="text-sm font-mono text-muted-foreground mb-2">NO DETECTIONS</div>
+            <div className="text-sm font-mono text-muted-foreground mb-2">{mode === 'LIVE' ? 'NO DETECTIONS RETURNED' : 'NO DETECTIONS'}</div>
             <div className="text-[11px] font-mono text-muted-foreground/60 mb-4">
-              Detections appear when the rule engine or ML classifier identifies malicious behavior in honeypot sessions.
+              This result describes the current API response only. No detection is not proof that activity was benign.
             </div>
           </div>
         </Panel>
@@ -168,6 +175,9 @@ export function DetectionsPage() {
                   <div className="text-muted-foreground">feature_schema: {lineage.features?.feature_schema_version || 'NOT AVAILABLE'}</div>
                   <div className="text-muted-foreground">campaign: {lineage.detection?.campaign_id?.slice(0, 16) || 'NOT CORRELATED'}</div>
                   <div className="text-muted-foreground">model: {lineage.model?.model_id || lineage.model?.engine || 'NOT USED'}</div>
+                  <div className="text-muted-foreground">ground_truth_label: {lineage.session?.ground_truth_label || 'NOT ATTACHED'}</div>
+                  <div className="text-muted-foreground">ground_truth_source: {lineage.session?.ground_truth_source || 'CONTROLLED RUN SUMMARY REQUIRED'}</div>
+                  <div className="text-amber-300">The detection label is a detector prediction; ground truth is separate evidence.</div>
                 </div>
               </div>
             </Panel>

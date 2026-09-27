@@ -13,12 +13,14 @@ Three levels:
 Labels that cannot be defensibly mapped → unknown/unknown.
 
 The IoT-23 labels are analyst-derived (manual analysis + labeling rules),
-NOT raw ground truth. We record this as label_source = external_analyst_derived.
+NOT raw ground truth. The categorical label_source is EXTERNAL_DATASET; separate
+documentation records that the source labels are analyst-derived annotations.
 """
 from __future__ import annotations
 
 from pathlib import Path
 from typing import Dict, Tuple
+from functools import lru_cache
 import yaml
 
 
@@ -304,15 +306,20 @@ def get_mapping_dict() -> Dict[str, Dict[str, str]]:
 
 def get_label_source() -> str:
     """IoT-23 labels are analyst-derived, not raw ground truth."""
-    return "external_analyst_derived"
+    return "EXTERNAL_DATASET"
+
+
+@lru_cache(maxsize=1)
+def _project_mapping_config() -> Dict[str, object]:
+    mapping_path = Path(__file__).resolve().parents[2] / "research" / "datasets" / "iot23" / "mappings.yaml"
+    if not mapping_path.is_file():
+        raise FileNotFoundError(f"IoT-23 mapping contract missing: {mapping_path}")
+    return yaml.safe_load(mapping_path.read_text(encoding="utf-8")) or {}
 
 
 def get_project_mapping(native_label: str) -> Tuple[str, str]:
     """Apply the versioned, repository-tracked mapping contract."""
-    mapping_path = Path(__file__).resolve().parents[2] / "research" / "datasets" / "iot23" / "mappings.yaml"
-    if not mapping_path.is_file():
-        raise FileNotFoundError(f"IoT-23 mapping contract missing: {mapping_path}")
-    config = yaml.safe_load(mapping_path.read_text(encoding="utf-8")) or {}
+    config = _project_mapping_config()
     entry = (config.get("labels") or {}).get(native_label)
     if entry is None:
         fallback = config.get("unlisted") or {}

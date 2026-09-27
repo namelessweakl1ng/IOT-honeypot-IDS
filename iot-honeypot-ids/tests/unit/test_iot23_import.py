@@ -29,7 +29,8 @@ from model_lab.datasets.import_iot23 import (
     parse_zeek_line, parse_zeek_ts, DEFAULT_ZEEK_FIELDS,
     discover_zeek_files, import_iot23,
 )
-from model_lab.datasets.iot23_features import audit_feature_names, feature_vector, scenario_split
+from model_lab.datasets.iot23_features import audit_feature_names, feature_vector, scenario_split, temporal_split
+from model_lab.datasets.validate_iot23 import validate as validate_iot23
 
 FIXTURE_DIR = REPO_ROOT / "tests" / "fixtures" / "iot23"
 
@@ -201,6 +202,9 @@ class TestImportEndToEnd:
         assert "project_label" in first
         assert "canonical_label" in first
         assert "binary_label" in first
+        assert first["label_source"] == "EXTERNAL_DATASET"
+        assert first["label_provenance_detail"] == "ANALYST_DERIVED_EXTERNAL_ANNOTATION"
+        assert first["data_category"] == "PUBLIC_DATASET"
 
     def test_label_mapping_file(self, output_dir):
         mapping = json.loads((output_dir / "label_mapping.json").read_text())
@@ -251,3 +255,37 @@ class TestSecurity:
     def test_iot23_scenario_split_fails_when_not_scenario_heldout(self):
         with pytest.raises(ValueError, match="at least 3 scenarios"):
             scenario_split(["one", "two"], seed=1)
+
+    def test_iot23_temporal_split_is_chronological_and_explicit_about_overlap(self):
+        rows = [{"record_id": f"r{i}", "source_scenario": "same-capture",
+                 "timestamp": f"2025-01-01T00:00:0{i}Z"} for i in range(10)]
+        split = temporal_split(rows)
+        partitions = split["indices"]
+        last_train = partitions["train"][-1]["timestamp"]
+        first_validation = partitions["validation"][0]["timestamp"]
+        last_validation = partitions["validation"][-1]["timestamp"]
+        first_test = partitions["test"][0]["timestamp"]
+        assert last_train <= first_validation <= last_validation <= first_test
+        assert split["metadata"]["scenario_overlap_is_expected"] is True
+        assert split["metadata"]["scenario_disjointness_claimed"] is False
+
+    def test_iot23_temporal_split_fails_without_timestamps(self):
+        with pytest.raises(ValueError, match="requires a timestamp"):
+            temporal_split([{"record_id": str(i)} for i in range(3)])
+
+    def test_iot23_validator_reports_fixture_without_claiming_full_dataset(self, import_result):
+        normalized = Path(import_result["output_dir"]) / "normalized" / "flows.jsonl"
+        report = validate_iot23(normalized, expected_scenarios=1)
+        assert report["samples"] == import_result["records_imported"]
+        assert report["scenario_count"] == 1
+        assert "validation_error" not in report
+
+    def test_iot23_validator_rejects_invalid_json_row(self, fixture_dir, tmp_path):
+        out = tmp_path / "iot23"
+        import_iot23(fixture_dir, out, "v1")
+        normalized = out / "normalized" / "flows.jsonl"
+        with normalized.open("a", encoding="utf-8") as stream:
+            stream.write("{invalid json}\n")
+        report = validate_iot23(normalized, expected_scenarios=1)
+        assert report["invalid_row_count"] == 1
+        assert report.get("validation_error") == "1 invalid row(s)"

@@ -1,7 +1,9 @@
 version: 1
 ground_truth_source: SCENARIO_GROUND_TRUTH
 record_fields:
-  required: [campaign_id, scenario, target, source, start_time, end_time, intended_behavior, ground_truth_label, ground_truth_source]
+  required: [campaign_id, attacker_campaign_tag, run_id, scenario, target, source, started_at, ended_at, intended_behavior, ground_truth_label, ground_truth_source, data_category]
+  campaign_id_note: "Attacker-side campaign metadata; backend correlator campaign_id is recorded separately unless a real telemetry link joins them."
+  data_category: CONTROLLED_LAB
   detector_output_fields_are_separate: [detector, detector_version, prediction, confidence, anomaly_score, decision_source, decision_reason]
 campaigns:
   - {scenario: BENIGN, attacker_scenario: null, status: PREPARED_NOT_RUN, intended_behavior: "Documented benign requests only"}
@@ -12,5 +14,6 @@ campaigns:
   - {scenario: COMMAND_INJECTION, attacker_scenario: http-enumeration, status: PREPARED_NOT_RUN, intended_behavior: "Bounded injection probes; retain distinct request evidence where possible"}
   - {scenario: MULTI_STAGE, attacker_scenario: multi-stage, status: PREPARED_NOT_RUN, intended_behavior: "Scenario steps supported by the selected honeypot configuration"}
 notes:
-  - "Generated campaign_id and actual timestamps are recorded by each run; this file is a protocol, not evidence of execution."
+  - "The attacker runner records campaign/run IDs, scenario ground truth, and actual timestamps; this file is a protocol, not evidence of execution."
+  - "Runtime detector output is stored separately and is not ground truth."
   - "No scenario runs against systems outside the configured isolated lab subnet."

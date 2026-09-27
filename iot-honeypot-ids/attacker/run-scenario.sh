@@ -153,11 +153,22 @@ esac
 mkdir -p "${RUNS_DIR:-./runs}"
 SUMMARY="${RUNS_DIR:-./runs}/${RUN_ID}.json"
 python3 - <<PY > "$SUMMARY"
-import json, os, datetime
+import json, os, datetime, socket
+import yaml
+manifest_path = os.path.join("scenarios", os.environ["SCENARIO"] + ".yaml")
+with open(manifest_path, encoding="utf-8") as stream:
+    scenario_manifest = yaml.safe_load(stream) or {}
+scenario_label = os.environ["SCENARIO"].upper().replace("-", "_")
 print(json.dumps({
     "campaign_id": os.environ["CAMPAIGN_ID"],
+    "attacker_campaign_tag": os.environ["CAMPAIGN_ID"],
     "run_id":      os.environ["RUN_ID"],
     "scenario":    os.environ["SCENARIO"],
+    "ground_truth_label": scenario_label,
+    "ground_truth_source": "SCENARIO_GROUND_TRUTH",
+    "intended_behavior": scenario_manifest.get("expected_behavior", []),
+    "data_category": "CONTROLLED_LAB",
+    "source": {"attacker_host": socket.gethostname(), "attacker_ip": os.environ.get("ATTACKER_SOURCE_IP") or None},
     "target":      os.environ["TARGET"],
     "lab_subnet":  os.environ["LAB_SUBNET"],
     "started_at":  os.environ.get("RUN_STARTED_ISO", ""),

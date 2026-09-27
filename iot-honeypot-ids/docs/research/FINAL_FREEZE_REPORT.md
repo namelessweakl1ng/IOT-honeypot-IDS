@@ -1,33 +1,27 @@
-# Final freeze report
+# FINAL IMPLEMENTATION FREEZE
 
-## Repository and architecture
+## Implementation statuses
 
-- Repository: `namelessweakl1ng/IOT-honeypot-IDS`.
-- This report is included by the freeze commit; its immutable SHA is recorded in Git metadata and in the final response.
-- Authoritative UI: root Next.js application (`src/`).
-- Authoritative domain API: nested FastAPI application (`iot-honeypot-ids/dashboard/api`).
-- Telemetry source of truth: Elasticsearch; ingestion: Pi Filebeat -> Logstash.
-- Research/runtime tree: `iot-honeypot-ids/`.
+- **IMPLEMENTATION: PASS** — canonical application paths and the requested IoT-23, lab readiness, query, measurement, reproducibility, and truth-audit tooling are implemented.
+- **PUBLIC DATASET PIPELINE: PASS (implementation)** — import, validation, feature compatibility, scenario/temporal split, and experiment code are present. Real data verification is **NOT RUN**.
+- **SCIENTIFIC VALIDITY: PASS (protocol/code review)** — provenance categories remain distinct, scenario holdout is explicit, and no dataset or lab results are claimed. Empirical validity remains **NOT RUN**.
+- **SECURITY: PASS (repository secret/artifact scan)** — no credential material or generated model/data artifacts were found; expected credential-related matches are test/corpus/config code. Historical dashboard screenshots are retained as UI snapshots, not research evidence.
+- **DOCUMENTATION: PASS** — architecture, audit, methodology, feature mapping, reproducibility, robustness, claims, and freeze documents are linked from the READMEs.
+- **DEMO: PASS (procedure reviewed)** — [DEMO.md](../../../DEMO.md) documents the primary `ssh-bruteforce` scenario and event-to-detection lineage. No physical execution is implied.
+- **SOFTWARE TESTING: FAIL (partial verification)** — Python tests, lint/build, compose, compile, and shell syntax pass; the Bun suite has 25 stale overview contract failures. Details: [FINAL_VERIFICATION_REPORT.md](FINAL_VERIFICATION_REPORT.md).
+- **PHYSICAL LAB: NOT RUN** — no Pi, analysis server, Elasticsearch, or live honeypot was connected.
+- **RESOURCE MEASUREMENT: NOT RUN** — no Pi CPU, memory, temperature, load, disk, network, or container samples were collected.
+- **LATENCY MEASUREMENT: NOT RUN** — no physical T0–T9 timestamps were collected.
 
-## Data and benchmark protocol
+## Evidence category ledger
 
-IoT-23 (version 1.0.0) is selected as a complementary public network-flow benchmark because it contains labeled Zeek connection flows from 20 malicious and 3 benign scenarios. It is not Pi honeypot telemetry. Raw archives stay outside Git. The adapter preserves native labels, scenario and source provenance; explicit mappings and a conservative flow feature compatibility contract are documented. Evaluation holds out entire scenarios with zero overlap, preserves an untouched test set, and reports macro and per-class results alongside FPR/FNR and a confusion matrix.
+- **IMPLEMENTED:** code and documentation committed in this freeze.
+- **VERIFIED IN SOFTWARE:** unit/integration status, frontend lint/build, composition and syntax checks in the verification report.
+- **VERIFIED WITH REAL DATASET:** NOT RUN; the IoT-23 archive was not downloaded or prepared.
+- **VERIFIED IN PHYSICAL LAB:** NOT RUN.
+- **MEASURED:** no physical resource or latency measurements.
+- **NOT RUN:** real-data benchmark, live E2E, physical preflight, Pi/ELK measurements.
 
-TRAPSIG Pi campaigns form a separate controlled deployment benchmark. Campaign ground truth is independent of rule/classifier/anomaly predictions. The physical lab is NOT RUN in this environment.
+Software implementation is frozen. This does not establish a completed empirical study or physical deployment evaluation. Next evidence work is real IoT-23 preparation and benchmark execution, followed by a connected lab E2E and resource/latency collection. Known limits include domain shift between network flows and honeypot sessions, analyst-derived source labels, scenario imbalance, and the inability of anomaly scores alone to prove zero-day detection.
 
-## Detection, models, software, and security
-
-Runtime detection design includes rule, supervised, anomaly, and hybrid components. IoT-23 supports only separately justified flow classifier/anomaly experiments; Pi-specific event rules are not applied to it by implication. Synthetic training labels are rejected by the research experiment runner. Model activation remains registry-gated. The demo uses unique local secrets and explicit DEMO/LIVE mode boundaries.
-
-## Verification and known limits
-
-- Python unit suite: 874 passed, 2 warnings.
-- Root frontend lint and production build: PASS.
-- Compose validation and edited shell syntax: PASS.
-- IoT-23 content download/preparation and benchmark artifacts: NOT RUN; adapter tests use deterministic fixtures.
-- Pi, Filebeat, ELK, runtime detection, lineage over physical telemetry: NOT RUN.
-- CPU, RAM, temperature, load, disk, network/container resources and T0-T9 latency: NOT RUN.
-- Supported claims and wording: [CLAIMS_AUDIT.md](CLAIMS_AUDIT.md).
-- Known limits: network-flow and honeypot-session domains differ; scenario correlations and class imbalance; dataset labels are analyst-derived; anomaly detection does not prove zero-day exploitation; public results do not establish production performance; controlled attacks do not represent the whole Internet.
-
-See [FINAL_VERIFICATION_REPORT.md](FINAL_VERIFICATION_REPORT.md) for command-by-command outcomes.
+See [CANONICAL_ARCHITECTURE.md](../architecture/CANONICAL_ARCHITECTURE.md), [FINAL_IMPLEMENTATION_AUDIT.md](FINAL_IMPLEMENTATION_AUDIT.md), [CLAIMS_AUDIT.md](CLAIMS_AUDIT.md), and [REPRODUCIBILITY.md](REPRODUCIBILITY.md).

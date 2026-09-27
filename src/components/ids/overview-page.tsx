@@ -32,17 +32,20 @@ export function OverviewPage({ onNavigate }: { onNavigate: (p: any) => void }) {
   const [stats, setStats] = useState<Stats | null>(null)
   const [sysStatus, setSysStatus] = useState<SystemStatus | null>(null)
   const [loading, setLoading] = useState(true)
+  const [backendUnavailable, setBackendUnavailable] = useState(false)
   const [demoLoading, setDemoLoading] = useState(false)
 
   const fetchAll = useCallback(async () => {
     try {
-      const [s, ss] = await Promise.all([
-        fetch('/api/ids/stats').then(r => r.json()),
-        fetch('/api/ids/pi/status').then(r => r.json()),
+      const [statsResponse, statusResponse] = await Promise.all([
+        fetch('/api/ids/stats'),
+        fetch('/api/ids/pi/status'),
       ])
+      const [s, ss] = await Promise.all([statsResponse.json(), statusResponse.json()])
       setStats(s)
       setSysStatus(ss)
-    } catch (e) { console.error(e) }
+      setBackendUnavailable(!statsResponse.ok || Boolean(s?.error) || ['error', 'degraded'].includes(s?.status))
+    } catch (e) { console.error(e); setBackendUnavailable(true) }
     finally { setLoading(false) }
   }, [])
 
@@ -67,6 +70,7 @@ export function OverviewPage({ onNavigate }: { onNavigate: (p: any) => void }) {
   }
 
   const isEmpty = stats?.mode === 'EMPTY' || stats?.status === 'empty'
+  const noLiveTelemetry = !backendUnavailable && stats?.mode === 'LIVE' && (stats.total_events ?? 0) === 0
 
   return (
     <div className="p-4 space-y-3">
@@ -92,8 +96,14 @@ export function OverviewPage({ onNavigate }: { onNavigate: (p: any) => void }) {
         </Panel>
       )}
 
+      {backendUnavailable && (
+        <Panel title="LIVE BACKEND">
+          <div className="py-5 text-center text-sm font-mono text-rose-400">BACKEND UNAVAILABLE</div>
+        </Panel>
+      )}
+
       {/* Threat activity */}
-      <Panel title="THREAT ACTIVITY">
+      {!backendUnavailable && !noLiveTelemetry && <Panel title="THREAT ACTIVITY">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-x-6 gap-y-2">
           <Metric label="EVENTS" value={isEmpty ? 0 : (stats?.total_events ?? 0)} />
           <Metric label="SESSIONS" value={isEmpty ? 0 : (stats?.total_sessions ?? 0)} onClick={() => onNavigate('sessions')} />
@@ -101,10 +111,14 @@ export function OverviewPage({ onNavigate }: { onNavigate: (p: any) => void }) {
           <Metric label="DETECTIONS" value={isEmpty ? 0 : (stats?.total_detections ?? 0)} onClick={() => onNavigate('detections')} />
           <Metric label="ANOMALIES" value={isEmpty ? 0 : (stats?.anomalies ?? 0)} />
         </div>
-      </Panel>
+      </Panel>}
 
       {/* Empty state — NO TELEMETRY */}
-      {isEmpty ? (
+      {noLiveTelemetry ? (
+        <Panel title="TELEMETRY">
+          <div className="py-8 text-center text-sm font-mono text-muted-foreground">NO LIVE TELEMETRY</div>
+        </Panel>
+      ) : isEmpty ? (
         <Panel title="TELEMETRY">
           <div className="py-8 text-center">
             <div className="text-sm font-mono text-muted-foreground mb-2">NO TELEMETRY RECEIVED</div>

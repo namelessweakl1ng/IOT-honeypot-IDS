@@ -248,6 +248,8 @@ def stream_flows(
                     "canonical_attack_family": canonical_family,
                     "binary_label": project_binary.lower(),
                     "label_source": get_label_source(),
+                    "label_provenance_detail": "ANALYST_DERIVED_EXTERNAL_ANNOTATION",
+                    "data_category": "PUBLIC_DATASET",
                     "label_mapping_confidence": conf,
                     "label_mapping_reason": reason,
                     "label_mapping_version": get_mapping_version(),
@@ -485,7 +487,7 @@ def import_iot23(input_dir: Path, output_dir: Path, dataset_version: str = "v1",
         audit_data["warnings"].append(f"High rejection rate: {total_rows_rejected}/{total_rows_seen} rows rejected")
     audit_data["warnings"].append(
         "IoT-23 labels are analyst-derived (manual analysis + labeling rules), NOT raw ground truth. "
-        "Recorded as label_source=external_analyst_derived."
+        "label_source=EXTERNAL_DATASET; label provenance detail=ANALYST_DERIVED_EXTERNAL_ANNOTATION."
     )
     (output_dir / "audit.json").write_text(json.dumps(audit_data, indent=2, default=str))
 

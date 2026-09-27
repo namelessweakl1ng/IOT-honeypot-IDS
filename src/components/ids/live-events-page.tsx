@@ -133,7 +133,7 @@ export function LiveEventsPage() {
       ) : isLive && events.length === 0 ? (
         <Panel title="EVENT STREAM" right="LIVE">
           <div className="py-8 text-center">
-            <div className="text-sm font-mono text-muted-foreground mb-2">0 EVENTS</div>
+            <div className="text-sm font-mono text-muted-foreground mb-2">NO LIVE TELEMETRY</div>
             <div className="text-[11px] font-mono text-muted-foreground/60">
               Pi is connected but no attacker activity has produced telemetry yet.
             </div>

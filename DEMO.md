@@ -1,63 +1,94 @@
-# TRAPSIG demonstration
+# TRAPSIG college demonstration
 
-This is the single operator sequence for the frozen project. The dashboard is the root Next.js app; the runtime/research implementation is `iot-honeypot-ids/`. This procedure demonstrates controlled telemetry only when the three lab machines and services are available. The steps have not been physically run here.
+This procedure demonstrates one controlled SSH brute-force campaign against the project's Cowrie honeypot. It is written for an evaluator with basic networking/security knowledge. It requires the three isolated lab machines and has **not** been physically run in this workspace.
 
-## Machines and modes
+## Architecture and evidence categories
 
-1. **Analysis host (Linux):** ELK, FastAPI, and root Next.js UI. It receives telemetry and owns runtime detections.
-2. **Raspberry Pi:** Cowrie, camera, IoT honeypots, and Filebeat. It is a sensor, not the ML host.
-3. **Attacker host:** runs the bounded, configured scenario against the isolated Pi.
+```text
+Attacker action -> Raspberry Pi Cowrie -> JSON event -> Filebeat -> Logstash
+     -> Elasticsearch -> FastAPI session/campaign/features/detection -> root Next.js dashboard
+```
 
-Use `LIVE` only with a reachable backend. Synthetic sample import is a labeled developer fixture, not physical evidence. The optional public-data section is the separate IoT-23 benchmark. IoT-23 network flows are not Pi honeypot events.
+The Pi is the sensor, the Fedora analysis host runs ELK and FastAPI, and the attacker/test host generates a bounded scenario. `SYNTHETIC` demo fixtures, `PUBLIC_DATASET` IoT-23 flows, `CONTROLLED_LAB` scenario ground truth, and observed `LIVE_TELEMETRY` are separate categories. Detector predictions are never treated as ground truth. Only one IDS-domain API is authoritative: nested FastAPI. The production dashboard is the root Next.js application.
 
-## Primary controlled campaign
+## Prerequisites
 
-### 1. Start the analysis host
+- Three hosts on an isolated lab network with explicit routes and firewall rules.
+- Fedora analysis host: Docker Engine/Compose, Python 3.11 compatible with the API image, and Bun/Node for the root UI.
+- Raspberry Pi: Docker Engine/Compose; the Pi compose builds the local camera and IoT service images.
+- Attacker host: Bash, Python 3, `sshpass`, and a clone of this repository.
+- Unique local credentials in ignored `.env` files. Do not use the template strings as credentials.
+- The attacker target must be inside the configured `LAB_SUBNET`; the scenario runner enforces that boundary.
 
-From the repository root on the analysis host:
+The Compose file configures Elasticsearch, Logstash, Kibana, and Filebeat as Elastic Stack **8.13.4** by default (`ELK_VERSION` can override the default). The FastAPI container base is Python **3.11-slim-bookworm**. Root package dependencies are constrained by `package.json` and `bun.lock`; the repository does not pin a Bun runtime version. Use `bun --version` and record it with the demonstration evidence.
+
+## Five-terminal layout
+
+1. **Terminal 1 — Fedora analysis host, services:** start ELK/API and retain service logs.
+2. **Terminal 2 — Fedora analysis host, preflight/mode/queries:** health checks, set LIVE, correlate records, and record IDs.
+3. **Terminal 3 — Pi SSH:** configure/start Cowrie and Filebeat; inspect logs.
+4. **Terminal 4 — attacker host:** run only `ssh-bruteforce` against the Pi.
+5. **Terminal 5 — Fedora analysis host, dashboard:** start the root UI and show the same event/session/detection lineage.
+
+## Startup and preflight
+
+### Terminal 1: analysis services
+
+From the repository checkout on Fedora:
 
 ```bash
 cd iot-honeypot-ids
 ./scripts/setup/init.sh
 ```
 
-Configure the generated `dashboard/.env` with unique lab-only credentials and the host's reachable interface address. Keep `.env` local and never commit it.
-
-### 2. Start ELK and FastAPI
+Setup creates ignored environment files and installs the Python API dependencies; it does not create research data. Replace every template credential with a unique local secret, set Pi/attacker addresses and `LAB_SUBNET`, then start the stack:
 
 ```bash
 ./scripts/deployment/start-pc1.sh
 ```
 
-Expected: compose services start and the script reports Kibana and API URLs. Failure means Docker, environment configuration, or service health must be resolved before continuing.
+Expected: compose lists healthy services and Elasticsearch bootstrap completes. A failure means fix Docker, environment, disk/memory, or image health before proceeding.
 
-### 3. Verify health and ingestion listener
+### Terminal 2: check services and explicitly enter LIVE
 
-```bash
-curl --fail http://127.0.0.1:8000/health
-curl --fail -u "elastic:${ELASTIC_PASSWORD}" http://127.0.0.1:9200/_cluster/health
-ss -ltn | grep ':5044'
-```
-
-Expected: API health JSON, Elasticsearch cluster health JSON, and a listener on TCP 5044. An unreachable dependency is a stop condition, not zero detections.
-
-Load the configured local API secret and explicitly enter LIVE mode so the session and detection endpoints are enabled:
+From the nested project root, source the dashboard environment and run preflight:
 
 ```bash
+cd iot-honeypot-ids
 set -a
 source dashboard/.env
 set +a
+export ANALYSIS_HOST="<analysis_host_ip>"
+export PI_IP="<pi_ip>"
+./scripts/testing/preflight-lab.sh
+```
+
+Expected: each reachable command/port/service is marked `PASS`; unconfigured checks are `SKIPPED`; an expected but unreachable service is `FAIL`. Do not proceed on a required `FAIL`.
+
+Check service health and Logstash's Beats listener directly:
+
+```bash
+curl --fail http://127.0.0.1:8000/health
+curl --fail --user "elastic:${ELASTIC_PASSWORD}" http://127.0.0.1:9200/_cluster/health
+ss -ltn | grep ':5044'
+```
+
+Expected: API health JSON, Elasticsearch `green` or `yellow`, and a TCP listener on 5044. Failure is infrastructure unavailability, not zero detections.
+
+Explicitly enter LIVE mode (the API key is required):
+
+```bash
 curl --fail -X POST -H "X-API-Key: ${API_SECRET_KEY}" http://127.0.0.1:8000/mode/live
 ```
 
-Expected: JSON confirms `LIVE`. Configure unique hexadecimal lab secrets so the shell-compatible env file can be sourced safely.
+Expected: response confirms `LIVE`. A rejected request means check the API key and current mode; do not locally label the UI LIVE without API confirmation.
 
-### 4. Start the Raspberry Pi honeypots and verify Filebeat
+### Terminal 3: Raspberry Pi sensor
 
-On the Pi, with its configured copy of the repository:
+SSH to the Pi and from its repository checkout:
 
 ```bash
-cd ~/iot-honeypot-ids/pi
+cd iot-honeypot-ids/pi
 ./scripts/configure.sh
 ./scripts/start.sh
 ./scripts/status.sh
@@ -65,42 +96,63 @@ docker compose ps
 docker compose logs --tail=50 filebeat
 ```
 
-Expected: configured containers are running and Filebeat has no connection/authentication error to the analysis host. Confirm TCP 5044 from the Pi using an available `nc -vz <ANALYSIS_HOST_IP> 5044` command. Failure means check host firewall, routing, Logstash, and Filebeat output configuration.
+Set `CENTRAL_SERVER_IP` in the Pi's ignored `pi/.env` to the analysis host. Expected: Cowrie and Filebeat containers running, Filebeat connected to Logstash. A warning means check host routing/firewall, port 5044, and Filebeat output configuration.
 
-### 5. Run controlled reconnaissance and record its campaign ID
+### Terminal 4: one controlled attack
 
-On the attacker host, set the isolated lab subnet and Pi address in `attacker/.env` (copy `.env.example` first if needed), then run:
+On the attacker host, configure `attacker/.env` with the Pi address, the lab subnet, and the Cowrie SSH port. From that host's clone:
 
 ```bash
 cd iot-honeypot-ids/attacker
-./run-scenario.sh --target <PI_IP> --scenario camera-recon
+./run-scenario.sh --target "<pi_ip>" --scenario ssh-bruteforce
 ```
 
-Expected: bounded requests and a final run summary with generated campaign and run identifiers. Record both. The runner identifier is campaign ground-truth metadata; the backend correlator may assign a separate campaign ID from observed sessions. Link those records using the session/source and actual API responses; do not assume the identifiers are identical. The runner must reject targets outside `LAB_SUBNET`; never disable that check.
+This performs the bounded synthetic credential attempts described by the scenario and prints attacker-side `campaign_id`, `run_id`, and a path to its run summary. Expected: summary written under `attacker/runs/`. The run's campaign identifier is scenario metadata; the backend campaign correlator may create a different ID. Keep both IDs distinct in notes. Never disable the `LAB_SUBNET` check.
 
-### 6. Query the event, session, and detection
+## Follow the live trace
 
-Back on the analysis host, allow the configured ingestion/reconstruction interval, then query:
+### Terminal 2: event, session, campaign, features, detector
+
+Inspect newly indexed events and identify the event/session IDs:
 
 ```bash
 curl --fail 'http://127.0.0.1:8000/events?size=20'
-curl --fail 'http://127.0.0.1:8000/sessions?size=20'
-curl --fail 'http://127.0.0.1:8000/campaigns?size=20'
-curl --fail 'http://127.0.0.1:8000/detections?size=20'
-curl --fail -X POST -H "X-API-Key: ${API_SECRET_KEY}" 'http://127.0.0.1:8000/sessions/materialize?lookback_minutes=60'
-curl --fail 'http://127.0.0.1:8000/sessions?size=20'
-curl --fail -X POST -H "X-API-Key: ${API_SECRET_KEY}" 'http://127.0.0.1:8000/detect/hybrid/<SESSION_ID>'
-curl --fail 'http://127.0.0.1:8000/detections?session_id=<SESSION_ID>'
 ```
 
-Replace `<SESSION_ID>` with the ID from the session response. Expected output shapes are JSON collections/details; dynamic event, session, and detection IDs vary. Check returned records for their actual campaign identifiers and confirm the session/event lineage. The runner campaign identifier is not automatically propagated into the backend correlator identity. A detector response saying no signal fired is a valid outcome. If event exists but session/detection does not, inspect scheduler status, session detail, and API logs rather than inventing a result.
+Expected: event JSON includes nonempty `event_id`, `session_id`, timestamp, source, device, honeypot, and event type. No result means inspect Filebeat, Logstash, and Elasticsearch before continuing.
 
-### 7. Open dashboard and show lineage
-
-In a separate analysis-host terminal, launch the root dashboard using the same secret and API address:
+If the session scheduler has not materialized it yet, request bounded materialization and correlation:
 
 ```bash
-cd <REPOSITORY_ROOT>
+curl --fail -X POST -H "X-API-Key: ${API_SECRET_KEY}" 'http://127.0.0.1:8000/sessions/materialize?lookback_minutes=60'
+curl --fail -X POST -H "X-API-Key: ${API_SECRET_KEY}" 'http://127.0.0.1:8000/campaigns/correlate?lookback_minutes=240'
+curl --fail 'http://127.0.0.1:8000/sessions?size=20'
+curl --fail 'http://127.0.0.1:8000/campaigns?size=20'
+```
+
+Expected: a session references the observed event ID; a backend campaign contains that session ID. The attacker-side campaign tag and backend campaign ID are separate unless telemetry explicitly links them.
+
+Copy the returned IDs into these commands:
+
+```bash
+./scripts/testing/show-campaign.sh <campaign_id>
+./scripts/testing/show-session.sh <session_id>
+curl --fail 'http://127.0.0.1:8000/features/<session_id>'
+curl --fail -X POST -H "X-API-Key: ${API_SECRET_KEY}" 'http://127.0.0.1:8000/detect/hybrid/<session_id>'
+curl --fail 'http://127.0.0.1:8000/detections?session_id=<session_id>'
+./scripts/testing/show-detection.sh <detection_id>
+```
+
+Expected features include a session ID, feature schema version, and measured feature object. If no hybrid signal fires, report **NO SIGNAL**; that is not proof the session was benign. For this selected SSH credential scenario, the rule detector is expected to contribute when telemetry contains the configured authentication-failure evidence. A persisted detection contains detector version, prediction, contributed signals, explanation, and lineage. Do not substitute a fixture when a live step fails.
+
+Record the attack scenario as `ground_truth_label=ssh-bruteforce` and `ground_truth_source=SCENARIO_GROUND_TRUTH` from the attacker run summary. Record the detector's `label` separately as a prediction. The controlled scenario label describes the action run, not proof every expected event reached Elasticsearch.
+
+### Terminal 5: dashboard walkthrough
+
+From the outer repository root, configure the UI to reach the same analysis API:
+
+```bash
+cd <repository_root>
 set -a
 source iot-honeypot-ids/dashboard/.env
 set +a
@@ -109,55 +161,35 @@ export FASTAPI_URL=http://127.0.0.1:8000
 bun run dev
 ```
 
-Open `http://<ANALYSIS_HOST_IP>:3000`, then open Events, Sessions, Detections, and the detection lineage detail. Show campaign -> event -> session -> features -> detector/version -> prediction/reason. The actual IDs and prediction are runtime-dependent; absence of a detection is a valid observation and must not be replaced with demo data.
+Open `http://<analysis_host_ip>:3000`. Show Overview, Events, Sessions, Detections, and detection lineage. Point out the event ID in the session timeline, backend campaign ID, detector/version, contributed signal, prediction, and reason. The mode must be `LIVE`. `BACKEND UNAVAILABLE` means the service path failed; `NO LIVE TELEMETRY` means the configured live query returned no events. Neither means “zero attacks” without a defined query and time window.
 
-### 8. Optional public-dataset experiment
+## Cleanup
 
-IoT-23 download is about 8.7 GB for the small flow archive. From a separate analysis checkout:
-
-```bash
-cd iot-honeypot-ids
-export IOT23_DATA_DIR="$HOME/datasets/iot23"
-./scripts/research/prepare-iot23.sh --download
-cat research/datasets/iot23/manifest.json
-cat research/datasets/iot23/summary.md
-./scripts/research/run-iot23-experiment.sh \
-  --dataset "$PWD/research/datasets/iot23/prepared/normalized/flows.jsonl" \
-  --experiment-id iot23-lr-seed42 \
-  --seed 42 \
-  --algorithm logistic_regression \
-  --feature-version iot23-flow-v1 \
-  --split-protocol scenario
-ls research/experiments/iot23/iot23-lr-seed42
-```
-
-Preparation fails clearly when data are absent or malformed. A local computed archive checksum is not an authenticity check unless compared with an independently trusted digest. The runner fits on train scenarios, reports validation descriptively, and evaluates the disjoint test scenarios once. Its deterministic per-scenario reservoir cap defaults to 10,000 flows to bound memory; the manifest records seen/retained counts. Outputs include the split, model artifact, metrics, confusion matrices, predictions, environment, and README. No benchmark scores are supplied by this demo procedure.
-
-### 9. Clean up
-
-On the attacker host, preserve the run summary as research evidence and remove any local credentials according to lab policy. On the Pi:
+Stop the Pi honeypot services:
 
 ```bash
-cd ~/iot-honeypot-ids/pi
+cd iot-honeypot-ids/pi
 ./scripts/stop.sh
 ```
 
-On the analysis host, stop only after retaining approved logs/artifacts:
+Stop the ELK/API stack on Fedora after retaining approved evidence:
 
 ```bash
 cd iot-honeypot-ids/dashboard
 docker compose down
 ```
 
+Keep `.env` files and run summaries local according to lab policy. Never commit passwords, raw packet captures, or unreviewed attacker logs.
+
 ## Troubleshooting
 
-- **Pi cannot reach analysis host:** verify routes and firewall; `ping <ANALYSIS_HOST_IP>` and `nc -vz <ANALYSIS_HOST_IP> 5044`.
-- **TCP 5044 unavailable:** `ss -ltnp | grep ':5044'`; inspect `docker compose ps` and Logstash logs.
-- **Filebeat unhealthy:** `docker compose logs --tail=100 filebeat`; verify mounted log paths and output host/credentials.
-- **Elasticsearch / Logstash unhealthy:** `docker compose ps` and `docker compose logs --tail=100 elasticsearch logstash`.
-- **No events:** inspect Pi honeypot logs, Filebeat registry/output logs, Logstash dead-letter routing, then Elasticsearch index health.
-- **No session:** query raw events and `/sessions/scheduler/status`; check required event/session IDs and scheduler/API logs.
-- **No detection:** query session detail, then detector endpoint and model/rule status; no detection is not proof of benign behavior.
-- **Dashboard empty or BACKEND UNAVAILABLE:** check API health and root app `FASTAPI_URL` configuration. Do not switch to synthetic data and call it LIVE.
-- **Missing IoT-23:** set `IOT23_DATA_DIR` to extracted data; the preparation command has no synthetic fallback.
-- **Invalid model:** inspect its dataset provenance, feature version, and registry status. Synthetic-trained models are not research-active.
+- **Preflight `FAIL`:** repair the named host/port/service before an attack; missing host configuration is shown as `SKIPPED`.
+- **Pi cannot reach port 5044:** check routes/firewall on both hosts, Logstash's Beats listener, and the configured Pi `CENTRAL_SERVER_IP`.
+- **Filebeat connected but no event:** inspect `docker compose logs --tail=100 filebeat` on the Pi and `docker compose logs --tail=100 logstash` on Fedora.
+- **Event but no session:** inspect `/sessions/scheduler/status`, then request the bounded materialization endpoint.
+- **Session but no campaign:** run the correlation endpoint and verify source-IP/time grouping; never equate the attacker run tag with backend correlation ID.
+- **Feature extraction 404:** verify the session contains events, then inspect API logs.
+- **No detection:** show the detector response and its evidence honestly. Absence of a detection is not a benign label.
+- **Dashboard says `BACKEND UNAVAILABLE`:** check API health and `FASTAPI_URL`; do not switch to synthetic fixtures and call it LIVE.
+
+IoT-23 preparation and experiments are a separate offline public-dataset workflow documented in `iot-honeypot-ids/research/datasets/iot23/README.md`. It is not part of this physical demonstration.

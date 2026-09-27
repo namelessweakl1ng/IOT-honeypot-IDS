@@ -23,16 +23,19 @@ export function SessionsPage() {
   const [sessions, setSessions] = useState<SessionRow[]>([])
   const [mode, setMode] = useState<string>('EMPTY')
   const [loading, setLoading] = useState(true)
+  const [backendUnavailable, setBackendUnavailable] = useState(false)
   const [selected, setSelected] = useState<string | null>(null)
   const [detail, setDetail] = useState<SessionRow | null>(null)
   const [demoLoading, setDemoLoading] = useState(false)
 
   const fetchSessions = useCallback(async () => {
     try {
-      const d = await fetch('/api/ids/sessions?size=100').then(r => r.json())
+      const response = await fetch('/api/ids/sessions?size=100')
+      const d = await response.json()
       setSessions(d.sessions || [])
       setMode(d.mode || 'EMPTY')
-    } catch (e) { console.error(e) }
+      setBackendUnavailable(!response.ok || Boolean(d?.error))
+    } catch (e) { console.error(e); setBackendUnavailable(true) }
     finally { setLoading(false) }
   }, [])
 
@@ -66,7 +69,8 @@ export function SessionsPage() {
     return <SessionDetail detail={detail} onBack={() => { setSelected(null); setDetail(null) }} />
   }
 
-  const isEmpty = mode === 'EMPTY' || sessions.length === 0
+  const noLiveTelemetry = mode === 'LIVE' && sessions.length === 0 && !backendUnavailable
+  const isEmpty = mode === 'EMPTY' || (mode === 'DEMO' && sessions.length === 0)
 
   return (
     <div className="p-4 space-y-3">
@@ -75,7 +79,11 @@ export function SessionsPage() {
         <span className="text-[10px] font-mono text-muted-foreground ml-auto">{sessions.length} SESSIONS · {mode}</span>
       </div>
 
-      {isEmpty ? (
+      {backendUnavailable ? (
+        <Panel title="SESSION INVESTIGATION"><div className="py-8 text-center text-sm font-mono text-rose-400">BACKEND UNAVAILABLE</div></Panel>
+      ) : noLiveTelemetry ? (
+        <Panel title="SESSION INVESTIGATION"><div className="py-8 text-center text-sm font-mono text-muted-foreground">NO LIVE TELEMETRY</div></Panel>
+      ) : isEmpty ? (
         <Panel title="SESSION INVESTIGATION">
           <div className="py-8 text-center">
             <div className="text-sm font-mono text-muted-foreground mb-2">NO ACTIVE ATTACK SESSIONS</div>

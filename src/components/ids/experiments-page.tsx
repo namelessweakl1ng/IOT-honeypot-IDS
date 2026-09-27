@@ -70,6 +70,12 @@ export function ExperimentsPage() {
         <span className="text-[10px] font-mono text-muted-foreground ml-auto">{experiments.length} RECORDED</span>
       </div>
 
+      <Panel title="PUBLIC DATASET" right="IOT-23 · OFFLINE">
+        <div className="text-[11px] font-mono text-muted-foreground">
+          IoT-23 is the separate network-flow benchmark category (PUBLIC_DATASET). Prepare and validate it with the research CLI. It is not imported into LIVE telemetry or the synthetic DEMO fixture view. This dashboard does not claim a prepared archive or measured IoT-23 experiment unless an artifact is explicitly recorded.
+        </div>
+      </Panel>
+
       {/* Datasets */}
       {datasets.length > 0 && (
         <Panel title="DATASETS">

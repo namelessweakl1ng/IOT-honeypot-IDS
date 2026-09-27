@@ -10,4 +10,4 @@ pytest tests/unit -v
 
 echo
 echo "=== Integration tests ==="
-pytest tests/integration -v --tb=short || echo "(integration tests may require running services — skipping failures)"
+pytest tests/integration -v --tb=short
