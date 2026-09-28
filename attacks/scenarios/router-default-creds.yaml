@@ -1,12 +1,12 @@
 id: router-default-creds
 name: Router default credentials
-description: Try one known router default pair
+description: Submit one known synthetic router credential
 target_services:
-  - router
+- router
 expected_detection: DEFAULT_CREDENTIALS
-severity: medium
+severity: high
 steps:
-  - service: router
-    payload: "GET /admin HTTP/1.1\r\nHost: router\r\n\r\n"
-  - service: router
-    payload: "GET /admin HTTP/1.1\r\nHost: router\r\n\r\n"
+- service: router
+  path: /login
+  username: admin
+  password: admin

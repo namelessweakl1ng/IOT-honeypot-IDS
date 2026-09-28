@@ -1,14 +1,16 @@
 id: router-recon
 name: Router reconnaissance
-description: Inspect router administration endpoint
+description: Inspect bounded router paths
 target_services:
-  - router
-expected_detection: RECONNAISSANCE
+- router
+expected_detection: WEB_ENUMERATION
 severity: medium
 steps:
-  - service: router
-    payload: "GET /admin HTTP/1.1\r\nHost: router\r\n\r\n"
-  - service: router
-    payload: "GET /admin HTTP/1.1\r\nHost: router\r\n\r\n"
-  - service: router
-    payload: "GET /admin HTTP/1.1\r\nHost: router\r\n\r\n"
+- service: router
+  path: /
+- service: router
+  path: /status
+- service: router
+  path: /network
+- service: router
+  path: /system

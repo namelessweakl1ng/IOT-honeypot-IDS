@@ -1,14 +1,16 @@
 id: camera-recon
 name: Camera reconnaissance
-description: Inspect camera HTTP endpoint
+description: Inspect bounded camera paths
 target_services:
-  - camera
-expected_detection: RECONNAISSANCE
+- camera
+expected_detection: WEB_ENUMERATION
 severity: medium
 steps:
-  - service: camera
-    payload: "GET / HTTP/1.1\r\nHost: camera\r\n\r\n"
-  - service: camera
-    payload: "GET / HTTP/1.1\r\nHost: camera\r\n\r\n"
-  - service: camera
-    payload: "GET / HTTP/1.1\r\nHost: camera\r\n\r\n"
+- service: camera
+  path: /
+- service: camera
+  path: /status
+- service: camera
+  path: /snapshot
+- service: camera
+  path: /stream

@@ -9,3 +9,4 @@ coverage/
 attacks/runs/
 sensor/logs/
 *.key
+secrets/

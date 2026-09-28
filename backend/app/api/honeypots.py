@@ -1,8 +1,13 @@
 from fastapi import APIRouter,HTTPException
+from ..elastic import store
 from ..services.pi_manager import HONEYPOTS,pi_manager
 router=APIRouter(prefix="/honeypots",tags=["honeypots"])
 @router.get("")
-async def honeypots(): return [{"id":key,**value,"status":"unknown"} for key,value in HONEYPOTS.items()]
+async def honeypots():
+    statuses=await pi_manager.statuses()
+    try: counts=await store.honeypot_counts()
+    except Exception: counts={}
+    return [{"id":key,**value,"status":statuses[key],"event_count":counts.get(f"{key}-01",0)} for key,value in HONEYPOTS.items()]
 async def run(identifier:str,action:str):
     try:return await pi_manager.action(identifier,action)
     except ValueError as exc: raise HTTPException(404,str(exc)) from exc

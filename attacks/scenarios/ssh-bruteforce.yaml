@@ -1,20 +1,26 @@
 id: ssh-bruteforce
 name: SSH brute force
-description: Repeated controlled SSH authentication probes
+description: Six failed SSH password authentications
 target_services:
-  - ssh
+- ssh
 expected_detection: BRUTE_FORCE
-severity: medium
+severity: high
 steps:
-  - service: ssh
-    payload: "SSH-2.0-OpenSSH_8.9\r\n"
-  - service: ssh
-    payload: "SSH-2.0-OpenSSH_8.9\r\n"
-  - service: ssh
-    payload: "SSH-2.0-OpenSSH_8.9\r\n"
-  - service: ssh
-    payload: "SSH-2.0-OpenSSH_8.9\r\n"
-  - service: ssh
-    payload: "SSH-2.0-OpenSSH_8.9\r\n"
-  - service: ssh
-    payload: "SSH-2.0-OpenSSH_8.9\r\n"
+- service: ssh
+  username: user0
+  password: wrong0
+- service: ssh
+  username: user1
+  password: wrong1
+- service: ssh
+  username: user2
+  password: wrong2
+- service: ssh
+  username: user3
+  password: wrong3
+- service: ssh
+  username: user4
+  password: wrong4
+- service: ssh
+  username: user5
+  password: wrong5

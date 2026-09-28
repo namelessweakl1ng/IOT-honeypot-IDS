@@ -22,7 +22,9 @@ def _materialize(events: list[dict[str, Any]]) -> dict[str, Any]:
     first, last = events[0], events[-1]
     ids = [e["event"]["id"] for e in events]
     auth = [e for e in events if e["event"].get("category") == "authentication"]
-    sid = "SES-" + sha256(f'{first["source"]["ip"]}|{first["@timestamp"]}|{"|".join(ids)}'.encode()).hexdigest()[:16]
+    # Source and window start stay stable as later events extend an active session,
+    # allowing the processor to upsert rather than duplicate derived documents.
+    sid = "SES-" + sha256(f'{first["source"]["ip"]}|{first["@timestamp"]}'.encode()).hexdigest()[:16]
     return {"session_id": sid, "source_ip": first["source"]["ip"], "start_time": first["@timestamp"], "end_time": last["@timestamp"],
       "duration": (_dt(last["@timestamp"])-_dt(first["@timestamp"])).total_seconds(),
       "honeypots_touched": sorted({e["honeypot"]["id"] for e in events}), "services_touched": sorted({e["service"]["name"] for e in events}),

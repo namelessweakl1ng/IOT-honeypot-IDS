@@ -1,6 +1,8 @@
 from fastapi import APIRouter
 from ..config import get_settings
 from ..elastic import store
+from ..services.pi_manager import pi_manager
+from ..services import processor as processor_module
 router=APIRouter()
 @router.get("/health")
 async def health():
@@ -10,4 +12,8 @@ async def health():
 @router.get("/system/status")
 async def status():
     cfg=get_settings(); data=await health()
-    return {**data,"kibana_url":cfg.kibana_url,"pi_configured":bool(cfg.pi_host),"lab_subnet":cfg.lab_subnet}
+    statuses=await pi_manager.statuses()
+    async def safe_count(index:str)->int|None:
+        try:return await store.count(index)
+        except Exception:return None
+    return {**data,"logstash":"configured","kibana_url":cfg.kibana_url,"pi":"reachable" if any(value!="unreachable" for value in statuses.values()) else "unreachable","honeypots":statuses,"counts":{"events":await safe_count("trapsig-events-*"),"sessions":await safe_count("trapsig-sessions-*"),"detections":await safe_count("trapsig-detections-*"),"experiments":await safe_count("trapsig-experiments-*")},"processor":processor_module.processor.status() if processor_module.processor else {"last_run":None}}

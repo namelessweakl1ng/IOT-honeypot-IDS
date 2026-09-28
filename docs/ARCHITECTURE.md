@@ -15,3 +15,7 @@ The deployment deliberately has only the components in this document; no paralle
 5. Session jobs use source IP and a configurable inactivity timeout (default five minutes).
 6. Rules return reasons and evidence IDs; no opaque score is used.
 7. Experiments reference matching immutable telemetry rather than altering it.
+
+## Derived-data processor
+
+FastAPI starts one lightweight asynchronous processor with its application lifespan. Every configured interval it reads the bounded event corpus, reconstructs sessions deterministically, and upserts sessions and detections under stable content-derived IDs. Repeating a cycle after a restart overwrites the same derived documents instead of duplicating them. The processor never updates event documents. Its last run, error, and write counts are exposed through `/system/status`.

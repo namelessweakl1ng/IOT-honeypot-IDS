@@ -2,7 +2,7 @@
 
 ## Laptop
 
-Install current Docker Engine/Compose, Git, Python 3.12+, and Bun. Clone the repository, copy `.env.example` to `.env`, replace the example secret and network values, and run `./scripts/analysis-up.sh`. Confirm `docker compose ps`, `curl http://localhost:8000/health`, and Kibana status. Install Python requirements and frontend packages before local tests.
+Install current Docker Engine/Compose, Git, Python 3.12+, and Node.js. Clone the repository, copy `.env.example` to `.env`, replace the example network values, and place the dedicated Pi private key at `secrets/pi_ssh_key` with mode `0600` (or set `PI_SSH_KEY_PATH`). Compose mounts it read-only at `/run/secrets/pi_ssh_key`; `secrets/` is ignored by Git. Run `./scripts/analysis-up.sh`. Confirm `docker compose ps`, `curl http://localhost:8000/health`, and Kibana status. Install Python requirements and frontend packages before local tests.
 
 ## Raspberry Pi
 

@@ -25,6 +25,12 @@ services:
     depends_on: {elasticsearch: {condition: service_healthy}}
     healthcheck: {test: [CMD-SHELL, "curl -fs http://localhost:5601/api/status"], interval: 20s, timeout: 10s, retries: 20}
     mem_limit: 768m
+  kibana-setup:
+    image: curlimages/curl:8.12.1
+    volumes: ["./elk/kibana/saved-objects/trapsig.ndjson:/assets/trapsig.ndjson:ro"]
+    depends_on: {kibana: {condition: service_healthy}}
+    command: ["-fsS", "-H", "kbn-xsrf:true", "-F", "file=@/assets/trapsig.ndjson", "http://kibana:5601/api/saved_objects/_import?overwrite=true"]
+    restart: "no"
   backend:
     build: ./backend
     environment:
@@ -35,13 +41,14 @@ services:
       PI_SSH_KEY: ${PI_SSH_KEY:-/run/secrets/pi_ssh_key}
       LAB_SUBNET: ${LAB_SUBNET:-192.168.50.0/24}
     ports: ["${API_PORT:-8000}:8000"]
+    volumes: ["${PI_SSH_KEY_PATH:-./secrets/pi_ssh_key}:/run/secrets/pi_ssh_key:ro"]
     depends_on: {elasticsearch: {condition: service_healthy}, logstash: {condition: service_healthy}}
     healthcheck: {test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"], interval: 15s, timeout: 5s, retries: 10}
     mem_limit: 256m
   frontend:
     build:
       context: ./frontend
-      args: {NEXT_PUBLIC_API_URL: "${NEXT_PUBLIC_API_URL:-http://localhost:8000}"}
+    environment: {API_URL: "http://backend:8000"}
     ports: ["3000:3000"]
     depends_on: {backend: {condition: service_healthy}}
     healthcheck: {test: [CMD-SHELL, "wget -q --spider http://localhost:3000/"], interval: 15s, timeout: 5s, retries: 10}

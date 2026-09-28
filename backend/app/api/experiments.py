@@ -26,5 +26,8 @@ async def finish(identifier:str):
     doc=await experiment(identifier)
     if doc["status"]!="running": raise HTTPException(409,"experiment is not running")
     doc.update(status="completed",end_time=datetime.now(timezone.utc).isoformat()); doc.pop("_id",None)
+    from ..services import processor as processor_module
+    if processor_module.processor:
+        await processor_module.processor.process_once()
     events=await store.search("trapsig-events-*",size=500); sessions=await store.search("trapsig-sessions-*",size=500); detections=await store.search("trapsig-detections-*",size=500)
     return await store.save(INDEX,identifier,correlate(doc,events,sessions,detections))

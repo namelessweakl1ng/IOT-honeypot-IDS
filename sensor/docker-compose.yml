@@ -46,7 +46,7 @@ services:
     user: root
     restart: unless-stopped
     command: [filebeat, -e, --strict.perms=false]
-    environment: {SENSOR_ID: "${SENSOR_ID}", HONEYPOT_HOSTNAME: "${HONEYPOT_HOSTNAME}", ANALYSIS_HOST: "${ANALYSIS_HOST}", LOGSTASH_PORT: "${LOGSTASH_PORT:-5044}"}
+    environment: {SENSOR_ID: "${SENSOR_ID}", SENSOR_IP: "${SENSOR_IP}", HONEYPOT_HOSTNAME: "${HONEYPOT_HOSTNAME}", ANALYSIS_HOST: "${ANALYSIS_HOST}", LOGSTASH_PORT: "${LOGSTASH_PORT:-5044}"}
     volumes: [./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro, custom-logs:/logs/custom:ro, cowrie-logs:/logs/cowrie:ro, filebeat-data:/usr/share/filebeat/data]
     depends_on: [cowrie, camera, iot-service, mqtt, router]
     healthcheck: {test: [CMD-SHELL, "filebeat test config -c /usr/share/filebeat/filebeat.yml"], interval: 30s, timeout: 10s, retries: 3}

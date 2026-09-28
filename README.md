@@ -17,6 +17,8 @@ controlled attacker -> Raspberry Pi: Cowrie SSH/Telnet, camera HTTP,
 
 Addresses are never encoded in application code. Configure the laptop/Pi/attacker subnet in environment files. Elasticsearch is the only telemetry and derived-data store. Raw `trapsig-events-*` documents are immutable; experiments reference their IDs.
 
+FastAPI continuously performs one deliberately small, idempotent processing cycle: it reads normalized events, deterministically reconstructs source-IP sessions, upserts `trapsig-sessions`, evaluates explainable rules, and upserts `trapsig-detections`. Stable IDs make restart and repeated cycles safe without marking or mutating raw events.
+
 ## Repository map
 
 | Path | Responsibility |
@@ -33,6 +35,7 @@ Addresses are never encoded in application code. Configure the laptop/Pi/attacke
 
 ```bash
 cp .env.example .env
+mkdir -p secrets && install -m 600 ~/.ssh/trapsig_pi secrets/pi_ssh_key
 docker compose up -d
 docker compose ps
 ```

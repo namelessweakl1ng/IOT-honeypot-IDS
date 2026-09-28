@@ -1,3 +1,9 @@
-# Kibana views
+# Kibana saved objects
 
-Create data views for `trapsig-events-*`, `trapsig-sessions-*`, `trapsig-detections-*`, and `trapsig-experiments-*`. The recommended dashboards are Event overview, Honeypot activity, Source IP analysis, Protocol distribution, Authentication attempts, Attack timeline, and Experiment analysis. Export site-specific saved objects here after configuring the lab; no fabricated dashboard data is shipped.
+`trapsig.ndjson` is imported automatically by the `kibana-setup` Compose job. It provisions four data views and seven named research workspaces without sample telemetry or fabricated results. Analysts add or save lab-specific visualizations from live indices in these workspaces.
+
+Manual re-import:
+
+```bash
+curl -f -H 'kbn-xsrf: true' -F file=@trapsig.ndjson http://localhost:5601/api/saved_objects/_import?overwrite=true
+```

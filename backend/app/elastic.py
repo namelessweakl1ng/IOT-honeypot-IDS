@@ -15,6 +15,21 @@ class ElasticStore:
         result = await self.client.search(index=index, query=query or {"match_all": {}}, size=size, sort=[{"@timestamp": "desc"}])
         return [{**hit["_source"], "_id": hit["_id"]} for hit in result["hits"]["hits"]]
 
+    async def count(self, index: str, query: dict[str, Any] | None = None) -> int:
+        result = await self.client.count(index=index, query=query or {"match_all": {}})
+        return int(result["count"])
+
+    async def honeypot_counts(self) -> dict[str, int]:
+        result = await self.client.search(
+            index="trapsig-events-*",
+            size=0,
+            aggs={"honeypots": {"terms": {"field": "honeypot.id", "size": 20}}},
+        )
+        return {
+            bucket["key"]: int(bucket["doc_count"])
+            for bucket in result["aggregations"]["honeypots"]["buckets"]
+        }
+
     async def get(self, index: str, document_id: str) -> dict[str, Any] | None:
         try:
             result = await self.client.get(index=index, id=document_id)
