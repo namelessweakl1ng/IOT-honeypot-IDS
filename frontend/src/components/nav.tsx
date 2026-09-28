@@ -17,10 +17,7 @@ export function Nav() {
   const pathname = usePathname();
   return (
     <aside className="sidebar">
-      <div className="brand">
-        <span className="brand-mark">T</span>
-        <div><h1>TRAPSIG</h1><p>IoT security lab</p></div>
-      </div>
+      <div className="brand"><h1>TRAPSIG</h1><p>IoT SECURITY LAB</p></div>
       <div className="nav-label">Operations</div>
       <nav>
         {links.map(([name, path, index]) => {

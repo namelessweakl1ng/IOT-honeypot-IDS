@@ -7,7 +7,7 @@ WEAK = {("admin","admin"), ("admin","password"), ("root","root"), ("admin","1234
 def detect(session: dict[str, Any]) -> list[dict[str, Any]]:
     cfg=get_settings(); found=[]; events=session.get("events", []); ids=session["event_ids"]
     def add(kind: str, severity: str, reason: str, evidence: list[str], rule: str):
-        key=f'{session["session_id"]}:{rule}'; found.append({"detection_id":"DET-"+sha256(key.encode()).hexdigest()[:16],"session_id":session["session_id"],"type":kind,"severity":severity,"timestamp":session["end_time"],"reason":reason,"evidence_event_ids":evidence,"rule_id":rule})
+        key=f'{session["session_id"]}:{rule}'; found.append({"detection_id":"DET-"+sha256(key.encode()).hexdigest()[:16],"session_id":session["session_id"],"source_ip":session.get("source_ip"),"type":kind,"severity":severity,"timestamp":session["end_time"],"reason":reason,"evidence_event_ids":evidence,"rule_id":rule})
     failed=[e for e in events if e["event"].get("category")=="authentication" and e["event"].get("outcome")=="failure"]
     if len(failed)>=cfg.brute_force_threshold: add("BRUTE_FORCE","high",f"{len(failed)} authentication failures occurred in one session (threshold {cfg.brute_force_threshold}).",[e["event"]["id"] for e in failed],"auth-failures-v1")
     weak=[e for e in events if (e.get("authentication",{}).get("username"),e.get("authentication",{}).get("password")) in WEAK]
