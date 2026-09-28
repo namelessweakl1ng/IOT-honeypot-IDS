@@ -6,7 +6,7 @@ class PiManager:
     async def _ssh(self, *arguments: str) -> str:
         cfg=get_settings()
         if not cfg.pi_host: raise RuntimeError("PI_HOST is not configured")
-        proc=await asyncio.create_subprocess_exec("ssh","-i",cfg.pi_ssh_key,"-o","BatchMode=yes","-o","ConnectTimeout=5",f"{cfg.pi_user}@{cfg.pi_host}","/opt/trapsig/sensor/scripts/manage.sh",*arguments,stdout=asyncio.subprocess.PIPE,stderr=asyncio.subprocess.PIPE)
+        proc=await asyncio.create_subprocess_exec("ssh","-i",cfg.pi_ssh_key,"-o","BatchMode=yes","-o","IdentitiesOnly=yes","-o","StrictHostKeyChecking=yes","-o",f"UserKnownHostsFile={cfg.pi_known_hosts}","-o","ConnectTimeout=5",f"{cfg.pi_user}@{cfg.pi_host}","/opt/trapsig/sensor/scripts/manage.sh",*arguments,stdout=asyncio.subprocess.PIPE,stderr=asyncio.subprocess.PIPE)
         out,err=await proc.communicate()
         if proc.returncode: raise RuntimeError(err.decode().strip() or "Pi action failed")
         return out.decode().strip()

@@ -36,6 +36,10 @@ FastAPI continuously performs one deliberately small, idempotent processing cycl
 ```bash
 cp .env.example .env
 mkdir -p secrets && install -m 600 ~/.ssh/trapsig_pi secrets/pi_ssh_key
+set -a; . ./.env; set +a
+ssh-keyscan -H "$PI_HOST" > secrets/known_hosts
+ssh-keygen -lf secrets/known_hosts  # compare this fingerprint with the Pi console
+chmod 600 secrets/known_hosts
 docker compose up -d
 docker compose ps
 ```
@@ -52,7 +56,7 @@ cp .env.example .env        # set ANALYSIS_HOST to the laptop
 ./scripts/status.sh
 ```
 
-Install the backend SSH public key for the dedicated, restricted Pi user. The API invokes only `/opt/trapsig/sensor/scripts/manage.sh <start|stop|restart> <known-service>`.
+Install the backend SSH public key for the dedicated, restricted Pi user. Verify the scanned host-key fingerprint from the Pi itself before starting Compose; `ssh-keyscan` alone does not authenticate the host. The backend startup copies the host-owned, mode-0600 key and known-hosts file into its private container SSH directory, assigns them to UID 10001, and then drops privileges. SSH enforces the dedicated known-hosts file with strict checking. The API invokes only `/opt/trapsig/sensor/scripts/manage.sh <start|stop|restart> <known-service>` (plus its argument-free status operation).
 
 ## Run a controlled scenario
 

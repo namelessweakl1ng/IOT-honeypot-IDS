@@ -2,7 +2,7 @@
 
 ## Laptop
 
-Install current Docker Engine/Compose, Git, Python 3.12+, and Node.js. Clone the repository, copy `.env.example` to `.env`, replace the example network values, and place the dedicated Pi private key at `secrets/pi_ssh_key` with mode `0600` (or set `PI_SSH_KEY_PATH`). Compose mounts it read-only at `/run/secrets/pi_ssh_key`; `secrets/` is ignored by Git. Run `./scripts/analysis-up.sh`. Confirm `docker compose ps`, `curl http://localhost:8000/health`, and Kibana status. Install Python requirements and frontend packages before local tests.
+Install current Docker Engine/Compose, Git, Python 3.12+, and Node.js. Clone the repository, copy `.env.example` to `.env`, and replace the example network values. Place the dedicated Pi private key at `secrets/pi_ssh_key` with mode `0600` (or set `PI_SSH_KEY_PATH`). Capture the Pi host key with `ssh-keyscan -H "$PI_HOST" > secrets/known_hosts`, then compare `ssh-keygen -lf secrets/known_hosts` against a fingerprint obtained directly from the Pi console before trusting it. Set mode `0600` or stricter on that file too. Compose mounts both host files read-only into a root-only staging path. The backend entrypoint copies them with ownership UID 10001 and mode `0600`, verifies readability as that user, then drops privileges before starting FastAPI. SSH uses this dedicated file with `StrictHostKeyChecking=yes`; it never silently trusts a changed key. `secrets/` is ignored by Git. Run `./scripts/analysis-up.sh`. Confirm `docker compose ps`, `curl http://localhost:8000/health`, and Kibana status. Install Python requirements and frontend packages before local tests.
 
 ## Raspberry Pi
 
