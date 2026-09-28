@@ -9,5 +9,5 @@ export default async function Page() {
   } catch (caught) {
     error = String(caught);
   }
-  return <><h2>Honeypots</h2><p className="lede">Explicit start, stop, and restart operations are sent through the constrained Pi management service.</p>{error ? <p className="error">Unable to load Pi status: {error}</p> : <HoneypotGrid initial={data}/>}</>;
+  return <><header className="page-header"><p className="eyebrow">Sensor fleet</p><h2>HONEYPOTS</h2><p className="lede">Service state, observed event volume, and constrained Raspberry Pi controls.</p></header>{error ? <p className="error">Unable to load Pi status: {error}</p> : <HoneypotGrid initial={data}/>}</>;
 }

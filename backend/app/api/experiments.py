@@ -8,7 +8,13 @@ from .common import one
 router=APIRouter(prefix="/experiments",tags=["experiments"])
 INDEX="trapsig-experiments"
 @router.get("")
-async def experiments(): return await store.search("trapsig-experiments",size=200,sort_field="created_at")
+async def experiments():
+    return await store.search(
+        INDEX,
+        size=200,
+        sort_field="created_at",
+        missing_index_is_empty=True,
+    )
 @router.post("",status_code=201)
 async def create(payload:ExperimentCreate):
     identifier="EXP-"+uuid4().hex[:12].upper(); doc={**payload.model_dump(),"experiment_id":identifier,"status":"created","created_at":datetime.now(timezone.utc).isoformat()}
