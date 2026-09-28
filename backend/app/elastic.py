@@ -1,5 +1,5 @@
 from typing import Any
-from elasticsearch import AsyncElasticsearch
+from elasticsearch import AsyncElasticsearch, NotFoundError
 from .config import get_settings
 
 class ElasticStore:
@@ -17,13 +17,19 @@ class ElasticStore:
         query: dict[str, Any] | None = None,
         size: int = 100,
         sort_field: str = "@timestamp",
+        missing_index_is_empty: bool = False,
     ) -> list[dict[str, Any]]:
-        result = await self.client.search(
-            index=index,
-            query=query or {"match_all": {}},
-            size=size,
-            sort=[{sort_field: "desc"}],
-        )
+        try:
+            result = await self.client.search(
+                index=index,
+                query=query or {"match_all": {}},
+                size=size,
+                sort=[{sort_field: "desc"}],
+            )
+        except NotFoundError:
+            if missing_index_is_empty:
+                return []
+            raise
         return [{**hit["_source"], "_id": hit["_id"]} for hit in result["hits"]["hits"]]
 
     async def count(self, index: str, query: dict[str, Any] | None = None) -> int:
