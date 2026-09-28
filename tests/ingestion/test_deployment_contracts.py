@@ -3,6 +3,8 @@ from pathlib import Path
 
 import yaml
 
+from backend.app.services.pi_manager import HONEYPOTS, MANAGE_SCRIPT
+
 ROOT = Path(__file__).parents[2]
 
 
@@ -52,13 +54,33 @@ def test_ssh_wrapper_is_an_exact_whitelist():
     text = wrapper.read_text()
     assert "eval" not in text
     assert "sh -c" not in text
-    assert 'MANAGER=/opt/trapsig/sensor/scripts/manage.sh' in text
+    assert f"MANAGER={MANAGE_SCRIPT}" in text
     assert "${SSH_ORIGINAL_COMMAND:-}" in text
+    expected_commands = {f"{MANAGE_SCRIPT} status"}
     for service in ("cowrie", "camera", "iot-service", "mqtt", "router"):
         for action in ("start", "stop", "restart"):
-            assert f'"{action} {service}")' in text
+            expected_commands.add(f"{MANAGE_SCRIPT} {action} {service}")
+            assert f'"$MANAGER {action} {service}")' in text
+    assert set(HONEYPOTS) == {"cowrie", "camera", "iot-service", "mqtt", "router"}
+    assert '"$MANAGER status")' in text
+    accepted = {
+        line.split('")', 1)[0].replace('  "$MANAGER', MANAGE_SCRIPT)
+        for line in text.splitlines()
+        if line.startswith('  "$MANAGER ')
+    }
+    assert accepted == expected_commands
     denied = subprocess.run(
         [str(wrapper)], env={"SSH_ORIGINAL_COMMAND": "uname -a"}, text=True, capture_output=True, check=False
     )
     assert denied.returncode != 0
     assert "Denied" in denied.stderr
+
+
+def test_pi_setup_documents_and_checks_docker_access():
+    setup = (ROOT / "sensor/scripts/setup.sh").read_text()
+    guide = (ROOT / "docs/SETUP.md").read_text()
+    assert "id -nG trapsig" in setup
+    assert "sudo usermod -aG docker trapsig" in guide
+    assert "sudo -u trapsig docker info" in guide
+    assert "new login/SSH session" in guide
+    assert "highly privileged" in guide

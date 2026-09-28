@@ -51,10 +51,24 @@ Install the restricted management account and wrapper as an administrator:
 ```bash
 sudo useradd --create-home --shell /bin/sh trapsig  # omit if it exists
 sudo passwd --lock trapsig                         # key-only authentication
+getent group docker                                # must exist from Docker installation
+sudo usermod -aG docker trapsig
 sudo chown -R root:root /opt/trapsig
+sudo chmod 755 /opt /opt/trapsig /opt/trapsig/sensor /opt/trapsig/sensor/scripts
+sudo chmod 644 /opt/trapsig/sensor/docker-compose.yml /opt/trapsig/sensor/.env
 sudo chmod 755 /opt/trapsig/sensor/scripts/manage.sh /opt/trapsig/sensor/scripts/ssh-manage-wrapper.sh
 sudo install -d -o trapsig -g trapsig -m 700 /home/trapsig/.ssh
 ```
+
+The Docker installation must already have created the `docker` group. Start a **new login/SSH session** after `usermod`, then verify read/traverse access and Docker daemon access without granting sudo:
+
+```bash
+id trapsig                         # groups must include docker
+namei -l /opt/trapsig/sensor/docker-compose.yml
+sudo -u trapsig docker info
+```
+
+Membership in the Docker group is highly privileged (effectively root-equivalent). Do not grant the account general sudo or install an unrestricted key. This is why the backend key below is constrained to an exact forced-command whitelist. The root-owned project tree remains non-writable by `trapsig`; the explicit directory and file modes provide only the read/traverse access Compose needs.
 
 Append the backend **public** key (never its private key) to `/home/trapsig/.ssh/authorized_keys` in this exact forced-command form:
 
@@ -77,7 +91,7 @@ docker compose exec filebeat filebeat test output -c /usr/share/filebeat/filebea
 
 The one-shot `custom-logs-init` service idempotently assigns the named log volume to UID/GID 10001 before custom honeypots start. Honeypots remain read-only, capability-free, resource-limited, non-root containers. Their health probes and Cowrie's probe inspect listening sockets without creating attacker telemetry. Filebeat health tests configuration only, so a temporary Logstash outage does not cause restart churn.
 
-The wrapper permits only `status` and exact `start|stop|restart` operations for `cowrie`, `camera`, `iot-service`, `mqtt`, and `router`. Empty, interactive, forwarded, and arbitrary commands are rejected; `manage.sh` independently validates its arguments.
+The wrapper permits only the full commands requested by the backend: `/opt/trapsig/sensor/scripts/manage.sh status` and that fixed path followed by exact `start|stop|restart` operations for `cowrie`, `camera`, `iot-service`, `mqtt`, and `router`. Empty, shortened, interactive, forwarded, and arbitrary commands are rejected; `manage.sh` independently validates its arguments.
 
 ## Troubleshooting observed deployment failures
 
