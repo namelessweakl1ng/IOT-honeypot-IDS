@@ -1,0 +1,26 @@
+id: ssh-bruteforce
+name: SSH brute force
+description: Six failed SSH password authentications
+target_services:
+- ssh
+expected_detection: BRUTE_FORCE
+severity: high
+steps:
+- service: ssh
+  username: user0
+  password: wrong0
+- service: ssh
+  username: user1
+  password: wrong1
+- service: ssh
+  username: user2
+  password: wrong2
+- service: ssh
+  username: user3
+  password: wrong3
+- service: ssh
+  username: user4
+  password: wrong4
+- service: ssh
+  username: user5
+  password: wrong5

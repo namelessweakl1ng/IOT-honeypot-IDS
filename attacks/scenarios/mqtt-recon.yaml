@@ -1,0 +1,14 @@
+id: mqtt-recon
+name: MQTT reconnaissance
+description: MQTT CONNECT, SUBSCRIBE and PING packets
+target_services:
+- mqtt
+expected_detection: MQTT_PROBING
+severity: medium
+steps:
+- service: mqtt
+  operation: connect
+- service: mqtt
+  operation: subscribe
+- service: mqtt
+  operation: ping

@@ -1,0 +1,17 @@
+id: multi-stage
+name: Multi-stage attack
+description: Authentication and interaction across decoys
+target_services:
+- ssh
+- camera
+- iot
+expected_detection: MULTI_STAGE_ATTACK
+severity: high
+steps:
+- service: ssh
+  username: admin
+  password: wrong
+- service: camera
+  path: /admin
+- service: iot
+  payload: STATUS\r\n

@@ -1,0 +1,2 @@
+- pipeline.id: trapsig
+  path.config: /usr/share/logstash/pipeline/*.conf

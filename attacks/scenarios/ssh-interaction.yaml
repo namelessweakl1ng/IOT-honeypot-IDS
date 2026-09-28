@@ -1,0 +1,12 @@
+id: ssh-interaction
+name: SSH interaction
+description: Controlled Cowrie login and harmless command
+target_services:
+- ssh
+expected_detection: COMMAND_INTERACTION
+severity: medium
+steps:
+- service: ssh
+  username: root
+  password: root
+  command: id

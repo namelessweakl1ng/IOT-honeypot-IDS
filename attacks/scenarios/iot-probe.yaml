@@ -1,0 +1,14 @@
+id: iot-probe
+name: IoT probe
+description: Three bounded device commands
+target_services:
+- iot
+expected_detection: RECONNAISSANCE
+severity: medium
+steps:
+- service: iot
+  payload: STATUS\r\n
+- service: iot
+  payload: VERSION\r\n
+- service: iot
+  payload: INFO\r\n

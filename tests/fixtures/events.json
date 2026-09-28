@@ -1,0 +1,5 @@
+[
+ {"timestamp":"2026-01-01T10:00:00Z","event_id":"e1","category":"network","type":"connection","action":"connect","outcome":"unknown","source_ip":"192.168.50.20","source_port":40001,"destination_ip":"192.168.50.10","destination_port":8081,"protocol":"http","service":"camera","summary":"camera request"},
+ {"timestamp":"2026-01-01T10:00:10Z","event_id":"e2","category":"web","type":"info","action":"request","outcome":"failure","source_ip":"192.168.50.20","source_port":40002,"destination_ip":"192.168.50.10","destination_port":8080,"protocol":"http","service":"router","summary":"router request"},
+ {"timestamp":"2026-01-01T10:00:20Z","event_id":"e3","category":"network","type":"info","action":"connect","outcome":"unknown","source_ip":"192.168.50.20","source_port":40003,"destination_ip":"192.168.50.10","destination_port":1883,"protocol":"mqtt","service":"mqtt","summary":"mqtt connect"}
+]

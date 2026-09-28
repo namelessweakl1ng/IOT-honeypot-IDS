@@ -1,44 +1,89 @@
 # TRAPSIG
 
-TRAPSIG is an IoT honeypot and hybrid intrusion-detection research platform.
-The repository has one authoritative dashboard: the root Next.js application in `src/`. The research/runtime project lives in `iot-honeypot-ids/` and owns the Raspberry Pi deployment, attacker scenarios, ELK configuration, FastAPI domain API, runtime ML, model-lab, research artifacts, shared schemas, and tests.
+TRAPSIG is a multi-honeypot IoT cybersecurity experimentation and attack-analysis platform. A Raspberry Pi exposes deliberately limited deception services; Filebeat forwards their logs to a laptop where Logstash normalizes telemetry, Elasticsearch stores it, FastAPI reconstructs sessions and explains rule detections, and Next.js provides experiment-oriented control. Kibana remains the deep-analysis interface.
 
-## Runtime authority
+## Why it exists
+
+The project provides a reproducible, understandable laboratory for studying how activity crosses IoT services and how deterministic detections behave. It is a final-year research platform, **not** a production SIEM and not a safe target on the public Internet.
+
+## Two-machine architecture
 
 ```text
-Computer 1: Raspberry Pi honeypots -> Filebeat/collector
-Computer 2: Fedora Logstash -> Elasticsearch/Kibana -> FastAPI
-Computer 3: controlled attacker scenarios
-Browser: root Next.js dashboard -> FastAPI
+controlled attacker -> Raspberry Pi: Cowrie SSH/Telnet, camera HTTP,
+                       IoT TCP, MQTT, router HTTP + Filebeat
+                    -> Laptop: Logstash -> Elasticsearch -> Kibana
+                                             |-> FastAPI -> Next.js
 ```
 
-FastAPI is the domain API and Elasticsearch is the telemetry source of truth. The root `/api/ids/*` handlers are a server-side browser facade and must not become a second business-logic implementation.
+Addresses are never encoded in application code. Configure the laptop/Pi/attacker subnet in environment files. Elasticsearch is the only telemetry and derived-data store. Raw `trapsig-events-*` documents are immutable; experiments reference their IDs.
 
-## Modes and research integrity
+FastAPI continuously performs one deliberately small, idempotent processing cycle: it reads normalized events, deterministically reconstructs source-IP sessions, upserts `trapsig-sessions`, evaluates explainable rules, and upserts `trapsig-detections`. Stable IDs make restart and repeated cycles safe without marking or mutating raw events.
 
-`EMPTY`, `DEMO`, and `LIVE` are explicit backend-owned modes. Synthetic data is labeled and never silently used as live telemetry. Rule predictions remain separate from ground truth; `NO_RULE` is not benign; unlabeled data remains unknown. Leakage-safe feature version `v2` excludes the audited label-derived features.
+## Repository map
 
-Research evidence has separate categories: `PUBLIC_DATASET` (IoT-23 network flows), `CONTROLLED_LAB` (scenario ground truth and physical telemetry), `LIVE_TELEMETRY` (current backend observations), and `SYNTHETIC` (explicit demo/test fixtures). These categories are never silently merged. The public-data experiments are offline; they do not validate Pi deployment.
+| Path | Responsibility |
+| --- | --- |
+| `frontend/` | Small Next.js operational and experiment UI |
+| `backend/` | Sole domain API, sessionization, rules, correlation, Pi actions |
+| `elk/` | Logstash normalization, Elasticsearch and Kibana configuration |
+| `sensor/` | Hardened Pi honeypots, Filebeat and management scripts |
+| `attacks/` | Subnet-restricted controlled scenario runner and manifests |
+| `tests/` | Behavior tests and clearly synthetic fixtures |
+| `docs/` | Five authoritative project guides |
 
-## Start locally
+## Start the laptop
 
 ```bash
-bun install
-bun run dev
+cp .env.example .env
+mkdir -p secrets && install -m 600 ~/.ssh/trapsig_pi secrets/pi_ssh_key
+set -a; . ./.env; set +a
+ssh-keyscan -H "$PI_HOST" > secrets/known_hosts
+ssh-keygen -lf secrets/known_hosts  # compare this fingerprint with the Pi console
+chmod 600 secrets/known_hosts
+docker compose up -d
+docker compose ps
 ```
 
-The single operator demonstration path is [DEMO.md](DEMO.md). The FastAPI and ELK deployment instructions are in [iot-honeypot-ids/README.md](iot-honeypot-ids/README.md). The final architecture and research baseline are documented in:
+Open TRAPSIG at `http://localhost:3000`, the API at `http://localhost:8000/docs`, and Kibana at `http://localhost:5601`.
 
-- [Final architecture decision](iot-honeypot-ids/docs/finalization/FINAL_ARCHITECTURE_DECISION.md)
-- [API source of truth](iot-honeypot-ids/docs/finalization/API_SOURCE_OF_TRUTH.md)
-- [Research baseline](iot-honeypot-ids/docs/research/RESEARCH_BASELINE.md)
-- [Claims audit](iot-honeypot-ids/docs/research/CLAIMS_AUDIT.md)
-- [Verification report](iot-honeypot-ids/docs/research/FINAL_VERIFICATION_REPORT.md)
-- [IoT-23 dataset card](iot-honeypot-ids/docs/research/datasets/IOT23_DATASET_CARD.md)
-- [Final research freeze report](iot-honeypot-ids/docs/research/FINAL_FREEZE_REPORT.md)
-- [Canonical architecture](iot-honeypot-ids/docs/architecture/CANONICAL_ARCHITECTURE.md)
-- [Implementation audit](iot-honeypot-ids/docs/research/FINAL_IMPLEMENTATION_AUDIT.md)
-- [Research reproducibility](iot-honeypot-ids/docs/research/REPRODUCIBILITY.md)
-- [IoT-23 feature mapping](iot-honeypot-ids/docs/research/datasets/IOT23_FEATURE_MAPPING.md)
+## Start the Raspberry Pi
 
-Physical-lab validation is not implied by local builds or unit tests. The current baseline must explicitly report physical status and measured results.
+```bash
+cd sensor
+cp .env.example .env        # set ANALYSIS_HOST to the laptop
+./scripts/setup.sh
+./scripts/start.sh
+./scripts/status.sh
+```
+
+Install the backend SSH public key for the dedicated, restricted Pi user. Verify the scanned host-key fingerprint from the Pi itself before starting Compose; `ssh-keyscan` alone does not authenticate the host. The backend startup copies the host-owned, mode-0600 key and known-hosts file into its private container SSH directory, assigns them to UID 10001, and then drops privileges. SSH enforces the dedicated known-hosts file with strict checking. The API invokes only `/opt/trapsig/sensor/scripts/manage.sh <start|stop|restart> <known-service>` (plus its argument-free status operation).
+
+## Run a controlled scenario
+
+```bash
+python -m venv .venv && . .venv/bin/activate
+pip install -r attacks/requirements.txt
+export LAB_SUBNET=192.168.50.0/24 HONEYPOT_IP=192.168.50.10
+python -m attacks.runner.run multi-honeypot-attack --target "$HONEYPOT_IP"
+```
+
+The explicit target must be a usable private address inside `LAB_SUBNET`. Scenarios never scan ranges, persist, create C2, or exfiltrate data.
+
+## Create an experiment
+
+Create it with `POST /experiments`, start it with `POST /experiments/{id}/start`, run the matching controlled scenario, then finish it with `POST /experiments/{id}/finish`. Finishing correlates immutable events by time window, attacker IP, and target IP and records linked session/detection IDs plus TP/FN outcome.
+
+## Test and validate
+
+```bash
+pip install -r backend/requirements.txt -r attacks/requirements.txt ruff
+cd frontend && bun install && cd ..
+./scripts/test.sh
+./scripts/validate.sh
+```
+
+See [setup](docs/SETUP.md), [architecture](docs/ARCHITECTURE.md), [event schema](docs/EVENT_SCHEMA.md), [experiment method](docs/EXPERIMENTS.md), and [demonstration](docs/DEMO.md).
+
+## Safety
+
+Run only on an isolated private lab network you own. Do not expose deception services to the Internet. Honeypots return static responses and provide no real device or shell capability. Keep the Pi management key out of Git and restrict it to the management script. Physical-Pi resource, ingestion, and detection measurements are currently **NOT MEASURED**.

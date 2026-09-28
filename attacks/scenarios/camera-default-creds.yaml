@@ -1,0 +1,12 @@
+id: camera-default-creds
+name: Camera default credentials
+description: Submit one known synthetic camera credential
+target_services:
+- camera
+expected_detection: DEFAULT_CREDENTIALS
+severity: high
+steps:
+- service: camera
+  path: /login
+  username: admin
+  password: admin

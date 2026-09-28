@@ -1,0 +1,12 @@
+id: router-default-creds
+name: Router default credentials
+description: Submit one known synthetic router credential
+target_services:
+- router
+expected_detection: DEFAULT_CREDENTIALS
+severity: high
+steps:
+- service: router
+  path: /login
+  username: admin
+  password: admin

@@ -1,0 +1,16 @@
+id: cross-service-recon
+name: Cross-service reconnaissance
+description: Probe three known services
+target_services:
+- camera
+- router
+- mqtt
+expected_detection: MULTI_SERVICE_ACTIVITY
+severity: medium
+steps:
+- service: camera
+  path: /
+- service: router
+  path: /
+- service: mqtt
+  operation: connect

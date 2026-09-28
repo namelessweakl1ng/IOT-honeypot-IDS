@@ -1,0 +1,16 @@
+id: router-recon
+name: Router reconnaissance
+description: Inspect bounded router paths
+target_services:
+- router
+expected_detection: WEB_ENUMERATION
+severity: medium
+steps:
+- service: router
+  path: /
+- service: router
+  path: /status
+- service: router
+  path: /network
+- service: router
+  path: /system

@@ -1,0 +1,28 @@
+id: multi-honeypot-attack
+name: Multi-honeypot attack
+description: Bounded interaction across all decoys
+target_services:
+- ssh
+- telnet
+- camera
+- iot
+- mqtt
+- router
+expected_detection: MULTI_STAGE_ATTACK
+severity: high
+steps:
+- service: ssh
+  username: admin
+  password: wrong
+- service: telnet
+  payload: admin\r\nwrong\r\n
+- service: camera
+  path: /admin
+- service: iot
+  payload: STATUS\r\n
+- service: mqtt
+  operation: connect
+- service: router
+  path: /login
+  username: admin
+  password: admin

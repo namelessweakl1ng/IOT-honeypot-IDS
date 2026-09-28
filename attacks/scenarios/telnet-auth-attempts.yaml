@@ -1,0 +1,20 @@
+id: telnet-auth-attempts
+name: Telnet authentication attempts
+description: Bounded Telnet input attempts
+target_services:
+- telnet
+expected_detection: BRUTE_FORCE
+severity: high
+steps:
+- service: telnet
+  payload: admin\r\nwrong0\r\n
+- service: telnet
+  payload: admin\r\nwrong1\r\n
+- service: telnet
+  payload: admin\r\nwrong2\r\n
+- service: telnet
+  payload: admin\r\nwrong3\r\n
+- service: telnet
+  payload: admin\r\nwrong4\r\n
+- service: telnet
+  payload: admin\r\nwrong5\r\n
