@@ -2,7 +2,7 @@
 
 There are two hosts. The Pi runs five containers representing six logical services (Cowrie supplies SSH and Telnet) plus Filebeat. Filebeat's disk queue is the sole edge buffer and sends JSON/JSONL over Beats to laptop Logstash. Per-family filters normalize records into the canonical schema; malformed records go to `trapsig-dead-letter-*`, never silently disappear.
 
-Elasticsearch owns `trapsig-events-*`, `trapsig-sessions-*`, `trapsig-detections-*`, and `trapsig-experiments-*`. FastAPI is the only domain backend. Its focused routers query Elasticsearch, while services deterministically reconstruct source-IP sessions, apply explainable rules, correlate experiments, and invoke a fixed Pi management script through SSH. Next.js contains only presentation and a typed HTTP client. Kibana directly explores Elasticsearch for detailed research analysis.
+Elasticsearch owns date-based `trapsig-events-*` raw indices and the three stable derived indices `trapsig-sessions`, `trapsig-detections`, and `trapsig-experiments`. FastAPI is the only domain backend. Its focused routers query Elasticsearch, while services deterministically reconstruct source-IP sessions, apply explainable rules, correlate experiments, and invoke a fixed Pi management script through SSH. Next.js contains only presentation and a typed HTTP client. Kibana directly explores Elasticsearch for detailed research analysis.
 
 The deployment deliberately has only the components in this document; no parallel messaging, storage, API, collector, runtime-mode, or model lifecycle exists.
 

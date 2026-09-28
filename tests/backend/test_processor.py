@@ -6,7 +6,7 @@ from tests.ingestion.test_pipeline_contracts import cowrie
 class Store:
     def __init__(self):
         self.documents = {}
-    async def search(self, index, query=None, size=100):
+    async def search(self, index, query=None, size=100, sort_field="@timestamp"):
         return [cowrie(str(i), second=i) for i in range(5)]
     async def save(self, index, document_id, document):
         self.documents[(index, document_id)] = document

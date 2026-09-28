@@ -11,8 +11,19 @@ class ElasticStore:
     async def health(self) -> dict[str, Any]:
         return dict(await self.client.cluster.health())
 
-    async def search(self, index: str, query: dict[str, Any] | None = None, size: int = 100) -> list[dict[str, Any]]:
-        result = await self.client.search(index=index, query=query or {"match_all": {}}, size=size, sort=[{"@timestamp": "desc"}])
+    async def search(
+        self,
+        index: str,
+        query: dict[str, Any] | None = None,
+        size: int = 100,
+        sort_field: str = "@timestamp",
+    ) -> list[dict[str, Any]]:
+        result = await self.client.search(
+            index=index,
+            query=query or {"match_all": {}},
+            size=size,
+            sort=[{sort_field: "desc"}],
+        )
         return [{**hit["_source"], "_id": hit["_id"]} for hit in result["hits"]["hits"]]
 
     async def count(self, index: str, query: dict[str, Any] | None = None) -> int:

@@ -25,7 +25,7 @@ class EventProcessor:
     async def process_once(self) -> dict[str, int]:
         settings = get_settings()
         events = await self.store.search(
-            "trapsig-events-*", size=settings.processing_event_limit
+            "trapsig-events-*", size=settings.processing_event_limit, sort_field="@timestamp"
         )
         sessions = reconstruct_sessions(events, settings.session_timeout_seconds)
         detections: list[dict[str, Any]] = []

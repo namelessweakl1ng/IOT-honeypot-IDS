@@ -16,4 +16,4 @@ async def status():
     async def safe_count(index:str)->int|None:
         try:return await store.count(index)
         except Exception:return None
-    return {**data,"logstash":"configured","kibana_url":cfg.kibana_url,"pi":"reachable" if any(value!="unreachable" for value in statuses.values()) else "unreachable","honeypots":statuses,"counts":{"events":await safe_count("trapsig-events-*"),"sessions":await safe_count("trapsig-sessions-*"),"detections":await safe_count("trapsig-detections-*"),"experiments":await safe_count("trapsig-experiments-*")},"processor":processor_module.processor.status() if processor_module.processor else {"last_run":None}}
+    return {**data,"logstash":"configured","kibana_url":cfg.kibana_url,"pi":"reachable" if any(value!="unreachable" for value in statuses.values()) else "unreachable","honeypots":statuses,"counts":{"events":await safe_count("trapsig-events-*"),"sessions":await safe_count("trapsig-sessions"),"detections":await safe_count("trapsig-detections"),"experiments":await safe_count("trapsig-experiments")},"processor":processor_module.processor.status() if processor_module.processor else {"last_run":None}}

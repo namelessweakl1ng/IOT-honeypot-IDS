@@ -8,13 +8,13 @@ from .common import one
 router=APIRouter(prefix="/experiments",tags=["experiments"])
 INDEX="trapsig-experiments"
 @router.get("")
-async def experiments(): return await store.search("trapsig-experiments-*",size=200)
+async def experiments(): return await store.search("trapsig-experiments",size=200,sort_field="created_at")
 @router.post("",status_code=201)
 async def create(payload:ExperimentCreate):
     identifier="EXP-"+uuid4().hex[:12].upper(); doc={**payload.model_dump(),"experiment_id":identifier,"status":"created","created_at":datetime.now(timezone.utc).isoformat()}
     return await store.save(INDEX,identifier,doc)
 @router.get("/{identifier}")
-async def experiment(identifier:str): return await one("trapsig-experiments-*",identifier)
+async def experiment(identifier:str): return await one("trapsig-experiments",identifier)
 @router.post("/{identifier}/start")
 async def start(identifier:str):
     doc=await experiment(identifier)
@@ -29,5 +29,5 @@ async def finish(identifier:str):
     from ..services import processor as processor_module
     if processor_module.processor:
         await processor_module.processor.process_once()
-    events=await store.search("trapsig-events-*",size=500); sessions=await store.search("trapsig-sessions-*",size=500); detections=await store.search("trapsig-detections-*",size=500)
+    events=await store.search("trapsig-events-*",size=500,sort_field="@timestamp"); sessions=await store.search("trapsig-sessions",size=500,sort_field="start_time"); detections=await store.search("trapsig-detections",size=500,sort_field="timestamp")
     return await store.save(INDEX,identifier,correlate(doc,events,sessions,detections))
