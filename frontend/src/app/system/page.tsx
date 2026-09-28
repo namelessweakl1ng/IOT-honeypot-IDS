@@ -1,0 +1,1 @@
+import {api,RecordValue} from "@/lib/api";export default async function Page(){let status:RecordValue={};try{status=await api<RecordValue>("/system/status")}catch{}return <><h2>System</h2><article>{Object.entries(status).map(([k,v])=><div key={k}><strong>{k}</strong><span>{String(v)}</span></div>)}</article></>}

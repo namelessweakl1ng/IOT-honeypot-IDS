@@ -1,0 +1,10 @@
+id: ssh-interaction
+name: SSH interaction
+description: SSH banner and command interaction
+target_services:
+  - ssh
+expected_detection: COMMAND_INTERACTION
+severity: medium
+steps:
+  - service: ssh
+    payload: "SSH-2.0-OpenSSH_8.9\r\n"

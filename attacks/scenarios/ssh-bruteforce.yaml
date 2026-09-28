@@ -1,0 +1,20 @@
+id: ssh-bruteforce
+name: SSH brute force
+description: Repeated controlled SSH authentication probes
+target_services:
+  - ssh
+expected_detection: BRUTE_FORCE
+severity: medium
+steps:
+  - service: ssh
+    payload: "SSH-2.0-OpenSSH_8.9\r\n"
+  - service: ssh
+    payload: "SSH-2.0-OpenSSH_8.9\r\n"
+  - service: ssh
+    payload: "SSH-2.0-OpenSSH_8.9\r\n"
+  - service: ssh
+    payload: "SSH-2.0-OpenSSH_8.9\r\n"
+  - service: ssh
+    payload: "SSH-2.0-OpenSSH_8.9\r\n"
+  - service: ssh
+    payload: "SSH-2.0-OpenSSH_8.9\r\n"

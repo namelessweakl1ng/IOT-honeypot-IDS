@@ -1,0 +1,1 @@
+import {DataView} from "@/components/data-view";export default function Page(){return <><h2>Experiments</h2><p className="lede">Controlled runs correlate immutable raw telemetry by time, source, target, session, and detection.</p><DataView path="/experiments"/></>}

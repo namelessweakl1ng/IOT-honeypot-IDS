@@ -1,0 +1,20 @@
+filebeat.inputs:
+  - type: filestream
+    id: cowrie
+    paths: [/logs/cowrie/*.json]
+    parsers: [{ndjson: {target: "", add_error_key: true}}]
+    fields: {sensor_id: "${SENSOR_ID}", honeypot_id: cowrie-01, honeypot_type: ssh_telnet}
+  - type: filestream
+    id: custom-honeypots
+    paths: [/logs/custom/*.jsonl]
+    parsers: [{ndjson: {target: "", add_error_key: true}}]
+    fields_under_root: false
+    fields: {sensor_id: "${SENSOR_ID}"}
+processors:
+  - add_fields: {target: observer, fields: {name: "${HONEYPOT_HOSTNAME}", type: honeypot_sensor}}
+queue.disk:
+  max_size: 512MB
+  path: /usr/share/filebeat/data/diskqueue
+output.logstash:
+  hosts: ["${ANALYSIS_HOST}:${LOGSTASH_PORT}"]
+logging.level: info

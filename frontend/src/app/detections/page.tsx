@@ -1,0 +1,1 @@
+import {DataView} from "@/components/data-view";export default function Page(){return <><h2>Explainable Detections</h2><p className="lede">Every finding states the rule, reason, severity, and evidence event IDs.</p><DataView path="/detections"/></>}

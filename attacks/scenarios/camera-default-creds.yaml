@@ -1,0 +1,12 @@
+id: camera-default-creds
+name: Camera default credentials
+description: Try one known camera default pair
+target_services:
+  - camera
+expected_detection: DEFAULT_CREDENTIALS
+severity: medium
+steps:
+  - service: camera
+    payload: "GET / HTTP/1.1\r\nHost: camera\r\n\r\n"
+  - service: camera
+    payload: "GET / HTTP/1.1\r\nHost: camera\r\n\r\n"

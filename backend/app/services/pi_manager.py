@@ -1,0 +1,15 @@
+import asyncio
+from ..config import get_settings
+
+HONEYPOTS={"cowrie":{"name":"Cowrie SSH/Telnet","protocol":"ssh/telnet","port":"2222/2223","description":"Interactive credential and command deception"},"camera":{"name":"IP Camera","protocol":"http","port":8081,"description":"Camera administration decoy"},"iot-service":{"name":"IoT TCP Device","protocol":"tcp","port":9000,"description":"Line-oriented embedded device decoy"},"mqtt":{"name":"MQTT Broker","protocol":"mqtt","port":1883,"description":"MQTT protocol decoy"},"router":{"name":"Router Admin","protocol":"http","port":8080,"description":"Router administration decoy"}}
+class PiManager:
+    async def action(self, honeypot_id: str, action: str) -> dict:
+        if honeypot_id not in HONEYPOTS: raise ValueError("unknown honeypot")
+        if action not in {"start","stop","restart"}: raise ValueError("unsupported action")
+        cfg=get_settings()
+        if not cfg.pi_host: raise RuntimeError("PI_HOST is not configured")
+        proc=await asyncio.create_subprocess_exec("ssh","-i",cfg.pi_ssh_key,"-o","BatchMode=yes",f"{cfg.pi_user}@{cfg.pi_host}","/opt/trapsig/sensor/scripts/manage.sh",action,honeypot_id,stdout=asyncio.subprocess.PIPE,stderr=asyncio.subprocess.PIPE)
+        out,err=await proc.communicate()
+        if proc.returncode: raise RuntimeError(err.decode().strip() or "Pi action failed")
+        return {"honeypot_id":honeypot_id,"action":action,"output":out.decode().strip()}
+pi_manager=PiManager()

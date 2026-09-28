@@ -1,0 +1,12 @@
+id: router-default-creds
+name: Router default credentials
+description: Try one known router default pair
+target_services:
+  - router
+expected_detection: DEFAULT_CREDENTIALS
+severity: medium
+steps:
+  - service: router
+    payload: "GET /admin HTTP/1.1\r\nHost: router\r\n\r\n"
+  - service: router
+    payload: "GET /admin HTTP/1.1\r\nHost: router\r\n\r\n"

@@ -1,0 +1,18 @@
+id: http-enumeration
+name: HTTP enumeration
+description: Request bounded administrative paths
+target_services:
+  - http
+expected_detection: WEB_ENUMERATION
+severity: medium
+steps:
+  - service: http
+    payload: "GET /admin HTTP/1.1\r\nHost: camera\r\n\r\n"
+  - service: http
+    payload: "GET /admin HTTP/1.1\r\nHost: camera\r\n\r\n"
+  - service: http
+    payload: "GET /admin HTTP/1.1\r\nHost: camera\r\n\r\n"
+  - service: http
+    payload: "GET /admin HTTP/1.1\r\nHost: camera\r\n\r\n"
+  - service: http
+    payload: "GET /admin HTTP/1.1\r\nHost: camera\r\n\r\n"

@@ -1,0 +1,20 @@
+id: telnet-auth-attempts
+name: Telnet authentication attempts
+description: Repeated Telnet credential attempts
+target_services:
+  - telnet
+expected_detection: BRUTE_FORCE
+severity: medium
+steps:
+  - service: telnet
+    payload: "admin\r\n"
+  - service: telnet
+    payload: "admin\r\n"
+  - service: telnet
+    payload: "admin\r\n"
+  - service: telnet
+    payload: "admin\r\n"
+  - service: telnet
+    payload: "admin\r\n"
+  - service: telnet
+    payload: "admin\r\n"

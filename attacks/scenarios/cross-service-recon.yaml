@@ -1,0 +1,16 @@
+id: cross-service-recon
+name: Cross-service reconnaissance
+description: Probe three explicitly known services
+target_services:
+  - camera
+  - mqtt
+  - router
+expected_detection: MULTI_SERVICE_ACTIVITY
+severity: medium
+steps:
+  - service: camera
+    payload: "GET / HTTP/1.1\r\nHost: camera\r\n\r\n"
+  - service: router
+    payload: "GET /admin HTTP/1.1\r\nHost: router\r\n\r\n"
+  - service: mqtt
+    payload: "\x10\x0c\x00\x04MQTT\x04\x02\x00\x0a\x00\x00"

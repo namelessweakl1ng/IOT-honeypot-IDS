@@ -1,0 +1,16 @@
+id: multi-stage
+name: Multi-stage attack
+description: Probe web then SSH and IoT services
+target_services:
+  - camera
+  - iot
+  - ssh
+expected_detection: MULTI_STAGE_ATTACK
+severity: medium
+steps:
+  - service: camera
+    payload: "GET / HTTP/1.1\r\nHost: camera\r\n\r\n"
+  - service: ssh
+    payload: "SSH-2.0-OpenSSH_8.9\r\n"
+  - service: iot
+    payload: "STATUS\r\n"

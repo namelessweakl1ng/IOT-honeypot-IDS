@@ -1,0 +1,14 @@
+id: iot-probe
+name: IoT probe
+description: Send a benign device status request
+target_services:
+  - iot
+expected_detection: RECONNAISSANCE
+severity: medium
+steps:
+  - service: iot
+    payload: "STATUS\r\n"
+  - service: iot
+    payload: "STATUS\r\n"
+  - service: iot
+    payload: "STATUS\r\n"

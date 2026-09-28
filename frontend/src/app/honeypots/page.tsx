@@ -1,0 +1,1 @@
+import {DataView} from "@/components/data-view";export default function Page(){return <><h2>Honeypots</h2><p className="lede">Status and predefined management actions are provided by FastAPI; no arbitrary shell is exposed.</p><DataView path="/honeypots"/></>}
