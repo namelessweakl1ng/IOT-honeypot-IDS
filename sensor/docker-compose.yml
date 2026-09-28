@@ -10,6 +10,12 @@ x-hardened: &hardened
   cpus: 0.25
   volumes: [custom-logs:/logs]
 services:
+  custom-logs-init:
+    build: {context: ./honeypots}
+    user: root
+    command: [chown, -R, "10001:10001", /logs]
+    volumes: [custom-logs:/logs]
+    restart: "no"
   cowrie:
     image: cowrie/cowrie:latest
     restart: unless-stopped
@@ -20,27 +26,31 @@ services:
     pids_limit: 128
     mem_limit: 256m
     cpus: 0.5
-    healthcheck: {test: [CMD-SHELL, "python -c \"import socket;s=socket.create_connection(('localhost',2222),2);s.close()\""], interval: 30s, timeout: 5s, retries: 3}
+    healthcheck: {test: [CMD, /cowrie/cowrie-env/bin/python, -c, "import sys; p='08AE'; sys.exit(0 if any(x.split()[1].endswith(':'+p) and x.split()[3]=='0A' for x in open('/proc/net/tcp').readlines()[1:]) else 1)"], interval: 30s, timeout: 5s, retries: 3}
   camera:
     <<: *hardened
     environment: {SERVICE: camera, PROTOCOL: http, PORT: "8081", LOG_PATH: /logs/camera.jsonl}
     ports: ["8081:8081"]
-    healthcheck: {test: [CMD, python, -c, "import socket;s=socket.create_connection(('localhost',8081),2);s.close()"], interval: 30s, timeout: 5s, retries: 3}
+    depends_on: {custom-logs-init: {condition: service_completed_successfully}}
+    healthcheck: {test: [CMD, python, /usr/local/bin/healthcheck.py], interval: 30s, timeout: 5s, retries: 3}
   iot-service:
     <<: *hardened
     environment: {SERVICE: iot-service, PROTOCOL: tcp, PORT: "9000", LOG_PATH: /logs/iot-service.jsonl}
     ports: ["9000:9000"]
-    healthcheck: {test: [CMD, python, -c, "import socket;s=socket.create_connection(('localhost',9000),2);s.close()"], interval: 30s, timeout: 5s, retries: 3}
+    depends_on: {custom-logs-init: {condition: service_completed_successfully}}
+    healthcheck: {test: [CMD, python, /usr/local/bin/healthcheck.py], interval: 30s, timeout: 5s, retries: 3}
   mqtt:
     <<: *hardened
     environment: {SERVICE: mqtt, PROTOCOL: mqtt, PORT: "1883", LOG_PATH: /logs/mqtt.jsonl}
     ports: ["1883:1883"]
-    healthcheck: {test: [CMD, python, -c, "import socket;s=socket.create_connection(('localhost',1883),2);s.close()"], interval: 30s, timeout: 5s, retries: 3}
+    depends_on: {custom-logs-init: {condition: service_completed_successfully}}
+    healthcheck: {test: [CMD, python, /usr/local/bin/healthcheck.py], interval: 30s, timeout: 5s, retries: 3}
   router:
     <<: *hardened
     environment: {SERVICE: router, PROTOCOL: http, PORT: "8080", LOG_PATH: /logs/router.jsonl}
     ports: ["8080:8080"]
-    healthcheck: {test: [CMD, python, -c, "import socket;s=socket.create_connection(('localhost',8080),2);s.close()"], interval: 30s, timeout: 5s, retries: 3}
+    depends_on: {custom-logs-init: {condition: service_completed_successfully}}
+    healthcheck: {test: [CMD, python, /usr/local/bin/healthcheck.py], interval: 30s, timeout: 5s, retries: 3}
   filebeat:
     image: docker.elastic.co/beats/filebeat:8.19.0
     user: root
@@ -49,6 +59,6 @@ services:
     environment: {SENSOR_ID: "${SENSOR_ID}", SENSOR_IP: "${SENSOR_IP}", HONEYPOT_HOSTNAME: "${HONEYPOT_HOSTNAME}", ANALYSIS_HOST: "${ANALYSIS_HOST}", LOGSTASH_PORT: "${LOGSTASH_PORT:-5044}"}
     volumes: [./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro, custom-logs:/logs/custom:ro, cowrie-logs:/logs/cowrie:ro, filebeat-data:/usr/share/filebeat/data]
     depends_on: [cowrie, camera, iot-service, mqtt, router]
-    healthcheck: {test: [CMD-SHELL, "filebeat test config -c /usr/share/filebeat/filebeat.yml"], interval: 30s, timeout: 10s, retries: 3}
+    healthcheck: {test: [CMD, filebeat, test, config, -c, /usr/share/filebeat/filebeat.yml, --strict.perms=false], interval: 30s, timeout: 10s, retries: 3}
     mem_limit: 128m
 volumes: {custom-logs: {}, cowrie-logs: {}, filebeat-data: {}}

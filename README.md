@@ -40,7 +40,8 @@ set -a; . ./.env; set +a
 ssh-keyscan -H "$PI_HOST" > secrets/known_hosts
 ssh-keygen -lf secrets/known_hosts  # compare this fingerprint with the Pi console
 chmod 600 secrets/known_hosts
-docker compose up -d
+./scripts/preflight.sh
+docker compose up -d --build
 docker compose ps
 ```
 
@@ -51,12 +52,12 @@ Open TRAPSIG at `http://localhost:3000`, the API at `http://localhost:8000/docs`
 ```bash
 cd sensor
 cp .env.example .env        # set ANALYSIS_HOST to the laptop
-./scripts/setup.sh
+./scripts/setup.sh          # validates environment and Compose first
 ./scripts/start.sh
 ./scripts/status.sh
 ```
 
-Install the backend SSH public key for the dedicated, restricted Pi user. Verify the scanned host-key fingerprint from the Pi itself before starting Compose; `ssh-keyscan` alone does not authenticate the host. The backend startup copies the host-owned, mode-0600 key and known-hosts file into its private container SSH directory, assigns them to UID 10001, and then drops privileges. SSH enforces the dedicated known-hosts file with strict checking. The API invokes only `/opt/trapsig/sensor/scripts/manage.sh <start|stop|restart> <known-service>` (plus its argument-free status operation).
+Install the backend SSH public key for the dedicated, restricted Pi user using the forced-command `authorized_keys` entry in [the setup guide](docs/SETUP.md). Verify the scanned host-key fingerprint from the Pi itself before starting Compose; `ssh-keyscan` alone does not authenticate the host. The backend startup copies the host-owned, mode-0600 key and known-hosts file into its private container SSH directory, assigns them to UID 10001, and then drops privileges. SSH enforces the dedicated known-hosts file with strict checking. The API invokes only `/opt/trapsig/sensor/scripts/manage.sh <start|stop|restart> <known-service>` (plus its argument-free status operation).
 
 ## Run a controlled scenario
 
