@@ -1,2 +1,3 @@
-from .models import Experiment, ExperimentCreate
-__all__ = ["Experiment", "ExperimentCreate"]
+from .models import Experiment, ExperimentCreate, GroundTruthSubmission
+
+__all__ = ["Experiment", "ExperimentCreate", "GroundTruthSubmission"]

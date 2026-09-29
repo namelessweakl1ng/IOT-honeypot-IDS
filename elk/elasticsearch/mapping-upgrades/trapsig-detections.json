@@ -1,0 +1,56 @@
+{
+  "properties": {
+    "detection_id": {
+      "type": "keyword"
+    },
+    "session_id": {
+      "type": "keyword"
+    },
+    "type": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      }
+    },
+    "severity": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      }
+    },
+    "rule_id": {
+      "type": "keyword"
+    },
+    "evidence_event_ids": {
+      "type": "keyword"
+    },
+    "source_ip": {
+      "type": "ip"
+    },
+    "timestamp": {
+      "type": "date"
+    },
+    "reason": {
+      "type": "text"
+    },
+    "trapsig": {
+      "properties": {
+        "schema_version": {
+          "type": "keyword"
+        }
+      }
+    },
+    "evidence_end_time": {
+      "type": "date"
+    },
+    "detected_at": {
+      "type": "date"
+    }
+  }
+}
