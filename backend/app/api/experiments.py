@@ -17,7 +17,7 @@ async def experiments():
     )
 @router.post("",status_code=201)
 async def create(payload:ExperimentCreate):
-    identifier="EXP-"+uuid4().hex[:12].upper(); doc={**payload.model_dump(),"experiment_id":identifier,"status":"created","created_at":datetime.now(timezone.utc).isoformat()}
+    identifier="EXP-"+uuid4().hex[:12].upper(); doc={**payload.model_dump(),"trapsig":{"schema_version":"1"},"experiment_id":identifier,"status":"created","created_at":datetime.now(timezone.utc).isoformat()}
     return await store.save(INDEX,identifier,doc)
 @router.get("/{identifier}")
 async def experiment(identifier:str): return await one("trapsig-experiments",identifier)

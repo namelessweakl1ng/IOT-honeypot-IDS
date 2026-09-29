@@ -15,7 +15,7 @@ def custom(identifier: str, service: str, protocol: str, second: int, **extra):
 def test_cowrie_failure_to_brute_force_pipeline():
     events = [cowrie(str(i), second=i) for i in range(5)]
     assert events[0]["event"]["id"].startswith("cowrie.login.failed-")
-    assert events[0]["event"] | {"id": "ignored"} == {"id": "ignored", "category": "authentication", "type": "info", "action": "login_attempt", "outcome": "failure"}
+    assert {k: v for k, v in events[0]["event"].items() if k != "ingested"} | {"id": "ignored"} == {"id": "ignored", "category": "authentication", "type": "info", "action": "login_attempt", "outcome": "failure"}
     assert any(item["type"] == "BRUTE_FORCE" for item in detect(reconstruct_sessions(events)[0]))
 
 

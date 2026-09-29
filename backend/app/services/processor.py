@@ -6,6 +6,7 @@ from typing import Any
 from ..config import get_settings
 from .detector import detect
 from .sessionizer import reconstruct_sessions
+from .telemetry import SCHEMA_VERSION, is_internal_event
 
 LOGGER = logging.getLogger(__name__)
 
@@ -27,13 +28,18 @@ class EventProcessor:
         events = await self.store.search(
             "trapsig-events-*", size=settings.processing_event_limit, sort_field="@timestamp"
         )
-        sessions = reconstruct_sessions(events, settings.session_timeout_seconds)
+        sessions = reconstruct_sessions(
+            [event for event in events if not is_internal_event(event)],
+            settings.session_timeout_seconds,
+        )
         detections: list[dict[str, Any]] = []
         for session in sessions:
             detections.extend(detect(session))
             stored = {key: value for key, value in session.items() if key != "events"}
+            stored["trapsig"] = {"schema_version": SCHEMA_VERSION}
             await self.store.save("trapsig-sessions", session["session_id"], stored)
         for detection in detections:
+            detection["trapsig"] = {"schema_version": SCHEMA_VERSION}
             await self.store.save(
                 "trapsig-detections", detection["detection_id"], detection
             )
