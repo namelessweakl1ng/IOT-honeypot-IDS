@@ -1,0 +1,67 @@
+{
+  "index_patterns": [
+    "trapsig-detections"
+  ],
+  "priority": 200,
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    },
+    "mappings": {
+      "dynamic": true,
+      "properties": {
+        "detection_id": {
+          "type": "keyword"
+        },
+        "session_id": {
+          "type": "keyword"
+        },
+        "type": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "severity": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "rule_id": {
+          "type": "keyword"
+        },
+        "evidence_event_ids": {
+          "type": "keyword"
+        },
+        "source_ip": {
+          "type": "ip"
+        },
+        "timestamp": {
+          "type": "date"
+        },
+        "reason": {
+          "type": "text"
+        },
+        "trapsig": {
+          "properties": {
+            "schema_version": {
+              "type": "keyword"
+            }
+          }
+        }
+      }
+    }
+  },
+  "_meta": {
+    "description": "trapsig-detections",
+    "trapsig_schema_version": "1"
+  }
+}

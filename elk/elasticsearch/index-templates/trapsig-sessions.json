@@ -1,0 +1,76 @@
+{
+  "index_patterns": [
+    "trapsig-sessions"
+  ],
+  "priority": 200,
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    },
+    "mappings": {
+      "dynamic": true,
+      "properties": {
+        "session_id": {
+          "type": "keyword"
+        },
+        "event_ids": {
+          "type": "keyword"
+        },
+        "honeypots_touched": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "services_touched": {
+          "type": "keyword"
+        },
+        "protocols": {
+          "type": "keyword"
+        },
+        "commands": {
+          "type": "keyword"
+        },
+        "urls": {
+          "type": "keyword"
+        },
+        "source_ip": {
+          "type": "ip"
+        },
+        "start_time": {
+          "type": "date"
+        },
+        "end_time": {
+          "type": "date"
+        },
+        "duration": {
+          "type": "double"
+        },
+        "event_count": {
+          "type": "integer"
+        },
+        "authentication_attempts": {
+          "type": "integer"
+        },
+        "failed_authentication_attempts": {
+          "type": "integer"
+        },
+        "trapsig": {
+          "properties": {
+            "schema_version": {
+              "type": "keyword"
+            }
+          }
+        }
+      }
+    }
+  },
+  "_meta": {
+    "description": "trapsig-sessions",
+    "trapsig_schema_version": "1"
+  }
+}

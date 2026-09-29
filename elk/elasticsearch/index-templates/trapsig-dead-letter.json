@@ -1,0 +1,40 @@
+{
+  "index_patterns": [
+    "trapsig-dead-letter-*"
+  ],
+  "priority": 200,
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    },
+    "mappings": {
+      "dynamic": false,
+      "properties": {
+        "@timestamp": {
+          "type": "date"
+        },
+        "tags": {
+          "type": "keyword"
+        },
+        "trapsig": {
+          "properties": {
+            "dead_letter_reason": {
+              "type": "keyword"
+            },
+            "sensor_id": {
+              "type": "keyword"
+            }
+          }
+        },
+        "raw": {
+          "type": "flattened"
+        }
+      }
+    }
+  },
+  "_meta": {
+    "description": "trapsig-dead-letter",
+    "trapsig_schema_version": "1"
+  }
+}

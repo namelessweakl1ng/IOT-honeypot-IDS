@@ -1,0 +1,76 @@
+{
+  "index_patterns": [
+    "trapsig-experiments"
+  ],
+  "priority": 200,
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    },
+    "mappings": {
+      "dynamic": true,
+      "properties": {
+        "experiment_id": {
+          "type": "keyword"
+        },
+        "scenario_id": {
+          "type": "keyword"
+        },
+        "status": {
+          "type": "keyword"
+        },
+        "target_honeypots": {
+          "type": "keyword"
+        },
+        "expected_detection": {
+          "type": "keyword"
+        },
+        "event_ids": {
+          "type": "keyword"
+        },
+        "session_ids": {
+          "type": "keyword"
+        },
+        "detection_ids": {
+          "type": "keyword"
+        },
+        "result": {
+          "type": "keyword"
+        },
+        "attacker_ip": {
+          "type": "ip"
+        },
+        "target_ip": {
+          "type": "ip"
+        },
+        "created_at": {
+          "type": "date"
+        },
+        "start_time": {
+          "type": "date"
+        },
+        "end_time": {
+          "type": "date"
+        },
+        "observed_detection": {
+          "type": "boolean"
+        },
+        "detection_latency_seconds": {
+          "type": "double"
+        },
+        "trapsig": {
+          "properties": {
+            "schema_version": {
+              "type": "keyword"
+            }
+          }
+        }
+      }
+    }
+  },
+  "_meta": {
+    "description": "trapsig-experiments",
+    "trapsig_schema_version": "1"
+  }
+}

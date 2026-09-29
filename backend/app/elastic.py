@@ -32,8 +32,18 @@ class ElasticStore:
             raise
         return [{**hit["_source"], "_id": hit["_id"]} for hit in result["hits"]["hits"]]
 
-    async def count(self, index: str, query: dict[str, Any] | None = None) -> int:
-        result = await self.client.count(index=index, query=query or {"match_all": {}})
+    async def count(
+        self,
+        index: str,
+        query: dict[str, Any] | None = None,
+        missing_index_is_empty: bool = False,
+    ) -> int:
+        try:
+            result = await self.client.count(index=index, query=query or {"match_all": {}})
+        except NotFoundError:
+            if missing_index_is_empty:
+                return 0
+            raise
         return int(result["count"])
 
     async def aggregate(

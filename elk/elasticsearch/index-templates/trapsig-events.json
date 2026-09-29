@@ -1,0 +1,172 @@
+{
+  "index_patterns": [
+    "trapsig-events-*"
+  ],
+  "priority": 200,
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    },
+    "mappings": {
+      "dynamic": true,
+      "properties": {
+        "@timestamp": {
+          "type": "date"
+        },
+        "event": {
+          "properties": {
+            "ingested": {
+              "type": "date"
+            },
+            "id": {
+              "type": "keyword"
+            },
+            "category": {
+              "type": "keyword"
+            },
+            "type": {
+              "type": "keyword"
+            },
+            "action": {
+              "type": "keyword"
+            },
+            "outcome": {
+              "type": "keyword"
+            }
+          }
+        },
+        "source": {
+          "properties": {
+            "ip": {
+              "type": "ip"
+            },
+            "port": {
+              "type": "integer"
+            }
+          }
+        },
+        "destination": {
+          "properties": {
+            "ip": {
+              "type": "ip"
+            },
+            "port": {
+              "type": "integer"
+            }
+          }
+        },
+        "network": {
+          "properties": {
+            "transport": {
+              "type": "keyword"
+            },
+            "protocol": {
+              "type": "keyword"
+            }
+          }
+        },
+        "service": {
+          "properties": {
+            "name": {
+              "type": "keyword"
+            }
+          }
+        },
+        "honeypot": {
+          "properties": {
+            "id": {
+              "type": "keyword"
+            },
+            "type": {
+              "type": "keyword"
+            }
+          }
+        },
+        "observer": {
+          "properties": {
+            "name": {
+              "type": "keyword"
+            },
+            "type": {
+              "type": "keyword"
+            }
+          }
+        },
+        "trapsig": {
+          "properties": {
+            "sensor_id": {
+              "type": "keyword"
+            },
+            "schema_version": {
+              "type": "keyword"
+            },
+            "internal": {
+              "type": "boolean"
+            },
+            "internal_reason": {
+              "type": "keyword"
+            }
+          }
+        },
+        "authentication": {
+          "properties": {
+            "username": {
+              "type": "keyword"
+            },
+            "password": {
+              "type": "keyword"
+            }
+          }
+        },
+        "mqtt": {
+          "properties": {
+            "operation": {
+              "type": "keyword"
+            },
+            "packet_type": {
+              "type": "integer"
+            }
+          }
+        },
+        "http": {
+          "properties": {
+            "request": {
+              "properties": {
+                "method": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "user_agent": {
+              "type": "keyword",
+              "ignore_above": 2048
+            }
+          }
+        },
+        "url": {
+          "properties": {
+            "path": {
+              "type": "keyword"
+            }
+          }
+        },
+        "process": {
+          "properties": {
+            "command_line": {
+              "type": "keyword",
+              "ignore_above": 8192
+            }
+          }
+        },
+        "message": {
+          "type": "text"
+        }
+      }
+    }
+  },
+  "_meta": {
+    "description": "trapsig-events",
+    "trapsig_schema_version": "1"
+  }
+}

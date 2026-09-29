@@ -15,7 +15,7 @@ def _query(minutes: int, timestamp_field: str, exclude_healthchecks: bool = Fals
     if exclude_healthchecks:
         # Sensor container health probes originate on loopback. Raw events remain untouched;
         # only analytics excludes this deterministic monitoring source.
-        query["must_not"] = [{"terms": {"source.ip": ["127.0.0.1", "::1"]}}]
+        query["must_not"] = [{"term": {"trapsig.internal": True}}, {"range": {"source.ip": {"gte": "127.0.0.0", "lte": "127.255.255.255"}}}, {"term": {"source.ip": "::1"}}]
     return {"bool": query}
 
 

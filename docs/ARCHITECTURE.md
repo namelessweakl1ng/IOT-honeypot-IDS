@@ -19,3 +19,12 @@ The deployment deliberately has only the components in this document; no paralle
 ## Derived-data processor
 
 FastAPI starts one lightweight asynchronous processor with its application lifespan. Every configured interval it reads the bounded event corpus, reconstructs sessions deterministically, and upserts sessions and detections under stable content-derived IDs. Repeating a cycle after a restart overwrites the same derived documents instead of duplicating them. The processor never updates event documents. Its last run, error, and write counts are exposed through `/system/status`.
+
+## Telemetry integrity
+
+An idempotent `elasticsearch-setup` Compose job installs explicit templates before
+Logstash starts. Normalized schema-v1 records enter daily immutable raw event indices;
+validation failures enter daily dead-letter indices. The processor reads but never
+updates raw records and filters loopback/internal telemetry before creating schema-v1
+sessions and detections. `/system/status` reports dead-letter volume (zero when no
+index exists). Existing schema-less historical documents remain readable.
