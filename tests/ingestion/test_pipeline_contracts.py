@@ -59,10 +59,11 @@ def test_default_credentials_survive_normalization():
     assert any(item["type"] == "DEFAULT_CREDENTIALS" for item in detection)
 
 
-def test_distinct_paths_and_mqtt_and_multiple_services():
+def test_distinct_paths_single_mqtt_connect_and_multiple_services():
     paths = [custom(str(i), "camera", "http", i, category="web", url={"path": path}) for i, path in enumerate(["/admin", "/login", "/config", "/setup"])]
     mqtt = custom("mqtt", "mqtt", "mqtt", 5, mqtt={"operation": "connect", "packet_type": 1})
     router = custom("router", "router", "http", 6, url={"path": "/"})
     detections = detect(reconstruct_sessions(paths + [mqtt, router])[0])
     kinds = {item["type"] for item in detections}
-    assert {"WEB_ENUMERATION", "MQTT_PROBING", "MULTI_SERVICE_ACTIVITY"} <= kinds
+    assert {"WEB_ENUMERATION", "MULTI_SERVICE_ACTIVITY"} <= kinds
+    assert "MQTT_PROBING" not in kinds

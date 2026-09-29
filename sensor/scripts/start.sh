@@ -1,3 +1,3 @@
 #!/usr/bin/env sh
 set -eu
-cd "$(dirname "$0")/.." && docker compose up -d
+cd "$(dirname "$0")/.." && docker compose up -d --build

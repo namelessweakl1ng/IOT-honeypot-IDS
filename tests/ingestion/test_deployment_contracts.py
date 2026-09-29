@@ -49,6 +49,23 @@ def test_sensor_health_and_permissions_contracts():
     assert "--strict.perms=false" in services["filebeat"]["healthcheck"]["test"]
 
 
+def test_cowrie_runtime_configuration_is_deterministic():
+    compose = load_compose("sensor/docker-compose.yml")
+    cowrie = compose["services"]["cowrie"]
+    config = (ROOT / "sensor/honeypots/cowrie/cowrie.cfg").read_text()
+    userdb = ROOT / "sensor/honeypots/cowrie/userdb.txt"
+
+    assert "logfile = var/log/cowrie/cowrie.json" in config
+    assert userdb.read_text().splitlines() == ["root:x:root", "*:x:!*"]
+    assert "./honeypots/cowrie/userdb.txt:/cowrie/cowrie-git/etc/userdb.txt:ro" in cowrie["volumes"]
+
+
+def test_sensor_start_rebuilds_changed_custom_images():
+    command = (ROOT / "sensor/scripts/start.sh").read_text()
+    assert "docker compose up -d --build" in command
+    assert "--no-cache" not in command
+
+
 def test_ssh_wrapper_is_an_exact_whitelist():
     wrapper = ROOT / "sensor/scripts/ssh-manage-wrapper.sh"
     text = wrapper.read_text()

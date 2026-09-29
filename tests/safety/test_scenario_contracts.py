@@ -27,3 +27,9 @@ def test_web_enumeration_paths_are_distinct():
 def test_mqtt_scenario_has_protocol_operations():
     operations = {step["operation"] for step in load("mqtt-recon")["steps"]}
     assert operations == {"connect", "subscribe", "ping"}
+
+
+def test_mqtt_auth_probe_uses_repeated_connects_expected_by_detector():
+    scenario = load("mqtt-auth-probe")
+    assert scenario["expected_detection"] == "MQTT_PROBING"
+    assert [step["operation"] for step in scenario["steps"]] == ["connect", "connect"]

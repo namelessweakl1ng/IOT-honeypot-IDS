@@ -42,7 +42,24 @@ def ssh_login(target: str, step: dict) -> None:
         except paramiko.AuthenticationException as exc:
             raise ExpectedRejection(str(exc)) from exc
         if step.get("command"):
-            client.exec_command(step["command"], timeout=3)
+            transport = client.get_transport()
+            if transport is None or not transport.is_active():
+                raise paramiko.SSHException("SSH transport closed before command execution")
+            channel = transport.open_session(timeout=3)
+            try:
+                # Cowrie models an interactive shell and may close an exec
+                # channel before Paramiko receives the exec-request reply.
+                # Use the complete shell lifecycle instead of treating that
+                # protocol race as a failed command.
+                channel.settimeout(3)
+                channel.get_pty()
+                channel.invoke_shell()
+                channel.sendall(f"{step['command']}\nexit\n".encode())
+                channel.shutdown_write()
+                while not channel.closed and channel.recv(512):
+                    pass
+            finally:
+                channel.close()
     finally:
         client.close()
 
