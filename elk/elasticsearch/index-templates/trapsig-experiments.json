@@ -155,12 +155,6 @@
         "scenario_step_allowed_statuses": {
           "type": "keyword"
         },
-        "scenario_kind": {
-          "type": "keyword"
-        },
-        "cohort_id": {
-          "type": "keyword"
-        },
         "observed_detection_types": {
           "type": "keyword"
         },
@@ -217,6 +211,18 @@
         },
         "evaluation_step_time_tolerance_seconds": {
           "type": "double"
+        },
+        "trial_kind": {
+          "type": "keyword"
+        },
+        "evaluation_config_fingerprint": {
+          "type": "keyword"
+        },
+        "evaluation_batch_id": {
+          "type": "keyword"
+        },
+        "replicate": {
+          "type": "integer"
         }
       }
     }

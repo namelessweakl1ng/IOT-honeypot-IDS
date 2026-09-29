@@ -24,7 +24,7 @@ def experiment(kind="attack", expected="BRUTE_FORCE"):
     return {
         "experiment_id": "EXP-1",
         "scenario_id": "case",
-        "scenario_kind": kind,
+        "trial_kind": kind,
         "expected_detection": expected,
         "status": "completed",
         "attacker_ip": "192.168.50.10",
@@ -42,7 +42,7 @@ def experiment(kind="attack", expected="BRUTE_FORCE"):
         ],
         "detector_ruleset_version": "rules-1",
         "software_revision": "abc",
-        "config_snapshot": CONFIG,
+        "config_snapshot": deepcopy(CONFIG),
         "trapsig": {"schema_version": "1"},
     }
 
@@ -77,33 +77,48 @@ def test_control_validation_and_catalog_kinds(tmp_path):
         "id": "one",
         "name": "one",
         "description": "one",
-        "kind": "control",
+        "trial_kind": "control",
         "expected_detection": "BRUTE_FORCE",
         "target_services": ["ssh"],
         "steps": [{"service": "ssh"}],
     }
     (tmp_path / "one.yaml").write_text(json.dumps(base))
-    with pytest.raises(ScenarioCatalogError, match="control scenarios must expect NONE"):
+    with pytest.raises(ScenarioCatalogError, match="null expected_detection"):
         ScenarioCatalog(tmp_path).load()
-    base.update(kind="attack", expected_detection="NONE")
+    base.update(trial_kind="attack", expected_detection="NONE")
     (tmp_path / "one.yaml").write_text(json.dumps(base))
     with pytest.raises(ScenarioCatalogError, match="unknown expected"):
         ScenarioCatalog(tmp_path).load()
     catalog = ScenarioCatalog().load()
-    assert catalog["ssh-bruteforce"].kind == "attack"
-    assert catalog["ssh-control"].kind == "control"
+    assert catalog["ssh-bruteforce"].trial_kind == "attack"
+    assert catalog["ssh-control"].trial_kind == "control"
+    assert catalog["ssh-control"].expected_detection is None
+
+
+def test_missing_trial_kind_defaults_to_attack(tmp_path):
+    manifest = {
+        "id": "one",
+        "name": "one",
+        "description": "one",
+        "expected_detection": "BRUTE_FORCE",
+        "target_services": ["ssh"],
+        "steps": [{"service": "ssh"}],
+    }
+    (tmp_path / "one.yaml").write_text(json.dumps(manifest))
+    assert ScenarioCatalog(tmp_path).load()["one"].trial_kind == "attack"
 
 
 def test_control_and_attack_outcomes_and_counts():
-    control = experiment("control", "NONE")
-    assert correlate(control, [event()], [session()], [], scientific=True)["result"] == "TN"
+    control = experiment("control", None)
+    tn = correlate(control, [event()], [session()], [], scientific=True)
+    assert tn["result"] == "TN" and tn["observed_detection"] is False
     fp = correlate(control, [event()], [session()], [detection("MQTT_PROBING")], scientific=True)
-    assert fp["result"] == "FP" and fp["observed_detection_types"] == ["MQTT_PROBING"]
+    assert fp["result"] == "FP" and fp["observed_detection"] is True and fp["observed_detection_types"] == ["MQTT_PROBING"]
     assert correlate(control, [], [], [], scientific=True)["result"] == "INCONCLUSIVE"
     attack = correlate(experiment(), [event()], [session()], [detection(), detection()], scientific=True)
     assert attack["result"] == "TP" and attack["observed_detection_types"] == ["BRUTE_FORCE"]
     assert attack["matched_event_count"] == 1 and attack["runner_duration_seconds"] == 2
-    assert attack["observed_event_rate_eps"] == 0.5 and attack["telemetry_step_coverage"] == 1
+    assert attack["observed_event_rate_eps"] is None and attack["telemetry_step_coverage"] == 1
     assert correlate(experiment(), [event()], [session()], [], scientific=True)["result"] == "FN"
     invalid = experiment()
     invalid["ground_truth_valid"] = False
@@ -121,7 +136,7 @@ def test_ingestion_statistics_and_negative_exclusion():
 
 def test_metrics_cohorts_per_rule_and_export():
     attack = correlate(experiment(), [event()], [session()], [detection(), detection("MULTI_SERVICE_ACTIVITY")], scientific=True)
-    control = correlate(experiment("control", "NONE"), [event()], [session()], [detection("MQTT_PROBING")], scientific=True)
+    control = correlate(experiment("control", None), [event()], [session()], [detection("MQTT_PROBING")], scientific=True)
     summary = aggregate([attack, control, {"status": "cancelled"}])
     cohort = summary["cohorts"][0]
     assert {key: cohort["overall"][key] for key in ("TP", "FP", "FN", "TN")} == {"TP": 1, "FP": 1, "FN": 0, "TN": 0}
@@ -131,13 +146,13 @@ def test_metrics_cohorts_per_rule_and_export():
     assert classification_metrics(1, 1, 1, 1)["f1"] == 0.5
     assert classification_metrics(0, 0, 0, 0)["precision"] is None
     changed = deepcopy(attack)
-    changed.pop("cohort_id")
+    changed.pop("evaluation_config_fingerprint")
     changed["software_revision"] = "def"
     changed["config_snapshot"]["software_revision"] = "def"
     assert cohort_id(attack) != cohort_id(changed)
     assert len(aggregate([attack, changed])["cohorts"]) == 2
     output = export_csv([attack])
-    assert "experiment_id,scenario_id,scenario_kind" in output and "password" not in output
+    assert "experiment_id,evaluation_batch_id,replicate,scenario_id,trial_kind" in output and "password" not in output
 
 
 def test_docker_json_parser_uses_binary_and_decimal_units():

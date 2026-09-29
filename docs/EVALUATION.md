@@ -2,6 +2,11 @@
 
 > Current physical Fedora/Raspberry Pi results: **NOT MEASURED**.
 
+- Fedora CPU/RAM — **NOT MEASURED**
+- Pi CPU/RAM — **NOT MEASURED**
+- Physical ingestion latency — **NOT MEASURED**
+- Physical recovery completeness — **NOT MEASURED**
+
 TRAPSIG records defensible measurements; it does not ship benchmark claims. Run every command against the private lab only and retain generated artifacts.
 
 ## Scientific outcomes and metrics
@@ -32,18 +37,20 @@ The CLI uses `attacks.runner.run`, creates one experiment at a time, and records
 - Detection latency: experiment start to detector creation.
 - Processing latency: evidence end to detector creation.
 - Ingestion latency: `event.ingested - @timestamp`; negative samples are rejected.
-- Observed event rate: matched events / positive runner duration. It is **not** capacity or maximum throughput.
+- Observed event rate: matched events / positive observed event window (only for at least two events). It is **not** capacity or maximum throughput.
 - Step coverage: fraction of runner steps with a service/time-matched event, mapping `ssh`/`telnet` to Cowrie. It is not percentage of generated events indexed. Default tolerance is 2 seconds (`EVALUATION_STEP_TIME_TOLERANCE_SECONDS`).
 
 Download `/evaluation/export.csv`, `/evaluation/export.json`, or generate `summary.json`, `experiments.csv`, and `report.md` in ignored `evaluation/results/<id>/`:
 
 ```bash
-python -m evaluation.report --api-url http://localhost:8000
+python -m evaluation.report --api-url http://localhost:8000 --batch FINAL-2026 \
+  --resource-csv evaluation/results/fedora-resources.csv \
+  --host-info evaluation/results/fedora-host.json
 ```
 
 ## Clock synchronization preflight
 
-Run **separately on Fedora and Raspberry Pi** and retain both outputs:
+Run **separately on Fedora and Raspberry Pi** and retain both outputs. Capture full provenance with `python -m evaluation.host_info --role fedora --output evaluation/results/fedora-host.json`:
 
 ```bash
 python -m evaluation.preflight
@@ -91,7 +98,7 @@ The evaluation API never restarts containers.
 9. Inspect dead-letter count.
 10. Record recovery time.
 
-This physical test is not automated by UI or CI.
+This physical test is not automated by UI or CI. After recovery, run `python -m evaluation.completeness --api-url http://localhost:8000 sensor/logs/*.jsonl --output evaluation/results/completeness.json`; only deterministically mappable IDs form the denominator.
 
 ### F. Clock verification
 Save preflight JSON from both hosts. Resolve warnings before timing claims.

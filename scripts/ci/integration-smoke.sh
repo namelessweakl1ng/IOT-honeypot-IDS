@@ -74,4 +74,9 @@ assert health["backend"] == "healthy" and health["elasticsearch"] in {"green", "
 scenarios = json.load(urllib.request.urlopen("http://127.0.0.1:8000/scenarios"))
 expected = len(list(Path("attacks/scenarios").glob("*.yaml")))
 assert len(scenarios) == expected, (len(scenarios), expected)
+
+evaluation = json.load(urllib.request.urlopen("http://127.0.0.1:8000/evaluation/summary"))
+assert evaluation["cohorts"] == [], evaluation
+assert evaluation["most_recent_evaluation_config_fingerprint"] is None, evaluation
+assert evaluation["resource_measurements"] == {"status": "NOT_MEASURED"}, evaluation
 PY

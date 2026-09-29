@@ -5,6 +5,7 @@ import csv
 import json
 import re
 import subprocess
+import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -42,8 +43,10 @@ def parse_stat(item: dict, host_label: str, timestamp: str) -> dict:
     memory, memory_limit = pair(item["MemUsage"])
     network_rx, network_tx = pair(item["NetIO"])
     block_read, block_write = pair(item["BlockIO"])
+
     def percent(value):
         return float(value.strip().removesuffix("%")) if value and value != "--" else None
+
     return {
         "timestamp": timestamp,
         "host_label": host_label,
@@ -62,7 +65,9 @@ def parse_stat(item: dict, host_label: str, timestamp: str) -> dict:
 
 def sample(host_label: str) -> list[dict]:
     command = ["docker", "stats", "--no-stream", "--format", "{{json .}}"]
-    result = subprocess.run(command, check=True, capture_output=True, text=True)
+    result = subprocess.run(command, check=False, capture_output=True, text=True, timeout=30)
+    if result.returncode:
+        raise RuntimeError(result.stderr.strip() or f"docker stats exited {result.returncode}")
     timestamp = datetime.now(timezone.utc).isoformat()
     return [parse_stat(json.loads(line), host_label, timestamp) for line in result.stdout.splitlines() if line.strip()]
 
@@ -83,7 +88,10 @@ def main():
         writer.writeheader()
         try:
             while time.monotonic() < deadline:
-                writer.writerows(sample(args.host_label))
+                try:
+                    writer.writerows(sample(args.host_label))
+                except (OSError, subprocess.SubprocessError, RuntimeError, ValueError, json.JSONDecodeError) as exc:
+                    print(f"WARNING: Docker stats sample skipped: {exc}", file=sys.stderr)
                 stream.flush()
                 time.sleep(min(args.interval, max(0, deadline - time.monotonic())))
         except KeyboardInterrupt:

@@ -1,10 +1,10 @@
 id: camera-control
 name: Camera ordinary request control
 description: One ordinary camera root request
-kind: control
+trial_kind: control
 target_services:
 - camera
-expected_detection: NONE
+expected_detection: null
 severity: informational
 steps:
 - service: camera

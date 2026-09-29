@@ -11,6 +11,8 @@ class ExperimentCreate(BaseModel):
     scenario_id: str
     attacker_ip: str
     target_ip: str
+    evaluation_batch_id: str | None = Field(default=None, min_length=1, max_length=120)
+    replicate: int | None = Field(default=None, ge=1)
 
 
 class RunnerStep(BaseModel):
@@ -36,7 +38,7 @@ class GroundTruthSubmission(BaseModel):
     scenario_manifest_sha256: str
     target: str
     source: str | None = None
-    expected_detection: str
+    expected_detection: str | None
     start_time: datetime
     end_time: datetime
     overall_status: Literal["completed", "partial", "failed"]

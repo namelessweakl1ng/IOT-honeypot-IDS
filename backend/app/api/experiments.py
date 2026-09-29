@@ -48,7 +48,7 @@ async def create(payload: ExperimentCreate):
         "attacker_ip": attacker,
         "target_ip": target,
         "target_honeypots": list(scenario.target_honeypots),
-        "scenario_kind": scenario.kind,
+        "trial_kind": scenario.trial_kind,
         "expected_detection": scenario.expected_detection,
         "scenario_manifest_sha256": scenario.manifest_sha256,
         "scenario_step_services": list(scenario.step_services),

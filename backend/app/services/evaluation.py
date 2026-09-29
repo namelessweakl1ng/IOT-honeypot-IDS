@@ -11,20 +11,12 @@ from typing import Any, Iterable
 
 from .detector import SUPPORTED_DETECTION_TYPES
 
-COHORT_FIELDS = (
-    "detector_ruleset_version",
-    "session_timeout_seconds",
-    "brute_force_threshold",
-    "web_enumeration_threshold",
-    "multi_service_threshold",
-    "trapsig_schema_version",
-    "software_revision",
-)
-
 EXPORT_COLUMNS = (
     "experiment_id",
+    "evaluation_batch_id",
+    "replicate",
     "scenario_id",
-    "scenario_kind",
+    "trial_kind",
     "expected_detection",
     "result",
     "result_reason",
@@ -33,7 +25,8 @@ EXPORT_COLUMNS = (
     "software_revision",
     "detector_ruleset_version",
     "scenario_manifest_sha256",
-    "cohort_id",
+    "evaluation_config_fingerprint",
+    "unexpected_detection_types",
     "matched_event_count",
     "linked_session_count",
     "linked_detection_count",
@@ -62,7 +55,6 @@ def safe_divide(numerator: float, denominator: float) -> float | None:
 
 
 def percentile(values: Iterable[float], percent: float) -> float | None:
-    """Linear interpolation (R-7), deterministic and dependency-free."""
     ordered = sorted(values)
     if not ordered:
         return None
@@ -76,21 +68,30 @@ def percentile(values: Iterable[float], percent: float) -> float | None:
 def descriptive_statistics(values: Iterable[float | int | None]) -> dict[str, float | int | None]:
     valid = [float(value) for value in values if value is not None and math.isfinite(float(value))]
     if not valid:
-        return {"count": 0, "min": None, "mean": None, "p50": None, "p95": None, "max": None, "standard_deviation": None}
+        return {"count": 0, "min": None, "mean": None, "p50": None, "median": None, "p95": None, "max": None, "standard_deviation": None}
+    median = percentile(valid, 0.5)
     return {
         "count": len(valid),
         "min": min(valid),
         "mean": statistics.fmean(valid),
-        "p50": percentile(valid, 0.5),
+        "p50": median,
+        "median": median,
         "p95": percentile(valid, 0.95),
         "max": max(valid),
         "standard_deviation": statistics.stdev(valid) if len(valid) >= 2 else None,
     }
 
 
+def ingestion_statistics(samples: Iterable[float | None]) -> dict[str, Any]:
+    values = list(samples)
+    result = descriptive_statistics(values)
+    result["sample_count"] = result.pop("count")
+    result["missing_or_invalid_count"] = sum(value is None for value in values)
+    return result
+
+
 def classification_metrics(tp: int, fn: int, fp: int, tn: int) -> dict[str, float | None]:
-    precision = safe_divide(tp, tp + fp)
-    recall = safe_divide(tp, tp + fn)
+    precision, recall = safe_divide(tp, tp + fp), safe_divide(tp, tp + fn)
     return {
         "precision": precision,
         "recall": recall,
@@ -101,63 +102,54 @@ def classification_metrics(tp: int, fn: int, fp: int, tn: int) -> dict[str, floa
     }
 
 
-def cohort_id(experiment: dict[str, Any]) -> str | None:
+def evaluation_config_fingerprint(experiment: dict[str, Any]) -> str | None:
     config = experiment.get("config_snapshot") or {}
-    required_config = {
+    required = (
         "session_timeout_seconds",
         "brute_force_threshold",
         "web_enumeration_threshold",
         "multi_service_threshold",
         "detector_ruleset_version",
         "trapsig_schema_version",
-    }
-    if not required_config.issubset(config) or "software_revision" not in experiment:
+    )
+    revision = experiment.get("software_revision")
+    if not all(field in config for field in required) or not isinstance(revision, str) or not revision.strip() or revision.lower() == "unknown":
         return None
-    values = {
-        "detector_ruleset_version": experiment.get("detector_ruleset_version") or config.get("detector_ruleset_version"),
-        "session_timeout_seconds": config.get("session_timeout_seconds"),
-        "brute_force_threshold": config.get("brute_force_threshold"),
-        "web_enumeration_threshold": config.get("web_enumeration_threshold"),
-        "multi_service_threshold": config.get("multi_service_threshold"),
-        "trapsig_schema_version": config.get("trapsig_schema_version") or (experiment.get("trapsig") or {}).get("schema_version"),
-        "software_revision": experiment.get("software_revision") or config.get("software_revision"),
-    }
-    payload = json.dumps(values, sort_keys=True, separators=(",", ":"))
-    return hashlib.sha256(payload.encode()).hexdigest()
+    values = {field: config[field] for field in required}
+    values["software_revision"] = revision
+    return hashlib.sha256(json.dumps(values, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
-def _counts(records: list[dict[str, Any]]) -> dict[str, int]:
-    return {name: sum(record.get("result") == name for record in records) for name in ("TP", "FN", "FP", "TN")}
+# Temporary source compatibility for callers from the initial PR revision.
+cohort_id = evaluation_config_fingerprint
 
 
-def _summary(records: list[dict[str, Any]]) -> dict[str, Any]:
-    counts = _counts(records)
-    scored = sum(counts.values())
+def _summary(records: list[dict[str, Any]], event_samples: dict[str, list[float | None]]) -> dict[str, Any]:
+    counts = {name: sum(record.get("result") == name for record in records) for name in ("TP", "FN", "FP", "TN")}
     overall = {
         **counts,
         **classification_metrics(counts["TP"], counts["FN"], counts["FP"], counts["TN"]),
         "total_experiments": len(records),
-        "scored_experiments": scored,
+        "scored_experiments": sum(counts.values()),
         "inconclusive_experiments": sum(r.get("result") == "INCONCLUSIVE" for r in records),
     }
-    scenarios = []
     grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for record in records:
         grouped[record.get("scenario_id", "UNKNOWN")].append(record)
-    metric_fields = {
+    fields = {
         "evidence_latency": "evidence_latency_seconds",
         "detection_latency": "detection_latency_seconds",
         "processing_latency": "processing_latency_seconds",
-        "ingestion_latency": "ingestion_latency_mean_seconds",
         "settle_duration": "settle_wait_seconds",
         "observed_event_rate": "observed_event_rate_eps",
         "telemetry_step_coverage": "telemetry_step_coverage",
     }
+    scenarios = []
     for scenario_id, runs in sorted(grouped.items()):
-        kind = runs[0].get("scenario_kind", "attack")
+        kind = runs[0].get("trial_kind", "attack")
         row = {
             "scenario_id": scenario_id,
-            "kind": kind,
+            "trial_kind": kind,
             "expected_detection": runs[0].get("expected_detection"),
             "run_count": len(runs),
             "scored_count": sum(r.get("result") in {"TP", "FN", "FP", "TN"} for r in runs),
@@ -169,32 +161,36 @@ def _summary(records: list[dict[str, Any]]) -> dict[str, Any]:
         else:
             row.update(tp=sum(r.get("result") == "TP" for r in runs), fn=sum(r.get("result") == "FN" for r in runs))
             row["detection_rate"] = safe_divide(row["tp"], row["tp"] + row["fn"])
-        row["measurements"] = {name: descriptive_statistics(r.get(field) for r in runs) for name, field in metric_fields.items()}
+        row["measurements"] = {name: descriptive_statistics(r.get(field) for r in runs) for name, field in fields.items()}
+        row["measurements"]["ingestion_latency_event_samples"] = ingestion_statistics(
+            sample for run in runs for sample in event_samples.get(run.get("experiment_id"), [])
+        )
         scenarios.append(row)
+    controls = [r for r in records if r.get("trial_kind") == "control" and r.get("result") in {"TN", "FP"}]
     rules = []
-    controls = [r for r in records if r.get("scenario_kind") == "control" and r.get("result") in {"TN", "FP"}]
     for detection_type in sorted(SUPPORTED_DETECTION_TYPES):
         positives = [
             r
             for r in records
-            if r.get("scenario_kind", "attack") == "attack" and r.get("expected_detection") == detection_type and r.get("result") in {"TP", "FN"}
+            if r.get("trial_kind", "attack") == "attack" and r.get("expected_detection") == detection_type and r.get("result") in {"TP", "FN"}
         ]
         tp = sum(detection_type in (r.get("observed_detection_types") or []) for r in positives)
-        fn = len(positives) - tp
         fp = sum(detection_type in (r.get("observed_detection_types") or []) for r in controls)
-        tn = len(controls) - fp
         rules.append(
             {
                 "detection_type": detection_type,
                 "methodology": "positive-vs-control",
                 "tp": tp,
-                "fn": fn,
+                "fn": len(positives) - tp,
                 "fp": fp,
-                "tn": tn,
-                **classification_metrics(tp, fn, fp, tn),
+                "tn": len(controls) - fp,
+                **classification_metrics(tp, len(positives) - tp, fp, len(controls) - fp),
             }
         )
-    latency = {name: descriptive_statistics(r.get(field) for r in records) for name, field in metric_fields.items()}
+    latency = {name: descriptive_statistics(r.get(field) for r in records) for name, field in fields.items()}
+    latency["ingestion_latency_event_samples"] = ingestion_statistics(
+        sample for record in records for sample in event_samples.get(record.get("experiment_id"), [])
+    )
     return {
         "overall": overall,
         "per_scenario": scenarios,
@@ -206,45 +202,57 @@ def _summary(records: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def aggregate(experiments: list[dict[str, Any]]) -> dict[str, Any]:
+def aggregate(experiments: list[dict[str, Any]], event_samples: dict[str, list[float | None]] | None = None) -> dict[str, Any]:
     completed = [dict(item) for item in experiments if item.get("status") == "completed"]
-    cancelled = sum(item.get("status") == "cancelled" for item in experiments)
-    cohorts: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    legacy = []
+    groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    excluded = []
     for item in completed:
-        identity = item.get("cohort_id") or cohort_id(item)
-        if identity is None or not item.get("scenario_kind") or not isinstance(item.get("observed_detection_types"), list):
-            legacy.append({**item, "evaluation_exclusion_reason": "LEGACY_INCOMPLETE"})
+        fingerprint = item.get("evaluation_config_fingerprint") or evaluation_config_fingerprint(item)
+        if fingerprint is None:
+            reason = (
+                "MISSING_SOFTWARE_REVISION"
+                if not str(item.get("software_revision") or "").strip() or str(item.get("software_revision")).lower() == "unknown"
+                else "LEGACY_INCOMPLETE"
+            )
+            excluded.append({**item, "evaluation_exclusion_reason": reason})
+        elif not item.get("trial_kind") or not isinstance(item.get("observed_detection_types"), list):
+            excluded.append({**item, "evaluation_exclusion_reason": "LEGACY_INCOMPLETE"})
         else:
-            item["cohort_id"] = identity
-            cohorts[identity].append(item)
+            item["evaluation_config_fingerprint"] = fingerprint
+            groups[fingerprint].append(item)
     summaries = []
-    for identity, records in cohorts.items():
-        summary = _summary(records)
-        summary.update(cohort_id=identity, latest_end_time=max((r.get("end_time", "") for r in records), default=""))
+    for fingerprint, records in groups.items():
+        summary = _summary(records, event_samples or {})
+        summary.update(
+            evaluation_config_fingerprint=fingerprint, cohort_id=fingerprint, latest_end_time=max((r.get("end_time", "") for r in records), default="")
+        )
         summaries.append(summary)
     summaries.sort(key=lambda value: value["latest_end_time"], reverse=True)
     return {
         "cohorts": summaries,
+        "most_recent_evaluation_config_fingerprint": summaries[0]["evaluation_config_fingerprint"] if summaries else None,
         "most_recent_cohort_id": summaries[0]["cohort_id"] if summaries else None,
-        "cancelled_experiments": cancelled,
-        "legacy_incomplete_count": len(legacy),
-        "legacy_incomplete": legacy,
-        "overall": summaries[0]["overall"] if len(summaries) == 1 else None,
-        "per_scenario": summaries[0]["per_scenario"] if len(summaries) == 1 else [],
-        "per_detection_type": summaries[0]["per_detection_type"] if len(summaries) == 1 else [],
-        "latency": summaries[0]["latency"] if len(summaries) == 1 else {},
-        "controls": summaries[0]["controls"] if len(summaries) == 1 else {},
-        "inconclusive": summaries[0]["inconclusive"] if len(summaries) == 1 else [],
+        "cancelled_experiments": sum(item.get("status") == "cancelled" for item in experiments),
+        "excluded_incomplete_count": len(excluded),
+        "legacy_incomplete_count": len(excluded),
+        "excluded_incomplete": excluded,
+        "resource_measurements": {"status": "NOT_MEASURED"},
+        "host_metadata": {"status": "NOT_MEASURED"},
+        "ingestion_completeness": {"status": "NOT_MEASURED"},
     }
 
 
 def export_rows(experiments: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    return [
-        {column: item.get(column) if column != "cohort_id" else item.get(column) or cohort_id(item) for column in EXPORT_COLUMNS}
-        for item in experiments
-        if item.get("status") == "completed"
-    ]
+    rows = []
+    for item in experiments:
+        if item.get("status") != "completed":
+            continue
+        row = {column: item.get(column) for column in EXPORT_COLUMNS}
+        row["evaluation_config_fingerprint"] = row["evaluation_config_fingerprint"] or evaluation_config_fingerprint(item)
+        for field in ("unexpected_detection_types",):
+            row[field] = "|".join(row[field] or [])
+        rows.append(row)
+    return rows
 
 
 def export_csv(experiments: list[dict[str, Any]]) -> str:

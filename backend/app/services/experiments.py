@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from ipaddress import ip_address, ip_network
 from typing import Any
 
-from .evaluation import cohort_id, descriptive_statistics
+from .evaluation import descriptive_statistics, evaluation_config_fingerprint
 from .scenarios import SERVICE_TO_HONEYPOT
 
 
@@ -90,9 +90,11 @@ def correlate(
     linked = [s for s in sessions if event_ids.intersection(s.get("event_ids", []))]
     session_ids = {s["session_id"] for s in linked}
     detected = [d for d in detections if d.get("session_id") in session_ids]
-    expected = experiment["expected_detection"].upper()
-    matching = [d for d in detected if d.get("type") == expected]
-    observed = bool(matching)
+    expected = experiment.get("expected_detection")
+    matching = [d for d in detected if expected and d.get("type") == expected]
+    primary_observed = bool(matching)
+    is_control = experiment.get("trial_kind", experiment.get("scenario_kind", "attack")) == "control"
+    observed = bool(detected) if is_control else primary_observed
     first_match = min(matching, key=lambda d: parse_time(d.get("detected_at") or d.get("timestamp"))) if matching else None
     evidence = parse_time(first_match.get("evidence_end_time") or first_match.get("timestamp")) if first_match else None
     detected_at = parse_time(first_match.get("detected_at")) if first_match else None
@@ -134,7 +136,7 @@ def correlate(
         "session_ids": sorted(session_ids),
         "detection_ids": sorted(d["detection_id"] for d in detected),
         "observed_detection_types": observed_types,
-        "unexpected_detection_types": sorted(set(observed_types) - ({expected} if expected != "NONE" else set())),
+        "unexpected_detection_types": sorted(set(observed_types) - ({expected} if expected else set())),
         "observed_detection": observed,
         "first_event_at": min(occurred_times).isoformat() if occurred_times else None,
         "last_event_at": max(occurred_times).isoformat() if occurred_times else None,
@@ -149,7 +151,11 @@ def correlate(
         "runner_step_count": len(steps),
         "runner_duration_seconds": runner_duration,
         "experiment_duration_seconds": experiment_duration,
-        "observed_event_rate_eps": len(matched) / runner_duration if runner_duration and runner_duration > 0 else None,
+        "observed_event_rate_eps": (
+            len(matched) / (max(occurred_times) - min(occurred_times)).total_seconds()
+            if len(matched) >= 2 and (max(occurred_times) - min(occurred_times)).total_seconds() > 0
+            else None
+        ),
         "ingestion_latency_count": ingestion["count"],
         "ingestion_latency_min_seconds": ingestion["min"],
         "ingestion_latency_mean_seconds": ingestion["mean"],
@@ -160,7 +166,7 @@ def correlate(
         "telemetry_steps_covered": covered if coverage_available else None,
         "telemetry_step_coverage": covered / telemetry_step_count if coverage_available else None,
     }
-    result["cohort_id"] = cohort_id(result)
+    result["evaluation_config_fingerprint"] = evaluation_config_fingerprint(result)
     if not scientific:
         result["result"] = "TP" if observed else "FN"
         return result
@@ -171,7 +177,7 @@ def correlate(
         reason = "NO_TELEMETRY"
     if reason:
         outcome = "INCONCLUSIVE"
-    elif experiment.get("scenario_kind", "attack") == "control":
+    elif is_control:
         outcome = "FP" if detected else "TN"
     else:
         outcome = "TP" if observed else "FN"

@@ -1,10 +1,10 @@
 id: ssh-control
 name: SSH single authentication control
 description: One non-default credential authentication attempt
-kind: control
+trial_kind: control
 target_services:
 - ssh
-expected_detection: NONE
+expected_detection: null
 severity: informational
 steps:
 - service: ssh

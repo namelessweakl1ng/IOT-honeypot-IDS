@@ -1,7 +1,7 @@
 id: mqtt-recon
 name: MQTT reconnaissance
 description: MQTT CONNECT, SUBSCRIBE and PING packets
-kind: attack
+trial_kind: attack
 target_services:
 - mqtt
 expected_detection: MQTT_PROBING

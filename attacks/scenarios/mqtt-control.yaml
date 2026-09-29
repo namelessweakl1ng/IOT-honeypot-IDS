@@ -1,10 +1,10 @@
 id: mqtt-control
 name: MQTT connection control
 description: One ordinary MQTT connection (the current rule may detect it)
-kind: control
+trial_kind: control
 target_services:
 - mqtt
-expected_detection: NONE
+expected_detection: null
 severity: informational
 steps:
 - service: mqtt

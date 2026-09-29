@@ -1,7 +1,7 @@
 id: multi-honeypot-attack
 name: Multi-honeypot attack
 description: Bounded interaction across all decoys
-kind: attack
+trial_kind: attack
 target_services:
 - ssh
 - telnet

@@ -11,12 +11,12 @@ export interface SystemStatus {
   processor?: { last_run?: string | null };
 }
 
-export interface Scenario { id: string; name: string; description: string; kind: "attack" | "control"; expected_detection: string; severity: string; target_honeypots: string[]; target_services: string[]; step_count: number; manifest_sha256: string; }
+export interface Scenario { id: string; name: string; description: string; trial_kind: "attack" | "control"; expected_detection: string | null; severity: string; target_honeypots: string[]; target_services: string[]; step_count: number; manifest_sha256: string; }
 
-export interface EvaluationRow { scenario_id: string; kind: string; expected_detection: string; run_count: number; scored_count: number; inconclusive_count: number; tp?: number; fn?: number; tn?: number; fp?: number; detection_rate?: number | null; false_positive_rate?: number | null }
+export interface EvaluationRow { scenario_id: string; trial_kind: string; expected_detection: string | null; run_count: number; scored_count: number; inconclusive_count: number; tp?: number; fn?: number; tn?: number; fp?: number; detection_rate?: number | null; false_positive_rate?: number | null }
 export interface RuleEvaluation { detection_type: string; tp: number; fn: number; fp: number; tn: number; precision: number | null; recall: number | null; f1: number | null; specificity: number | null; false_positive_rate: number | null }
-export interface EvaluationCohort { cohort_id: string; overall: Record<string, number | null>; per_scenario: EvaluationRow[]; per_detection_type: RuleEvaluation[]; latency: Record<string, { count: number; mean: number | null; p95: number | null }>; controls: { runs: number; tn: number; fp: number } }
-export interface EvaluationSummary { cohorts: EvaluationCohort[]; most_recent_cohort_id: string | null; legacy_incomplete_count: number }
+export interface EvaluationCohort { evaluation_config_fingerprint: string; overall: Record<string, number | null>; per_scenario: EvaluationRow[]; per_detection_type: RuleEvaluation[]; latency: Record<string, { count: number; mean: number | null; p95: number | null }>; controls: { runs: number; tn: number; fp: number } }
+export interface EvaluationSummary { cohorts: EvaluationCohort[]; most_recent_evaluation_config_fingerprint: string | null; legacy_incomplete_count: number }
 
 export interface Experiment {
   experiment_id: string;
@@ -26,7 +26,8 @@ export interface Experiment {
   target_honeypots: string[];
   attacker_ip: string;
   target_ip: string;
-  expected_detection: string;
+  trial_kind: "attack" | "control";
+  expected_detection: string | null;
   status: string;
   result?: string | null;
   observed_detection?: boolean | null;

@@ -1,10 +1,10 @@
 id: router-control
 name: Router ordinary request control
 description: One ordinary router root request
-kind: control
+trial_kind: control
 target_services:
 - router
-expected_detection: NONE
+expected_detection: null
 severity: informational
 steps:
 - service: router

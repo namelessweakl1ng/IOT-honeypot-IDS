@@ -33,13 +33,13 @@ def parser() -> argparse.ArgumentParser:
     return value
 
 
-def make_plan(args) -> list[str]:
+def make_plan(args) -> list[dict]:
     catalog = ScenarioCatalog().load()
     selected = list(args.scenario)
     if args.all_attacks:
-        selected += [item.id for item in catalog.values() if item.kind == "attack"]
+        selected += [item.id for item in catalog.values() if item.trial_kind == "attack"]
     if args.all_controls:
-        selected += [item.id for item in catalog.values() if item.kind == "control"]
+        selected += [item.id for item in catalog.values() if item.trial_kind == "control"]
     if args.all_evaluation:
         selected += list(catalog)
     selected = list(dict.fromkeys(selected))
@@ -48,7 +48,11 @@ def make_plan(args) -> list[str]:
     unknown = set(selected) - set(catalog)
     if unknown:
         raise ValueError(f"unknown scenarios: {', '.join(sorted(unknown))}")
-    plan = [scenario for _ in range(args.repetitions) for scenario in selected]
+    plan = [
+        {"scenario_id": scenario_id, "trial_kind": catalog[scenario_id].trial_kind, "replicate": replicate}
+        for replicate in range(1, args.repetitions + 1)
+        for scenario_id in selected
+    ]
     if args.shuffle:
         if args.seed is None:
             raise ValueError("--shuffle requires --seed so ordering is reproducible")
@@ -56,7 +60,7 @@ def make_plan(args) -> list[str]:
     return plan
 
 
-def execute(args, plan: list[str]) -> Path:
+def execute(args, plan: list[dict]) -> Path:
     identifier = "EVAL-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     directory = RESULTS / identifier
     directory.mkdir(parents=True, exist_ok=False)
@@ -67,14 +71,15 @@ def execute(args, plan: list[str]) -> Path:
         "target": args.target_ip,
         "attacker_ip": args.attacker_ip,
         "requested_repetitions": args.repetitions,
-        "scenario_ids": list(dict.fromkeys(plan)),
+        "scenario_ids": list(dict.fromkeys(entry["scenario_id"] for entry in plan)),
         "scenario_order": plan,
         "shuffle_seed": args.seed if args.shuffle else None,
         "software_revision": subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=False).stdout.strip() or None,
         "experiments": [],
     }
     path = directory / "evaluation-session.json"
-    for number, scenario_id in enumerate(plan, 1):
+    for number, entry in enumerate(plan, 1):
+        scenario_id = entry["scenario_id"]
         created = request_json(
             f"{args.api_url.rstrip('/')}/experiments",
             "POST",
@@ -84,6 +89,8 @@ def execute(args, plan: list[str]) -> Path:
                 "scenario_id": scenario_id,
                 "attacker_ip": args.attacker_ip,
                 "target_ip": args.target_ip,
+                "evaluation_batch_id": identifier,
+                "replicate": entry["replicate"],
             },
         )
         experiment_id = created["experiment_id"]
@@ -98,9 +105,7 @@ def execute(args, plan: list[str]) -> Path:
                 final = {"experiment_id": experiment_id, "status": "error", "result": "INCONCLUSIVE"}
             final["local_error"] = str(exc)
         (directory / f"{experiment_id}.json").write_text(json.dumps(final, indent=2) + "\n")
-        manifest["experiments"].append(
-            {"experiment_id": experiment_id, "scenario_id": scenario_id, "status": final.get("status"), "result": final.get("result")}
-        )
+        manifest["experiments"].append({"experiment_id": experiment_id, **entry, "status": final.get("status"), "result": final.get("result")})
         path.write_text(json.dumps(manifest, indent=2) + "\n")
     manifest["finished_at"] = datetime.now(timezone.utc).isoformat()
     path.write_text(json.dumps(manifest, indent=2) + "\n")
