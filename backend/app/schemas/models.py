@@ -15,6 +15,17 @@ class ExperimentCreate(BaseModel):
     replicate: int | None = Field(default=None, ge=1)
 
 
+class EventPresenceRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    event_ids: list[str] = Field(min_length=1, max_length=250)
+
+    @model_validator(mode="after")
+    def event_ids_are_bounded_and_nonempty(self):
+        if any(not value or len(value) > 512 for value in self.event_ids):
+            raise ValueError("event IDs must contain 1 to 512 characters")
+        return self
+
+
 class RunnerStep(BaseModel):
     model_config = ConfigDict(extra="ignore")
     step: int = Field(ge=1)

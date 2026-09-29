@@ -25,11 +25,13 @@ Plan safely (no network action without `--execute`):
 
 ```bash
 python -m evaluation.run_matrix --api-url http://localhost:8000 \
-  --attacker-ip 192.168.50.10 --target-ip 192.168.50.20 --all-evaluation --repetitions 5
-# Review, then repeat with --execute. Random order requires --shuffle --seed 1234.
+  --attacker-ip 192.168.50.10 --target-ip 192.168.50.20 \
+  --all-evaluation --repetitions 5 --batch-id FINAL-2026
+# Review, then repeat the identical command with --execute. The report below
+# uses the same FINAL-2026 batch. Random order requires --shuffle --seed 1234.
 ```
 
-The CLI uses `attacks.runner.run`, creates one experiment at a time, and records failures rather than hiding them. Local manifests contain identifiers/statuses, never credentials.
+The CLI uses `attacks.runner.run`, creates one experiment at a time, and records failures rather than hiding them. `--batch-id` is stored on every experiment and used for the local directory and manifest; omit it only when an automatic `EVAL-<UTC timestamp>` ID is desired. Local manifests contain identifiers/statuses, never credentials.
 
 ## Measurements and exports
 

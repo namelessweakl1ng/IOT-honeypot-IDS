@@ -1,3 +1,3 @@
-from .models import Experiment, ExperimentCreate, GroundTruthSubmission
+from .models import EventPresenceRequest, Experiment, ExperimentCreate, GroundTruthSubmission
 
-__all__ = ["Experiment", "ExperimentCreate", "GroundTruthSubmission"]
+__all__ = ["EventPresenceRequest", "Experiment", "ExperimentCreate", "GroundTruthSubmission"]

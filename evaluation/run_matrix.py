@@ -3,6 +3,7 @@
 import argparse
 import json
 import random
+import re
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -14,6 +15,14 @@ from backend.app.services.scenarios import ScenarioCatalog
 from .http import request_json
 
 RESULTS = Path(__file__).parent / "results"
+BATCH_ID_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,119}\Z")
+
+
+def resolve_batch_id(value: str | None) -> str:
+    identifier = value if value is not None else "EVAL-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    if not BATCH_ID_PATTERN.fullmatch(identifier) or identifier in {".", ".."}:
+        raise ValueError("batch ID must be 1-120 safe letters, numbers, dots, underscores, or hyphens")
+    return identifier
 
 
 def parser() -> argparse.ArgumentParser:
@@ -29,6 +38,7 @@ def parser() -> argparse.ArgumentParser:
     group.add_argument("--all-evaluation", action="store_true")
     value.add_argument("--shuffle", action="store_true")
     value.add_argument("--seed", type=int)
+    value.add_argument("--batch-id", help="stable evaluation batch ID; defaults to EVAL-<UTC timestamp>")
     value.add_argument("--execute", action="store_true", help="required to perform network actions")
     return value
 
@@ -60,8 +70,8 @@ def make_plan(args) -> list[dict]:
     return plan
 
 
-def execute(args, plan: list[dict]) -> Path:
-    identifier = "EVAL-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+def execute(args, plan: list[dict], batch_id: str | None = None) -> Path:
+    identifier = resolve_batch_id(batch_id if batch_id is not None else args.batch_id)
     directory = RESULTS / identifier
     directory.mkdir(parents=True, exist_ok=False)
     manifest = {
@@ -116,13 +126,14 @@ def main(argv=None) -> int:
     args = parser().parse_args(argv)
     try:
         plan = make_plan(args)
+        batch_id = resolve_batch_id(args.batch_id)
     except ValueError as exc:
         parser().error(str(exc))
-    print(json.dumps({"mode": "EXECUTE" if args.execute else "PLAN ONLY", "scenario_order": plan}, indent=2))
+    print(json.dumps({"mode": "EXECUTE" if args.execute else "PLAN ONLY", "evaluation_batch_id": batch_id, "scenario_order": plan}, indent=2))
     if not args.execute:
         print("No network actions performed. Add --execute to run this plan.")
         return 0
-    print(execute(args, plan))
+    print(execute(args, plan, batch_id))
     return 0
 
 

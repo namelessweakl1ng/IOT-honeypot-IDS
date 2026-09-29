@@ -3,6 +3,7 @@ import asyncio
 import csv
 import json
 from copy import deepcopy
+from datetime import datetime
 from unittest.mock import AsyncMock
 
 import pytest
@@ -12,10 +13,11 @@ from backend.app.api import evaluation, experiments
 from backend.app.main import app
 from backend.app.services.evaluation import aggregate, evaluation_config_fingerprint, ingestion_statistics
 from backend.app.services.experiments import correlate
-from evaluation.completeness import load_ids, mapped_event_id
+from evaluation import run_matrix
+from evaluation.completeness import fetch_present_event_ids, load_ids, mapped_event_id
 from evaluation.host_info import capture
 from evaluation.report import measurement_status, resource_summary
-from evaluation.run_matrix import make_plan
+from evaluation.run_matrix import make_plan, resolve_batch_id
 from tests.evaluation.test_framework import CONFIG, detection, event, experiment, session
 
 
@@ -52,6 +54,38 @@ def test_structured_shuffled_plan_preserves_replicates():
     assert all(entry["trial_kind"] == "control" for entry in plan)
 
 
+def test_explicit_and_automatic_batch_ids_are_safe():
+    assert resolve_batch_id("FINAL-2026") == "FINAL-2026"
+    assert resolve_batch_id(None).startswith("EVAL-")
+    for unsafe in ("../FINAL", "bad/batch", "..", ""):
+        with pytest.raises(ValueError):
+            resolve_batch_id(unsafe)
+
+
+def test_execute_persists_explicit_batch_and_replicates(monkeypatch, tmp_path):
+    created_payloads = []
+
+    def fake_request(url, method="GET", data=None):
+        if url.endswith("/experiments"):
+            created_payloads.append(data)
+            return {"experiment_id": f"EXP-{len(created_payloads)}"}
+        return {"experiment_id": url.split("/")[-2], "status": "completed", "result": "TN"}
+
+    monkeypatch.setattr(run_matrix, "RESULTS", tmp_path)
+    monkeypatch.setattr(run_matrix, "request_json", fake_request)
+    monkeypatch.setattr(run_matrix, "run", lambda *args, **kwargs: {})
+    args = argparse.Namespace(
+        api_url="http://backend", target_ip="192.168.50.10", attacker_ip="192.168.50.20", repetitions=2, seed=None, shuffle=False, batch_id="FINAL-2026"
+    )
+    plan = [{"scenario_id": "ssh-control", "trial_kind": "control", "replicate": 1}, {"scenario_id": "ssh-control", "trial_kind": "control", "replicate": 2}]
+    result = run_matrix.execute(args, plan)
+    assert result.parent.name == "FINAL-2026"
+    assert [payload["replicate"] for payload in created_payloads] == [1, 2]
+    assert {payload["evaluation_batch_id"] for payload in created_payloads} == {"FINAL-2026"}
+    manifest = json.loads(result.read_text())
+    assert manifest["evaluation_run_id"] == "FINAL-2026"
+
+
 def test_unknown_revision_has_no_fingerprint_and_is_excluded():
     item = experiment()
     item["software_revision"] = "unknown"
@@ -85,6 +119,19 @@ def test_event_fetch_is_bounded(monkeypatch):
     monkeypatch.setattr(evaluation.store, "search_all", search)
     asyncio.run(evaluation.fetch_events_by_ids([f"id-{i}" for i in range(501)], batch_size=250))
     assert search.await_count == 3
+
+
+def test_event_presence_returns_present_ids_only(monkeypatch):
+    monkeypatch.setattr(
+        evaluation,
+        "fetch_events_by_ids",
+        AsyncMock(return_value={"known": {"event": {"id": "known"}}}),
+    )
+    response = TestClient(app).post("/evaluation/event-presence", json={"event_ids": ["known", "missing"]})
+    assert response.status_code == 200
+    assert response.json() == {"present_event_ids": ["known"]}
+    oversized = TestClient(app).post("/evaluation/event-presence", json={"event_ids": [str(index) for index in range(251)]})
+    assert oversized.status_code == 422
 
 
 def test_resource_summary_and_missing_state(tmp_path):
@@ -129,8 +176,33 @@ def test_completeness_mapping_and_unmappable_denominator(tmp_path):
     assert mapped_event_id(cowrie) == "cowrie.login.failed-abc-2026-01-01T00:00:01Z"
     path = tmp_path / "sensor.jsonl"
     path.write_text("\n".join([json.dumps(custom), json.dumps(cowrie), "not-json"]))
-    total, identifiers, unmappable = load_ids([path])
-    assert total == 3 and len(identifiers) == 2 and unmappable == 1
+    loaded = load_ids([path])
+    assert loaded["sensor_events_total"] == 3 and len(loaded["event_ids"]) == 2 and loaded["unmappable_events"] == 1
+
+
+def test_completeness_batches_presence_requests(monkeypatch):
+    calls = []
+
+    def fake_request(url, method, data):
+        calls.append((url, method, data))
+        return {"present_event_ids": data["event_ids"][:1]}
+
+    monkeypatch.setattr("evaluation.completeness.request_json", fake_request)
+    present = fetch_present_event_ids("http://backend", [f"event-{index}" for index in range(501)])
+    assert len(calls) == 3 and all(call[0].endswith("/evaluation/event-presence") for call in calls)
+    assert all(call[1] == "POST" and len(call[2]["event_ids"]) <= 250 for call in calls)
+    assert present == {"event-0", "event-250", "event-500"}
+
+
+def test_out_of_window_events_are_filtered_not_unmappable(tmp_path):
+    path = tmp_path / "sensor.jsonl"
+    path.write_text(json.dumps({"event_id": "old", "timestamp": "2025-01-01T00:00:00Z"}) + "\n")
+    loaded = load_ids([path], start=datetime.fromisoformat("2026-01-01T00:00:00+00:00"))
+    assert loaded["sensor_events_total"] == 1
+    assert loaded["sensor_events_in_window"] == 0
+    assert loaded["filtered_out_events"] == 1
+    assert loaded["unmappable_events"] == 0
+    assert loaded["event_ids"] == []
 
 
 def test_measurement_status_distinguishes_zero_from_measured():

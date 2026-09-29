@@ -4,10 +4,10 @@ import argparse
 import json
 from datetime import datetime
 from pathlib import Path
-from urllib.error import HTTPError
-from urllib.parse import quote
 
 from .http import request_json
+
+PRESENCE_BATCH_SIZE = 250
 
 
 def mapped_event_id(record: dict) -> str | None:
@@ -18,16 +18,17 @@ def mapped_event_id(record: dict) -> str | None:
     return None
 
 
-def load_ids(paths: list[Path], start: datetime | None = None, end: datetime | None = None) -> tuple[int, list[str], int]:
-    sensor_events, identifiers, unmappable = 0, [], 0
+def load_ids(paths: list[Path], start: datetime | None = None, end: datetime | None = None) -> dict:
+    total, in_window, filtered, identifiers, unmappable = 0, 0, 0, [], 0
     for path in paths:
         for line in path.read_text().splitlines():
             if not line.strip():
                 continue
-            sensor_events += 1
+            total += 1
             try:
                 record = json.loads(line)
             except json.JSONDecodeError:
+                in_window += 1
                 unmappable += 1
                 continue
             timestamp = record.get("timestamp")
@@ -35,37 +36,50 @@ def load_ids(paths: list[Path], start: datetime | None = None, end: datetime | N
                 occurred = datetime.fromisoformat(timestamp.replace("Z", "+00:00")) if timestamp else None
             except (TypeError, ValueError):
                 occurred = None
-            if (start and (not occurred or occurred < start)) or (end and (not occurred or occurred > end)):
+            if (start or end) and occurred is None:
+                in_window += 1
                 unmappable += 1
                 continue
+            if (start and (not occurred or occurred < start)) or (end and (not occurred or occurred > end)):
+                filtered += 1
+                continue
+            in_window += 1
             identifier = mapped_event_id(record)
             if identifier is None:
                 unmappable += 1
             else:
                 identifiers.append(identifier)
-    return sensor_events, list(dict.fromkeys(identifiers)), unmappable
+    return {
+        "sensor_events_total": total,
+        "sensor_events_in_window": in_window,
+        "filtered_out_events": filtered,
+        "event_ids": list(dict.fromkeys(identifiers)),
+        "unmappable_events": unmappable,
+    }
+
+
+def fetch_present_event_ids(api_url: str, identifiers: list[str], batch_size: int = PRESENCE_BATCH_SIZE) -> set[str]:
+    present: set[str] = set()
+    for offset in range(0, len(identifiers), batch_size):
+        batch = identifiers[offset : offset + batch_size]
+        response = request_json(f"{api_url.rstrip('/')}/evaluation/event-presence", "POST", {"event_ids": batch})
+        present.update(response.get("present_event_ids", []))
+    return present
 
 
 def compare(paths: list[Path], api_url: str, start: datetime | None = None, end: datetime | None = None) -> dict:
-    sensor_events, identifiers, unmappable = load_ids(paths, start, end)
-    matched = []
-    for identifier in identifiers:
-        try:
-            request_json(f"{api_url.rstrip('/')}/events/{quote(identifier, safe='')}")
-            matched.append(identifier)
-        except HTTPError as exc:
-            if exc.code != 404:
-                raise
-    missing = sorted(set(identifiers) - set(matched))
+    loaded = load_ids(paths, start, end)
+    identifiers = loaded.pop("event_ids")
+    present = fetch_present_event_ids(api_url, identifiers)
+    missing = sorted(set(identifiers) - present)
     return {
         "status": "MEASURED",
-        "sensor_events": sensor_events,
+        **loaded,
         "mappable_events": len(identifiers),
-        "unmappable_events": unmappable,
-        "indexed_events": len(matched),
-        "matched_events": len(matched),
+        "indexed_events": len(present),
+        "matched_events": len(present),
         "missing_event_ids": missing,
-        "completeness_percent": len(matched) / len(identifiers) * 100 if identifiers else None,
+        "completeness_percent": len(present) / len(identifiers) * 100 if identifiers else None,
     }
 
 

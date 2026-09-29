@@ -7,6 +7,7 @@ from fastapi import APIRouter, Query
 from fastapi.responses import PlainTextResponse
 
 from ..elastic import store
+from ..schemas import EventPresenceRequest
 from ..services.evaluation import aggregate, evaluation_config_fingerprint, export_csv, export_rows
 from ..services.experiments import exact_filter, parse_time
 
@@ -56,6 +57,14 @@ async def _event_samples(records: list[dict[str, Any]]) -> dict[str, list[float 
             values.append(delta if delta is not None and delta >= 0 else None)
         samples[record.get("experiment_id")] = values
     return samples
+
+
+@router.post("/event-presence")
+async def event_presence(payload: EventPresenceRequest):
+    """Return only IDs present across bounded event indices; never raw telemetry."""
+    requested = list(dict.fromkeys(payload.event_ids))
+    events = await fetch_events_by_ids(requested)
+    return {"present_event_ids": sorted(set(requested).intersection(events))}
 
 
 @router.get("/summary")
