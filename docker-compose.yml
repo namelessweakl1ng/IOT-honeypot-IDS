@@ -6,7 +6,9 @@ services:
       discovery.type: single-node
       xpack.security.enabled: "false"
       ES_JAVA_OPTS: -Xms512m -Xmx512m
-    volumes: [elastic-data:/usr/share/elasticsearch/data, ./elk/elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro,Z]
+    volumes:
+      - elastic-data:/usr/share/elasticsearch/data
+      - "./elk/elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro,Z"
     ports: ["${LOCAL_BIND_HOST:-127.0.0.1}:9200:9200"]
     healthcheck: {test: [CMD-SHELL, "curl -fs http://localhost:9200/_cluster/health"], interval: 15s, timeout: 5s, retries: 20}
     mem_limit: 1g
@@ -23,7 +25,9 @@ services:
   logstash:
     image: docker.elastic.co/logstash/logstash:8.19.0
     environment: {LS_JAVA_OPTS: -Xms256m -Xmx256m}
-    volumes: ["./elk/logstash/config:/usr/share/logstash/config:ro,Z", "./elk/logstash/pipelines:/usr/share/logstash/pipeline:ro,Z"]
+    volumes:
+      - "./elk/logstash/config:/usr/share/logstash/config:ro,Z"
+      - "./elk/logstash/pipelines:/usr/share/logstash/pipeline:ro,Z"
     ports: ["${BEATS_BIND_HOST:-0.0.0.0}:5044:5044", "${LOCAL_BIND_HOST:-127.0.0.1}:9600:9600"]
     depends_on: {elasticsearch-setup: {condition: service_completed_successfully}}
     healthcheck: {test: [CMD-SHELL, "curl -fs http://localhost:9600/_node/pipelines"], interval: 15s, timeout: 5s, retries: 20}
@@ -32,7 +36,8 @@ services:
     image: docker.elastic.co/kibana/kibana:8.19.0
     environment:
       NODE_OPTIONS: "--max-old-space-size=768"
-    volumes: ["./elk/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml:ro,Z"]
+    volumes:
+      - "./elk/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml:ro,Z"
     ports: ["${LOCAL_BIND_HOST:-127.0.0.1}:5601:5601"]
     depends_on: {elasticsearch: {condition: service_healthy}}
     healthcheck: {test: [CMD-SHELL, "curl -fs http://localhost:5601/api/status"], interval: 20s, timeout: 10s, retries: 20}
@@ -40,7 +45,8 @@ services:
     mem_limit: 1536m
   kibana-setup:
     image: curlimages/curl:8.12.1
-    volumes: ["./elk/kibana/saved-objects/trapsig.ndjson:/assets/trapsig.ndjson:ro,Z"]
+    volumes:
+      - "./elk/kibana/saved-objects/trapsig.ndjson:/assets/trapsig.ndjson:ro,Z"
     depends_on: {kibana: {condition: service_healthy}}
     command: ["-fsS", "-H", "kbn-xsrf:true", "-F", "file=@/assets/trapsig.ndjson", "http://kibana:5601/api/saved_objects/_import?overwrite=true"]
     restart: "no"

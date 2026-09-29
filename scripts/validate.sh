@@ -2,6 +2,7 @@
 set -eu
 cd "$(dirname "$0")/.."
 docker compose config >/dev/null
+docker compose config --format json | python scripts/ci/check-compose-mounts.py
 docker compose -f sensor/docker-compose.yml --env-file sensor/.env.example config >/dev/null
 ./scripts/ci/check-shell.sh
 ./scripts/test.sh
