@@ -5,7 +5,7 @@ from typing import Any
 from ..config import get_settings
 
 WEAK = {("admin", "admin"), ("admin", "password"), ("root", "root"), ("admin", "1234")}
-DETECTOR_RULESET_VERSION = "1"
+DETECTOR_RULESET_VERSION = "2"
 SUPPORTED_DETECTION_TYPES = frozenset(
     {
         "RECONNAISSANCE",
@@ -68,13 +68,15 @@ def detect(session: dict[str, Any]) -> list[dict[str, Any]]:
     if session.get("commands"):
         add("COMMAND_INTERACTION", "high", f"{len(session['commands'])} command interaction(s) recorded.", ids, "command-v1")
     mqtt = [e for e in events if e.get("network", {}).get("protocol") == "mqtt"]
-    if mqtt:
-        add("MQTT_PROBING", "medium", f"{len(mqtt)} MQTT operation(s) observed.", [e["event"]["id"] for e in mqtt], "mqtt-v1")
+    mqtt_operations = {e.get("mqtt", {}).get("operation") for e in mqtt}
+    if len(mqtt) >= 2 or mqtt_operations.intersection({"subscribe", "publish", "unsubscribe", "ping"}):
+        add("MQTT_PROBING", "medium", f"{len(mqtt)} MQTT operation(s) observed.", [e["event"]["id"] for e in mqtt], "mqtt-v2")
     services = session.get("services_touched", [])
     if len(services) >= cfg.multi_service_threshold:
         add("MULTI_SERVICE_ACTIVITY", "high", f"Source touched {len(services)} services: {', '.join(services)}.", ids, "multi-service-v1")
     if failed and (urls or session.get("commands")) and len(services) >= 2:
         add("MULTI_STAGE_ATTACK", "critical", "Authentication activity was followed by interaction across multiple services.", ids, "multi-stage-v1")
-    if len(events) >= 3 and not found:
-        add("RECONNAISSANCE", "low", f"{len(events)} probe events occurred without authentication or command interaction.", ids, "recon-v1")
+    iot_probes = [e for e in events if e.get("service", {}).get("name") == "iot-service" and e.get("network", {}).get("protocol") == "tcp"]
+    if len(iot_probes) >= 3:
+        add("RECONNAISSANCE", "low", f"{len(iot_probes)} IoT probe interactions occurred.", [e["event"]["id"] for e in iot_probes], "recon-v2")
     return found

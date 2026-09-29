@@ -20,7 +20,7 @@ services:
     image: cowrie/cowrie:latest
     restart: unless-stopped
     ports: ["2222:2222", "2223:2223"]
-    volumes: [cowrie-logs:/cowrie/cowrie-git/var/log/cowrie, ./honeypots/cowrie/cowrie.cfg:/cowrie/cowrie-git/etc/cowrie.cfg:ro]
+    volumes: [cowrie-logs:/cowrie/cowrie-git/var/log/cowrie, ./honeypots/cowrie/cowrie.cfg:/cowrie/cowrie-git/etc/cowrie.cfg:ro, ./honeypots/cowrie/userdb.txt:/cowrie/cowrie-git/etc/userdb.txt:ro]
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
     pids_limit: 128

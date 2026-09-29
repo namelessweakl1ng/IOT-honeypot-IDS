@@ -172,9 +172,9 @@ async def settle(doc: dict) -> tuple[bool, float]:
         if count > 0 and monotonic() - unchanged_since >= settings.experiment_settle_quiet_seconds:
             return True, elapsed
         if elapsed >= settings.experiment_settle_timeout_seconds:
-            # A consistently empty bounded window is settled but has no
-            # telemetry. A changing stream at the deadline is a settle timeout.
-            return (count == 0), elapsed
+            # Both an empty window and a still-changing stream are incomplete.
+            # Neither may be silently interpreted as a negative observation.
+            return False, elapsed
         await asyncio.sleep(settings.experiment_settle_poll_seconds)
 
 

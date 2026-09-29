@@ -2,7 +2,7 @@ import asyncio
 import json
 from copy import deepcopy
 from pathlib import Path
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 from elasticsearch import NotFoundError
@@ -12,6 +12,7 @@ from attacks.runner import run as runner
 from backend.app.api import experiments
 from backend.app.elastic import ElasticStore
 from backend.app.schemas import GroundTruthSubmission
+from backend.app.services.evaluation import evaluation_config_fingerprint
 from backend.app.services.scenario_contract import allowed_step_statuses
 from backend.app.services.scenarios import ScenarioCatalog
 
@@ -274,6 +275,102 @@ def test_runner_classifies_ssh_rejection_by_step_intent(monkeypatch, scenario_id
     result = runner.run(scenario_id, "192.168.50.10")
     assert {step["status"] for step in result["steps"]} == {expected_step_status}
     assert result["overall_status"] == expected_overall
+
+
+def test_ssh_command_uses_an_interactive_channel_that_cowrie_can_close(monkeypatch):
+    channel = Mock()
+    transport = Mock()
+    transport.is_active.return_value = True
+    transport.open_session.return_value = channel
+    client = Mock()
+    client.get_transport.return_value = transport
+    monkeypatch.setattr(runner.paramiko, "SSHClient", Mock(return_value=client))
+
+    runner.ssh_login("192.168.50.10", {"username": "root", "password": "root", "command": "id"})
+
+    channel.get_pty.assert_called_once()
+    channel.invoke_shell.assert_called_once()
+    channel.sendall.assert_called_once_with(b"id\nexit\n")
+    channel.close.assert_called_once()
+
+
+def test_ssh_command_channel_setup_failure_remains_a_failure(monkeypatch):
+    channel = Mock()
+    channel.invoke_shell.side_effect = runner.paramiko.SSHException("channel setup failed")
+    transport = Mock()
+    transport.is_active.return_value = True
+    transport.open_session.return_value = channel
+    client = Mock()
+    client.get_transport.return_value = transport
+    monkeypatch.setattr(runner.paramiko, "SSHClient", Mock(return_value=client))
+
+    with pytest.raises(runner.paramiko.SSHException, match="channel setup failed"):
+        runner.ssh_login("192.168.50.10", {"username": "root", "password": "root", "command": "id"})
+
+
+def test_settle_polls_until_matching_telemetry_is_stable(monkeypatch):
+    clock = iter([0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 4.0, 4.0])
+    monkeypatch.setattr(experiments, "monotonic", lambda: next(clock))
+    monkeypatch.setattr(experiments.asyncio, "sleep", AsyncMock())
+    monkeypatch.setattr(experiments.store, "count", AsyncMock(side_effect=[0, 1, 1]))
+
+    settled, elapsed = asyncio.run(
+        experiments.settle({**BASE_EXPERIMENT, "end_time": "2026-01-01T00:00:20Z", "attacker_ip": "192.168.50.20", "target_honeypots": ["cowrie"]})
+    )
+
+    assert settled is True
+    assert elapsed == 4.0
+    assert experiments.store.count.await_count == 3
+
+
+def test_settle_empty_stream_times_out_instead_of_becoming_a_negative(monkeypatch):
+    clock = iter([0.0, 0.0, 0.0, 30.0])
+    monkeypatch.setattr(experiments, "monotonic", lambda: next(clock))
+    monkeypatch.setattr(experiments.store, "count", AsyncMock(return_value=0))
+
+    settled, elapsed = asyncio.run(
+        experiments.settle({**BASE_EXPERIMENT, "end_time": "2026-01-01T00:00:20Z", "attacker_ip": "192.168.50.20", "target_honeypots": ["cowrie"]})
+    )
+
+    assert settled is False
+    assert elapsed == 30.0
+
+
+def test_finish_preserves_settle_timeout_as_inconclusive(monkeypatch):
+    state = {
+        **deepcopy(BASE_EXPERIMENT),
+        "attacker_ip": "192.168.50.20",
+        "target_honeypots": ["cowrie"],
+        "ground_truth_valid": True,
+    }
+    monkeypatch.setattr(experiments, "experiment", AsyncMock(return_value=state))
+    monkeypatch.setattr(experiments, "settle", AsyncMock(return_value=(False, 25.0)))
+    save = AsyncMock(side_effect=lambda _index, _id, document: document)
+    monkeypatch.setattr(experiments.store, "save", save)
+
+    result = asyncio.run(experiments.finish("EXP-1"))
+
+    assert result["status"] == "completed"
+    assert result["telemetry_settled"] is False
+    assert result["result"] == "INCONCLUSIVE"
+    assert result["result_reason"] == "SETTLE_TIMEOUT"
+
+
+def test_detector_ruleset_version_changes_evaluation_fingerprint():
+    base = {
+        "software_revision": "cf06b73",
+        "config_snapshot": {
+            "session_timeout_seconds": 30,
+            "brute_force_threshold": 5,
+            "web_enumeration_threshold": 4,
+            "multi_service_threshold": 3,
+            "detector_ruleset_version": "1",
+            "trapsig_schema_version": "1",
+        },
+    }
+    changed = deepcopy(base)
+    changed["config_snapshot"]["detector_ruleset_version"] = "2"
+    assert evaluation_config_fingerprint(base) != evaluation_config_fingerprint(changed)
 
 
 def test_finish_resumes_after_settle_failure_and_preserves_end_time(monkeypatch):
