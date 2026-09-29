@@ -77,6 +77,6 @@ def detect(session: dict[str, Any]) -> list[dict[str, Any]]:
     if failed and (urls or session.get("commands")) and len(services) >= 2:
         add("MULTI_STAGE_ATTACK", "critical", "Authentication activity was followed by interaction across multiple services.", ids, "multi-stage-v1")
     iot_probes = [e for e in events if e.get("service", {}).get("name") == "iot-service" and e.get("network", {}).get("protocol") == "tcp"]
-    if len(iot_probes) >= 3 and not found:
+    if len(iot_probes) >= 3:
         add("RECONNAISSANCE", "low", f"{len(iot_probes)} IoT probe interactions occurred.", [e["event"]["id"] for e in iot_probes], "recon-v2")
     return found

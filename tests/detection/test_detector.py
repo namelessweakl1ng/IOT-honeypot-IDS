@@ -81,3 +81,15 @@ def test_mqtt_control_is_negative_but_active_or_repeated_operations_are_probing(
     assert detection_types([connect], ["mqtt"]) == set()
     assert "MQTT_PROBING" in detection_types(repeated, ["mqtt"])
     assert "MQTT_PROBING" in detection_types(recon, ["mqtt"])
+
+
+def test_iot_reconnaissance_is_not_suppressed_by_another_detection():
+    events = [ev(i, protocol="tcp", service="iot-service") for i in range(1, 4)]
+    events.extend(
+        [
+            ev(4, protocol="mqtt", service="mqtt", mqtt={"operation": "connect"}),
+            ev(5, protocol="mqtt", service="mqtt", mqtt={"operation": "subscribe"}),
+        ]
+    )
+
+    assert detection_types(events, ["iot-service", "mqtt"]) == {"MQTT_PROBING", "RECONNAISSANCE"}
