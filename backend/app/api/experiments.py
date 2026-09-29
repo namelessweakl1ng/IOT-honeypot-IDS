@@ -9,7 +9,7 @@ from ..config import get_settings
 from ..elastic import store
 from ..schemas import ExperimentCreate, GroundTruthSubmission
 from ..services.detector import DETECTOR_RULESET_VERSION
-from ..services.experiments import correlate, event_query, parse_time, validate_lab_host
+from ..services.experiments import correlate, event_query, exact_filter, parse_time, validate_lab_host
 from ..services.scenarios import ScenarioCatalog, ScenarioCatalogError
 from ..services.telemetry import SCHEMA_VERSION
 from .common import one
@@ -50,6 +50,7 @@ async def create(payload: ExperimentCreate):
         "target_honeypots": list(scenario.target_honeypots),
         "expected_detection": scenario.expected_detection,
         "scenario_manifest_sha256": scenario.manifest_sha256,
+        "scenario_step_services": list(scenario.step_services),
         "trapsig": {"schema_version": SCHEMA_VERSION},
         "experiment_id": identifier,
         "status": "created",
@@ -77,9 +78,7 @@ async def start(identifier: str):
         raise HTTPException(409, f"scenario is unavailable; create a new experiment: {exc}") from exc
     if scenario.manifest_sha256 != doc["scenario_manifest_sha256"]:
         raise HTTPException(409, "scenario manifest changed; create a new experiment")
-    active = await store.search_all(
-        INDEX, {"terms": {"status": ["running", "correlating"]}}, sort=[{"created_at": "asc"}, {"experiment_id": "asc"}], missing_index_is_empty=True
-    )
+    active = await store.search_all(INDEX, exact_filter("status", ["running", "correlating"]), sort=[{"created_at": "asc"}], missing_index_is_empty=True)
     if any(item.get("experiment_id") != identifier for item in active):
         raise HTTPException(409, "another experiment is running or correlating")
     settings = get_settings()
@@ -106,8 +105,8 @@ async def cancel(identifier: str):
     doc = await experiment(identifier)
     if doc["status"] == "cancelled":
         return doc
-    if doc["status"] not in {"created", "running"}:
-        raise HTTPException(409, "only a created or running experiment can be cancelled")
+    if doc["status"] not in {"created", "running", "correlating"}:
+        raise HTTPException(409, "only a created, running, or correlating experiment can be cancelled")
     doc.update(status="cancelled", cancelled_at=now())
     doc.pop("_id", None)
     return await store.save(INDEX, identifier, doc)
@@ -134,6 +133,10 @@ async def ground_truth(identifier: str, payload: GroundTruthSubmission):
         if existing == data:
             return doc
         raise HTTPException(409, "a conflicting ground-truth run already exists")
+    expected_steps = list(enumerate(doc.get("scenario_step_services", ()), start=1))
+    actual_steps = [(step.step, step.service) for step in payload.steps]
+    if not expected_steps or actual_steps != expected_steps:
+        raise HTTPException(422, "ground-truth steps do not match the scenario manifest")
     valid = payload.overall_status == "completed" and all(step.status != "failed" for step in payload.steps)
     doc.update(
         ground_truth=data,
@@ -172,11 +175,17 @@ async def finish(identifier: str):
     doc = await experiment(identifier)
     if doc["status"] == "completed":
         return doc
-    if doc["status"] != "running":
-        raise HTTPException(409, "only a running experiment can be finished")
-    doc.update(status="correlating", end_time=now())
+    if doc["status"] not in {"running", "correlating"}:
+        raise HTTPException(409, "only a running or correlating experiment can be finished")
+    if doc["status"] == "running":
+        # Persist the evidence window before any settling I/O. A retry from
+        # correlating deliberately reuses this immutable end time.
+        doc.update(status="correlating", end_time=now())
+        doc.pop("_id", None)
+        await store.save(INDEX, identifier, doc)
+    elif not doc.get("end_time"):
+        raise HTTPException(409, "correlating experiment has no recorded end_time")
     doc.pop("_id", None)
-    await store.save(INDEX, identifier, doc)
     settled, wait = await settle(doc)
     doc.update(telemetry_settled=settled, settle_wait_seconds=wait)
     if not settled:
@@ -187,28 +196,26 @@ async def finish(identifier: str):
 
         if processor_module.processor:
             await processor_module.processor.process_once()
-        events = await store.search_all("trapsig-events-*", event_query(doc), sort=[{"@timestamp": "asc"}, {"event.id": "asc"}], missing_index_is_empty=True)
+        events = await store.search_all("trapsig-events-*", event_query(doc), sort=[{"@timestamp": "asc"}], missing_index_is_empty=True)
         sessions = await store.search_all(
             "trapsig-sessions",
             {
                 "bool": {
                     "filter": [
-                        {"term": {"source_ip": doc["attacker_ip"]}},
+                        exact_filter("source_ip", doc["attacker_ip"]),
                         {"range": {"start_time": {"lte": doc["end_time"]}}},
                         {"range": {"end_time": {"gte": doc["start_time"]}}},
                     ]
                 }
             },
-            sort=[{"start_time": "asc"}, {"session_id": "asc"}],
+            sort=[{"start_time": "asc"}],
             missing_index_is_empty=True,
         )
         session_ids = [s["session_id"] for s in sessions]
         detections = (
             []
             if not session_ids
-            else await store.search_all(
-                "trapsig-detections", {"terms": {"session_id": session_ids}}, sort=[{"timestamp": "asc"}, {"detection_id": "asc"}], missing_index_is_empty=True
-            )
+            else await store.search_all("trapsig-detections", exact_filter("session_id", session_ids), sort=[{"timestamp": "asc"}], missing_index_is_empty=True)
         )
         doc = correlate(doc, events, sessions, detections, scientific=True)
     except Exception:

@@ -145,6 +145,9 @@
         "runner_steps": {
           "type": "object",
           "enabled": false
+        },
+        "scenario_step_services": {
+          "type": "keyword"
         }
       }
     }

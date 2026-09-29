@@ -12,7 +12,7 @@ Canonical service mapping is: `ssh` and `telnet` → `cowrie`, `camera` and `htt
 
 ## Lifecycle and isolation
 
-The lifecycle is `created → running → correlating → completed`, with `created → cancelled` and `running → cancelled` also permitted. Start and completed finish responses are idempotent where safe; invalid transitions return HTTP 409. `POST /experiments/{id}/cancel` records `cancelled_at` rather than deleting evidence. Only one experiment may be running or correlating, preventing overlapping runs from claiming the same telemetry.
+The lifecycle is `created → running → correlating → completed`, with `created → cancelled`, `running → cancelled`, and `correlating → cancelled` also permitted. Start and completed finish responses are idempotent where safe; invalid transitions return HTTP 409. A repeated finish resumes a correlating experiment with its original `end_time`, so a transient settling failure cannot permanently lock the lab. `POST /experiments/{id}/cancel` records `cancelled_at` rather than deleting evidence. Only one experiment may be running or correlating, preventing overlapping runs from claiming the same telemetry.
 
 Start snapshots the manifest hash, detector ruleset version, TRAPSIG schema version, and the session timeout, brute-force, web-enumeration, and multi-service thresholds. `TRAPSIG_REVISION` is recorded when supplied; otherwise software revision is null. No Git revision is invented and no secrets are captured.
 
@@ -28,7 +28,7 @@ Supplying both `--experiment-id` and `--api-url` posts the summary after its loc
 
 Finish first records `end_time` and persists `correlating`. The backend polls the count of experiment-specific events until it is unchanged for the configured quiet period, bounded by the settle timeout. The query uses occurrence time, source and destination IP, canonical `service.name` targets, and excludes internal/loopback telemetry. A timeout produces `INCONCLUSIVE / SETTLE_TIMEOUT`; it never produces an FN.
 
-After settling, the processor runs and correlation uses Elasticsearch `search_after` pagination rather than the latest N documents. Events must match the experiment window, route, and canonical targets. Candidate sessions overlap the window and source, but are linked only by intersection with matched event IDs. Detections are linked only through those session IDs. Unrelated events in a source-IP session are not added to the experiment.
+After settling, the processor runs and correlation uses a bounded Elasticsearch point-in-time (PIT) with `search_after` pagination rather than the latest N documents. Meaningful date fields are the primary sort and PIT `_shard_doc` is the mapping-independent tiebreaker; every PIT is closed in `finally`. Exact-match filters try both the typed field and its historical dynamic `.keyword` variant, allowing the same non-destructive query path to work with old and freshly templated indices. Events must match the experiment window, route, and canonical targets. Candidate sessions overlap the window and source, but are linked only by intersection with matched event IDs. Detections are linked only through those session IDs. Unrelated events in a source-IP session are not added to the experiment.
 
 Results mean:
 

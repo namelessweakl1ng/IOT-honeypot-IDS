@@ -26,14 +26,25 @@ def validate_lab_host(value: str, lab_subnet: str, field: str) -> str:
     return str(address)
 
 
+def exact_filter(field: str, value: Any) -> dict[str, Any]:
+    """Match fresh typed fields and historical dynamic text+keyword fields."""
+    operator = "terms" if isinstance(value, (list, tuple, set)) else "term"
+    return {
+        "bool": {
+            "should": [{operator: {field: value}}, {operator: {f"{field}.keyword": value}}],
+            "minimum_should_match": 1,
+        }
+    }
+
+
 def event_query(experiment: dict[str, Any]) -> dict[str, Any]:
     return {
         "bool": {
             "filter": [
                 {"range": {"@timestamp": {"gte": experiment["start_time"], "lte": experiment["end_time"]}}},
-                {"term": {"source.ip": experiment["attacker_ip"]}},
-                {"term": {"destination.ip": experiment["target_ip"]}},
-                {"terms": {"service.name": experiment["target_honeypots"]}},
+                exact_filter("source.ip", experiment["attacker_ip"]),
+                exact_filter("destination.ip", experiment["target_ip"]),
+                exact_filter("service.name", experiment["target_honeypots"]),
             ],
             "must_not": [
                 {"term": {"trapsig.internal": True}},

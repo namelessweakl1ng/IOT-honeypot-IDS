@@ -36,11 +36,15 @@ class Scenario:
     target_services: tuple[str, ...]
     step_count: int
     manifest_sha256: str
+    # Internal execution contract only. Public catalog responses intentionally
+    # omit step-level data, credentials, and payloads.
+    step_services: tuple[str, ...]
 
     def public_dict(self) -> dict[str, Any]:
         result = asdict(self)
         result["target_honeypots"] = list(self.target_honeypots)
         result["target_services"] = list(self.target_services)
+        result.pop("step_services")
         return result
 
 
@@ -106,4 +110,5 @@ class ScenarioCatalog:
             target_services=tuple(services),
             step_count=len(steps),
             manifest_sha256=sha256(raw).hexdigest(),
+            step_services=tuple(step_services),
         )
