@@ -18,10 +18,22 @@
           "type": "keyword"
         },
         "type": {
-          "type": "keyword"
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
         },
         "severity": {
-          "type": "keyword"
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
         },
         "rule_id": {
           "type": "keyword"

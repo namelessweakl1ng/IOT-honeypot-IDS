@@ -31,13 +31,13 @@ MQTT packet types are integers. The controlled values remain: categories
 `trapsig-events-*`, but processor sessionization/detection and security analytics
 exclude both newly classified records and legacy records identifiable by loopback IP.
 
-Invalid JSON and invalid canonical events retain `raw`, receive
+Invalid JSON retains its exact input line at `raw.original`; invalid canonical events retain the parsed `raw` object. Both receive
 `trapsig.dead_letter_reason`, and route only to `trapsig-dead-letter-YYYY.MM.dd`.
 Inspect them with `curl 'localhost:9200/trapsig-dead-letter-*/_search?pretty'`.
 
 Composable templates in `elk/elasticsearch/index-templates/` define mappings for
 `trapsig-events-*`, dead letters, sessions, detections, and experiments. They set one
-shard and zero replicas for the single-node lab. No lifecycle policy is enabled: raw
+shard and zero replicas for the single-node lab. Compatibility multi-fields preserve the historical `severity.keyword`, `type.keyword`, and `honeypots_touched.keyword` aggregation paths. The idempotent setup job also sets zero replicas on existing, known TRAPSIG indices without recreating them. No lifecycle policy is enabled: raw
 research telemetry and experiments are never automatically deleted.
 
 Historical loopback-derived sessions/detections are not removed automatically. Preview

@@ -18,7 +18,13 @@
           "type": "keyword"
         },
         "honeypots_touched": {
-          "type": "keyword"
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
         },
         "services_touched": {
           "type": "keyword"

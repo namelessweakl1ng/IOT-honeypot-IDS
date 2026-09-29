@@ -2,6 +2,7 @@ from hashlib import sha256
 from datetime import datetime, timezone
 from typing import Any, Callable
 from .telemetry import SCHEMA_VERSION, is_loopback
+from ipaddress import ip_address
 
 
 def normalize(raw: dict[str, Any], honeypot_type: str, honeypot_id: str, sensor_id: str, now: Callable[[], datetime] | None = None) -> dict[str, Any]:
@@ -9,8 +10,13 @@ def normalize(raw: dict[str, Any], honeypot_type: str, honeypot_id: str, sensor_
     cowrie = honeypot_type == "ssh_telnet"
     timestamp = raw.get("timestamp") or raw.get("@timestamp")
     source_ip = raw.get("src_ip") if cowrie else raw.get("source_ip")
-    if not timestamp or not source_ip:
-        raise ValueError("timestamp and source IP are required")
+    destination_ip = raw.get("destination_ip")
+    if not timestamp or not source_ip or not destination_ip:
+        raise ValueError("timestamp, source IP, and destination IP are required")
+    try:
+        ip_address(str(source_ip)); ip_address(str(destination_ip))
+    except ValueError as exc:
+        raise ValueError("source and destination IPs must be valid IPv4 or IPv6") from exc
     identifier = f'{raw.get("eventid")}-{raw.get("session", "")}-{timestamp}' if cowrie and raw.get("eventid") else raw.get("event_id")
     identifier = identifier or sha256(f"{timestamp}|{source_ip}|{raw}".encode()).hexdigest()
     cowrie_id = raw.get("eventid", "")
@@ -21,7 +27,7 @@ def normalize(raw: dict[str, Any], honeypot_type: str, honeypot_id: str, sensor_
         "@timestamp": timestamp,
         "event": {"id": identifier, "ingested": (now or (lambda: datetime.now(timezone.utc)))().astimezone(timezone.utc).isoformat().replace("+00:00", "Z"), "category": category, "type": raw.get("type", "info"), "action": "login_attempt" if login else "command" if cowrie_id == "cowrie.command.input" else raw.get("action", "observe"), "outcome": outcome},
         "source": {"ip": source_ip, "port": raw.get("src_port") or raw.get("source_port")},
-        "destination": {"ip": raw.get("destination_ip", "sensor"), "port": raw.get("dst_port") or raw.get("destination_port")},
+        "destination": {"ip": destination_ip, "port": raw.get("dst_port") or raw.get("destination_port")},
         "network": {"transport": "tcp", "protocol": (raw.get("protocol") or ("telnet" if raw.get("dst_port") == 2223 else "ssh")) if cowrie else raw.get("protocol")},
         "service": {"name": "cowrie" if cowrie else raw.get("service")},
         "honeypot": {"id": honeypot_id, "type": honeypot_type},

@@ -56,13 +56,13 @@ async def overview(minutes: int = Query(60)) -> dict[str, Any]:
     sessions_task = store.aggregate(
         "trapsig-sessions", _query(minutes, "start_time"), {
             "failed_auth": {"sum": {"field": "failed_authentication_attempts"}},
-            "multi_service": {"filter": {"script": {"script": "doc.containsKey('honeypots_touched') && doc['honeypots_touched'].size() > 1"}}},
+            "multi_service": {"filter": {"script": {"script": "doc.containsKey('honeypots_touched.keyword') && doc['honeypots_touched.keyword'].size() > 1"}}},
         }, size=10, sort=[{"start_time": "desc"}], missing_index_is_empty=True,
     )
     detections_task = store.aggregate(
         "trapsig-detections", _query(minutes, "timestamp"), {
-            "severity": {"terms": {"field": "severity", "size": 8}},
-            "types": {"terms": {"field": "type", "size": 16}},
+            "severity": {"terms": {"field": "severity.keyword", "size": 8}},
+            "types": {"terms": {"field": "type.keyword", "size": 16}},
         }, size=8, sort=[{"timestamp": "desc"}], missing_index_is_empty=True,
     )
     events, sessions, detections = await asyncio.gather(events_task, sessions_task, detections_task)
