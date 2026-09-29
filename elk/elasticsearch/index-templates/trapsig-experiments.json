@@ -65,6 +65,92 @@
               "type": "keyword"
             }
           }
+        },
+        "scenario_manifest_sha256": {
+          "type": "keyword"
+        },
+        "detector_ruleset_version": {
+          "type": "keyword"
+        },
+        "software_revision": {
+          "type": "keyword"
+        },
+        "run_id": {
+          "type": "keyword"
+        },
+        "runner_status": {
+          "type": "keyword"
+        },
+        "result_reason": {
+          "type": "keyword"
+        },
+        "cancelled_at": {
+          "type": "date"
+        },
+        "runner_start_time": {
+          "type": "date"
+        },
+        "runner_end_time": {
+          "type": "date"
+        },
+        "first_event_at": {
+          "type": "date"
+        },
+        "last_event_at": {
+          "type": "date"
+        },
+        "first_event_ingested_at": {
+          "type": "date"
+        },
+        "last_event_ingested_at": {
+          "type": "date"
+        },
+        "settle_wait_seconds": {
+          "type": "double"
+        },
+        "evidence_latency_seconds": {
+          "type": "double"
+        },
+        "processing_latency_seconds": {
+          "type": "double"
+        },
+        "ground_truth_valid": {
+          "type": "boolean"
+        },
+        "telemetry_settled": {
+          "type": "boolean"
+        },
+        "config_snapshot": {
+          "properties": {
+            "session_timeout_seconds": {
+              "type": "integer"
+            },
+            "brute_force_threshold": {
+              "type": "integer"
+            },
+            "web_enumeration_threshold": {
+              "type": "integer"
+            },
+            "multi_service_threshold": {
+              "type": "integer"
+            },
+            "detector_ruleset_version": {
+              "type": "keyword"
+            },
+            "trapsig_schema_version": {
+              "type": "keyword"
+            }
+          }
+        },
+        "runner_steps": {
+          "type": "object",
+          "enabled": false
+        },
+        "scenario_step_services": {
+          "type": "keyword"
+        },
+        "scenario_step_allowed_statuses": {
+          "type": "keyword"
         }
       }
     }

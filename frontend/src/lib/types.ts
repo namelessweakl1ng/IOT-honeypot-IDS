@@ -11,6 +11,8 @@ export interface SystemStatus {
   processor?: { last_run?: string | null };
 }
 
+export interface Scenario { id: string; name: string; description: string; expected_detection: string; severity: string; target_honeypots: string[]; target_services: string[]; step_count: number; manifest_sha256: string; }
+
 export interface Experiment {
   experiment_id: string;
   name: string;
@@ -24,6 +26,13 @@ export interface Experiment {
   result?: string | null;
   observed_detection?: boolean | null;
   detection_latency_seconds?: number | null;
+  evidence_latency_seconds?: number | null;
+  processing_latency_seconds?: number | null;
+  settle_wait_seconds?: number | null;
+  result_reason?: string | null;
+  ground_truth_valid?: boolean;
+  runner_status?: string | null;
+  run_id?: string | null;
   event_ids?: string[];
   session_ids?: string[];
   detection_ids?: string[];

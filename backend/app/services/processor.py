@@ -25,9 +25,7 @@ class EventProcessor:
 
     async def process_once(self) -> dict[str, int]:
         settings = get_settings()
-        events = await self.store.search(
-            "trapsig-events-*", size=settings.processing_event_limit, sort_field="@timestamp"
-        )
+        events = await self.store.search("trapsig-events-*", size=settings.processing_event_limit, sort_field="@timestamp")
         sessions = reconstruct_sessions(
             [event for event in events if not is_internal_event(event)],
             settings.session_timeout_seconds,
@@ -39,10 +37,11 @@ class EventProcessor:
             stored["trapsig"] = {"schema_version": SCHEMA_VERSION}
             await self.store.save("trapsig-sessions", session["session_id"], stored)
         for detection in detections:
+            existing = (await self.store.get("trapsig-detections", detection["detection_id"])) if hasattr(self.store, "get") else None
+            if existing and existing.get("detected_at"):
+                detection["detected_at"] = existing["detected_at"]
             detection["trapsig"] = {"schema_version": SCHEMA_VERSION}
-            await self.store.save(
-                "trapsig-detections", detection["detection_id"], detection
-            )
+            await self.store.save("trapsig-detections", detection["detection_id"], detection)
         self.sessions_written = len(sessions)
         self.detections_written = len(detections)
         self.last_run = datetime.now(timezone.utc).isoformat()

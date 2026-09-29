@@ -17,6 +17,7 @@ services:
     volumes:
       - "./elk/elasticsearch/index-templates:/templates:ro,Z"
       - "./elk/elasticsearch/setup:/setup:ro,Z"
+      - "./elk/elasticsearch/mapping-upgrades:/mapping-upgrades:ro,Z"
     depends_on: {elasticsearch: {condition: service_healthy}}
     restart: "no"
   logstash:
@@ -53,10 +54,16 @@ services:
       PI_SSH_KEY: /home/trapsig/.ssh/pi_ssh_key
       PI_KNOWN_HOSTS: /home/trapsig/.ssh/known_hosts
       LAB_SUBNET: ${LAB_SUBNET:-192.168.50.0/24}
+      SCENARIO_DIR: /app/scenarios
+      TRAPSIG_REVISION: ${TRAPSIG_REVISION:-}
+      EXPERIMENT_SETTLE_TIMEOUT_SECONDS: ${EXPERIMENT_SETTLE_TIMEOUT_SECONDS:-25}
+      EXPERIMENT_SETTLE_QUIET_SECONDS: ${EXPERIMENT_SETTLE_QUIET_SECONDS:-3}
+      EXPERIMENT_SETTLE_POLL_SECONDS: ${EXPERIMENT_SETTLE_POLL_SECONDS:-1}
     ports: ["${LOCAL_BIND_HOST:-127.0.0.1}:${API_PORT:-8000}:8000"]
     volumes:
       - "${PI_SSH_KEY_PATH:-./secrets/pi_ssh_key}:/run/trapsig-secrets/pi_ssh_key:ro,Z"
       - "${PI_KNOWN_HOSTS_PATH:-./secrets/known_hosts}:/run/trapsig-secrets/known_hosts:ro,Z"
+      - "./attacks/scenarios:/app/scenarios:ro,Z"
     depends_on: {elasticsearch: {condition: service_healthy}, logstash: {condition: service_healthy}}
     healthcheck: {test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"], interval: 15s, timeout: 5s, retries: 10}
     mem_limit: 256m

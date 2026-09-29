@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass
 from functools import lru_cache
+from pathlib import Path
 
 
 @dataclass(frozen=True)
@@ -20,6 +21,14 @@ class Settings:
     processing_interval_seconds: int = int(os.getenv("PROCESSING_INTERVAL_SECONDS", "10"))
     processing_event_limit: int = int(os.getenv("PROCESSING_EVENT_LIMIT", "10000"))
     cors_origins: str = os.getenv("CORS_ORIGINS", "http://localhost:3000")
+    scenario_dir: str = os.getenv(
+        "SCENARIO_DIR",
+        str(Path(__file__).resolve().parents[2] / "attacks" / "scenarios"),
+    )
+    experiment_settle_timeout_seconds: float = float(os.getenv("EXPERIMENT_SETTLE_TIMEOUT_SECONDS", "25"))
+    experiment_settle_quiet_seconds: float = float(os.getenv("EXPERIMENT_SETTLE_QUIET_SECONDS", "3"))
+    experiment_settle_poll_seconds: float = float(os.getenv("EXPERIMENT_SETTLE_POLL_SECONDS", "1"))
+    trapsig_revision: str | None = os.getenv("TRAPSIG_REVISION") or None
 
 
 @lru_cache

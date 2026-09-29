@@ -1,0 +1,10 @@
+{
+  "properties": {
+    "evidence_end_time": {
+      "type": "date"
+    },
+    "detected_at": {
+      "type": "date"
+    }
+  }
+}
