@@ -1,5 +1,7 @@
 # TRAPSIG
 
+[![TRAPSIG CI](https://github.com/namelessweakl1ng/IOT-honeypot-IDS/actions/workflows/ci.yml/badge.svg)](https://github.com/namelessweakl1ng/IOT-honeypot-IDS/actions/workflows/ci.yml)
+
 TRAPSIG is a multi-honeypot IoT cybersecurity experimentation and attack-analysis platform. A Raspberry Pi exposes deliberately limited deception services; Filebeat forwards their logs to a laptop where Logstash normalizes telemetry, Elasticsearch stores it, FastAPI reconstructs sessions and explains rule detections, and Next.js provides experiment-oriented control. Kibana remains the deep-analysis interface.
 
 ## Why it exists
@@ -77,11 +79,25 @@ Create it with `POST /experiments`, start it with `POST /experiments/{id}/start`
 ## Test and validate
 
 ```bash
-pip install -r backend/requirements.txt -r attacks/requirements.txt ruff
-cd frontend && bun install && cd ..
+pip install -r backend/requirements.txt
+pip install -r attacks/requirements.txt
+pip install -r requirements-dev.txt
+cd frontend && npm ci && cd ..
 ./scripts/test.sh
 ./scripts/validate.sh
 ```
+
+`test.sh` runs Ruff, the complete Python suite, frontend linting, and TypeScript
+checking. `validate.sh` additionally validates both committed Compose files,
+checks shell syntax, and performs the frontend production build. GitHub pull
+requests automatically run these unit/static checks plus project image builds
+and real Elasticsearch, template-setup, Logstash-pipeline, and backend API smoke
+checks.
+
+The Docker integration check does not exercise the physical Filebeat-to-Logstash
+path, a Fedora laptop, or Raspberry Pi behavior. Those remain separate lab
+verification steps; green GitHub CI does not establish hardware behavior or
+physical resource usage.
 
 See [setup](docs/SETUP.md), [architecture](docs/ARCHITECTURE.md), [event schema](docs/EVENT_SCHEMA.md), [experiment method](docs/EXPERIMENTS.md), and [demonstration](docs/DEMO.md).
 

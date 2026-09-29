@@ -4,18 +4,53 @@ from backend.app.services.sessionizer import reconstruct_sessions
 
 
 def cowrie(identifier: str, username: str = "user", password: str = "wrong", second: int = 0):
-    return normalize({"timestamp": f"2026-01-01T00:00:{second:02d}Z", "eventid": "cowrie.login.failed", "session": identifier, "src_ip": "192.168.50.20", "src_port": 40000 + second, "destination_ip": "192.168.50.10", "dst_port": 2222, "username": username, "password": password}, "ssh_telnet", "cowrie-01", "pi-01")
+    return normalize(
+        {
+            "timestamp": f"2026-01-01T00:00:{second:02d}Z",
+            "eventid": "cowrie.login.failed",
+            "session": identifier,
+            "src_ip": "192.168.50.20",
+            "src_port": 40000 + second,
+            "destination_ip": "192.168.50.10",
+            "dst_port": 2222,
+            "username": username,
+            "password": password,
+        },
+        "ssh_telnet",
+        "cowrie-01",
+        "pi-01",
+    )
 
 
 def custom(identifier: str, service: str, protocol: str, second: int, **extra):
-    raw = {"timestamp": f"2026-01-01T00:00:{second:02d}Z", "event_id": identifier, "category": "network", "type": "info", "action": "request", "outcome": "unknown", "source_ip": "192.168.50.20", "source_port": 41000 + second, "destination_ip": "192.168.50.10", "destination_port": 80, "protocol": protocol, "service": service, **extra}
+    raw = {
+        "timestamp": f"2026-01-01T00:00:{second:02d}Z",
+        "event_id": identifier,
+        "category": "network",
+        "type": "info",
+        "action": "request",
+        "outcome": "unknown",
+        "source_ip": "192.168.50.20",
+        "source_port": 41000 + second,
+        "destination_ip": "192.168.50.10",
+        "destination_port": 80,
+        "protocol": protocol,
+        "service": service,
+        **extra,
+    }
     return normalize(raw, service, f"{service}-01", "pi-01")
 
 
 def test_cowrie_failure_to_brute_force_pipeline():
     events = [cowrie(str(i), second=i) for i in range(5)]
     assert events[0]["event"]["id"].startswith("cowrie.login.failed-")
-    assert {k: v for k, v in events[0]["event"].items() if k != "ingested"} | {"id": "ignored"} == {"id": "ignored", "category": "authentication", "type": "info", "action": "login_attempt", "outcome": "failure"}
+    assert {k: v for k, v in events[0]["event"].items() if k != "ingested"} | {"id": "ignored"} == {
+        "id": "ignored",
+        "category": "authentication",
+        "type": "info",
+        "action": "login_attempt",
+        "outcome": "failure",
+    }
     assert any(item["type"] == "BRUTE_FORCE" for item in detect(reconstruct_sessions(events)[0]))
 
 

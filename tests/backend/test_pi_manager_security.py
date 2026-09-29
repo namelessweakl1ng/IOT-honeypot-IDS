@@ -44,12 +44,7 @@ def test_ssh_uses_strict_dedicated_host_keys_and_fixed_script(monkeypatch):
 
 @pytest.mark.parametrize(
     "arguments",
-    [("status",)]
-    + [
-        (action, service)
-        for service in module.HONEYPOTS
-        for action in ("start", "stop", "restart")
-    ],
+    [("status",)] + [(action, service) for service in module.HONEYPOTS for action in ("start", "stop", "restart")],
 )
 def test_backend_remote_command_matches_forced_command_contract(monkeypatch, arguments):
     captured = []

@@ -63,15 +63,9 @@ def test_ssh_wrapper_is_an_exact_whitelist():
             assert f'"$MANAGER {action} {service}")' in text
     assert set(HONEYPOTS) == {"cowrie", "camera", "iot-service", "mqtt", "router"}
     assert '"$MANAGER status")' in text
-    accepted = {
-        line.split('")', 1)[0].replace('  "$MANAGER', MANAGE_SCRIPT)
-        for line in text.splitlines()
-        if line.startswith('  "$MANAGER ')
-    }
+    accepted = {line.split('")', 1)[0].replace('  "$MANAGER', MANAGE_SCRIPT) for line in text.splitlines() if line.startswith('  "$MANAGER ')}
     assert accepted == expected_commands
-    denied = subprocess.run(
-        [str(wrapper)], env={"SSH_ORIGINAL_COMMAND": "uname -a"}, text=True, capture_output=True, check=False
-    )
+    denied = subprocess.run([str(wrapper)], env={"SSH_ORIGINAL_COMMAND": "uname -a"}, text=True, capture_output=True, check=False)
     assert denied.returncode != 0
     assert "Denied" in denied.stderr
 
