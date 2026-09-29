@@ -8,9 +8,11 @@ import pytest
 from elasticsearch import NotFoundError
 from fastapi import HTTPException
 
+from attacks.runner import run as runner
 from backend.app.api import experiments
 from backend.app.elastic import ElasticStore
 from backend.app.schemas import GroundTruthSubmission
+from backend.app.services.scenario_contract import allowed_step_statuses
 from backend.app.services.scenarios import ScenarioCatalog
 
 HISTORICAL_EXPERIMENT_FIELDS = {
@@ -54,6 +56,7 @@ def test_mapping_upgrades_are_strictly_additive():
     assert set(experiment) == {
         "scenario_manifest_sha256",
         "scenario_step_services",
+        "scenario_step_allowed_statuses",
         "detector_ruleset_version",
         "software_revision",
         "run_id",
@@ -160,6 +163,7 @@ BASE_EXPERIMENT = {
     "scenario_id": "ssh-bruteforce",
     "scenario_manifest_sha256": "hash",
     "scenario_step_services": ["ssh"] * 6,
+    "scenario_step_allowed_statuses": ["completed|rejected"] * 6,
     "target_ip": "192.168.50.10",
     "expected_detection": "BRUTE_FORCE",
     "start_time": "2026-01-01T00:00:00Z",
@@ -191,6 +195,62 @@ def test_ground_truth_accepts_complete_rejected_auth_sequence(monkeypatch):
     steps = [(i, "ssh", "rejected") for i in range(1, 7)]
     result = asyncio.run(experiments.ground_truth("EXP-1", submission(steps)))
     assert result["ground_truth_valid"] is True
+
+
+@pytest.mark.parametrize(
+    "scenario_id,status,expected_valid",
+    [
+        ("ssh-interaction", "rejected", False),
+        ("ssh-interaction", "completed", True),
+        ("camera-default-creds", "rejected", True),
+        ("router-default-creds", "rejected", True),
+        ("mqtt-recon", "rejected", False),
+        ("iot-probe", "rejected", False),
+        ("mqtt-recon", "failed", False),
+        ("iot-probe", "failed", False),
+    ],
+)
+def test_ground_truth_status_must_prove_step_intent(monkeypatch, scenario_id, status, expected_valid):
+    scenario = ScenarioCatalog().get(scenario_id)
+    experiment = {
+        **deepcopy(BASE_EXPERIMENT),
+        "scenario_id": scenario.id,
+        "scenario_manifest_sha256": scenario.manifest_sha256,
+        "scenario_step_services": list(scenario.step_services),
+        "scenario_step_allowed_statuses": ["|".join(values) for values in scenario.step_allowed_statuses],
+        "expected_detection": scenario.expected_detection,
+    }
+    payload = submission([(number, service, status) for number, service in enumerate(scenario.step_services, 1)])
+    payload.scenario_id = scenario.id
+    payload.scenario_manifest_sha256 = scenario.manifest_sha256
+    payload.expected_detection = scenario.expected_detection
+    monkeypatch.setattr(experiments, "experiment", AsyncMock(return_value=experiment))
+    monkeypatch.setattr(experiments.store, "save", AsyncMock(side_effect=lambda _index, _id, document: document))
+    result = asyncio.run(experiments.ground_truth("EXP-1", payload))
+    assert result["ground_truth_valid"] is expected_valid
+
+
+def test_central_step_contract_distinguishes_authentication_from_command_intent():
+    assert allowed_step_statuses({"service": "ssh"}) == {"completed", "rejected"}
+    assert allowed_step_statuses({"service": "ssh", "command": "id"}) == {"completed"}
+    assert allowed_step_statuses({"service": "camera"}) == {"completed", "rejected"}
+    assert allowed_step_statuses({"service": "mqtt"}) == {"completed"}
+
+
+@pytest.mark.parametrize(
+    "scenario_id,expected_step_status,expected_overall",
+    [("ssh-bruteforce", "rejected", "completed"), ("ssh-interaction", "failed", "failed")],
+)
+def test_runner_classifies_ssh_rejection_by_step_intent(monkeypatch, scenario_id, expected_step_status, expected_overall):
+    monkeypatch.setenv("LAB_SUBNET", "192.168.50.0/24")
+
+    def reject(_target, _step):
+        raise runner.ExpectedRejection("authentication rejected")
+
+    monkeypatch.setattr(runner, "execute", reject)
+    result = runner.run(scenario_id, "192.168.50.10")
+    assert {step["status"] for step in result["steps"]} == {expected_step_status}
+    assert result["overall_status"] == expected_overall
 
 
 def test_finish_resumes_after_settle_failure_and_preserves_end_time(monkeypatch):
@@ -255,3 +315,11 @@ def test_experiments_page_keeps_independent_request_results():
     assert "Promise.allSettled" in source
     assert 'experimentResult.status === "fulfilled"' in source
     assert 'scenarioResult.status === "fulfilled"' in source
+
+
+def test_correlating_ui_exposes_retry_and_cancel_actions():
+    source = Path("frontend/src/components/experiment-console.tsx").read_text()
+    assert '["created", "running", "correlating"]' in source
+    assert "Retry correlation" in source
+    assert 'transition(item.experiment_id, "finish")' in source
+    assert 'transition(item.experiment_id, "cancel")' in source

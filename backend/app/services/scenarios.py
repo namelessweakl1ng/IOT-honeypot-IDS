@@ -9,6 +9,7 @@ import yaml
 
 from ..config import get_settings
 from .detector import SUPPORTED_DETECTION_TYPES
+from .scenario_contract import allowed_step_statuses
 
 SERVICE_TO_HONEYPOT = {
     "ssh": "cowrie",
@@ -39,12 +40,14 @@ class Scenario:
     # Internal execution contract only. Public catalog responses intentionally
     # omit step-level data, credentials, and payloads.
     step_services: tuple[str, ...]
+    step_allowed_statuses: tuple[tuple[str, ...], ...]
 
     def public_dict(self) -> dict[str, Any]:
         result = asdict(self)
         result["target_honeypots"] = list(self.target_honeypots)
         result["target_services"] = list(self.target_services)
         result.pop("step_services")
+        result.pop("step_allowed_statuses")
         return result
 
 
@@ -111,4 +114,5 @@ class ScenarioCatalog:
             step_count=len(steps),
             manifest_sha256=sha256(raw).hexdigest(),
             step_services=tuple(step_services),
+            step_allowed_statuses=tuple(tuple(sorted(allowed_step_statuses(step))) for step in steps),
         )

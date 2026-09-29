@@ -18,7 +18,7 @@ Start snapshots the manifest hash, detector ruleset version, TRAPSIG schema vers
 
 ## Controlled-run ground truth
 
-The runner always writes a local JSON summary with run and optional experiment IDs, scenario and manifest hash, target/source, expected detection, run times, overall status, and per-step start/end/status. `completed` and expected authentication `rejected` actions are valid; unexpected network, protocol, or runtime errors are `failed`. Overall `completed` means no required step failed, `partial` means some did, and `failed` means all did.
+The runner always writes a local JSON summary with run and optional experiment IDs, scenario and manifest hash, target/source, expected detection, run times, overall status, and per-step start/end/status. Step validity is intent-aware: an SSH authentication-only attempt may be `rejected`, but an SSH step that requires a command must be `completed`; rejection means the command never ran and is therefore `failed`. HTTP rejection remains evidence that the bounded request reached the service, while MQTT, IoT/raw, and Telnet steps must complete. Unexpected network, protocol, or runtime errors are `failed`. Overall `completed` means no required step failed, `partial` means some did, and `failed` means all did.
 
 Supplying both `--experiment-id` and `--api-url` posts the summary after its local file is written. The API checks experiment state, scenario/hash, target, expected detector, time plausibility, and conflicts. Reposting byte-equivalent modeled data for the same run is idempotent. Summaries describe results and do not copy scenario credentials.
 

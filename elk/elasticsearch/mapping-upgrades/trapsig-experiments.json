@@ -82,6 +82,9 @@
     },
     "scenario_step_services": {
       "type": "keyword"
+    },
+    "scenario_step_allowed_statuses": {
+      "type": "keyword"
     }
   }
 }

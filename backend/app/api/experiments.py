@@ -51,6 +51,7 @@ async def create(payload: ExperimentCreate):
         "expected_detection": scenario.expected_detection,
         "scenario_manifest_sha256": scenario.manifest_sha256,
         "scenario_step_services": list(scenario.step_services),
+        "scenario_step_allowed_statuses": ["|".join(statuses) for statuses in scenario.step_allowed_statuses],
         "trapsig": {"schema_version": SCHEMA_VERSION},
         "experiment_id": identifier,
         "status": "created",
@@ -137,7 +138,11 @@ async def ground_truth(identifier: str, payload: GroundTruthSubmission):
     actual_steps = [(step.step, step.service) for step in payload.steps]
     if not expected_steps or actual_steps != expected_steps:
         raise HTTPException(422, "ground-truth steps do not match the scenario manifest")
-    valid = payload.overall_status == "completed" and all(step.status != "failed" for step in payload.steps)
+    allowed_statuses = doc.get("scenario_step_allowed_statuses", ())
+    statuses_match_contract = len(allowed_statuses) == len(payload.steps) and all(
+        step.status in contract.split("|") for step, contract in zip(payload.steps, allowed_statuses, strict=True)
+    )
+    valid = payload.overall_status == "completed" and statuses_match_contract
     doc.update(
         ground_truth=data,
         run_id=payload.run_id,

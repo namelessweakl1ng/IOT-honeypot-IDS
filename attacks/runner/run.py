@@ -12,6 +12,8 @@ from urllib.request import Request, urlopen
 import paramiko
 import yaml
 
+from backend.app.services.scenario_contract import allowed_step_statuses
+
 from .safety import validate_target
 
 
@@ -106,7 +108,8 @@ def run(scenario_id: str, target: str, source: str = "controlled-attacker", expe
         try:
             execute(target, step)
         except ExpectedRejection as exc:
-            status, detail = "rejected", str(exc)
+            status = "rejected" if "rejected" in allowed_step_statuses(step) else "failed"
+            detail = str(exc)
         except Exception as exc:
             status, detail = "failed", str(exc)
         item = {
