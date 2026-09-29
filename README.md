@@ -99,7 +99,7 @@ path, a Fedora laptop, or Raspberry Pi behavior. Those remain separate lab
 verification steps; green GitHub CI does not establish hardware behavior or
 physical resource usage.
 
-See [setup](docs/SETUP.md), [architecture](docs/ARCHITECTURE.md), [event schema](docs/EVENT_SCHEMA.md), [experiment method](docs/EXPERIMENTS.md), and [demonstration](docs/DEMO.md).
+See [research evaluation](docs/EVALUATION.md), [setup](docs/SETUP.md), [architecture](docs/ARCHITECTURE.md), [event schema](docs/EVENT_SCHEMA.md), [experiment method](docs/EXPERIMENTS.md), and [demonstration](docs/DEMO.md).
 
 ## Safety
 

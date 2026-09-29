@@ -11,6 +11,19 @@ class ExperimentCreate(BaseModel):
     scenario_id: str
     attacker_ip: str
     target_ip: str
+    evaluation_batch_id: str | None = Field(default=None, min_length=1, max_length=120)
+    replicate: int | None = Field(default=None, ge=1)
+
+
+class EventPresenceRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    event_ids: list[str] = Field(min_length=1, max_length=250)
+
+    @model_validator(mode="after")
+    def event_ids_are_bounded_and_nonempty(self):
+        if any(not value or len(value) > 512 for value in self.event_ids):
+            raise ValueError("event IDs must contain 1 to 512 characters")
+        return self
 
 
 class RunnerStep(BaseModel):
@@ -36,7 +49,7 @@ class GroundTruthSubmission(BaseModel):
     scenario_manifest_sha256: str
     target: str
     source: str | None = None
-    expected_detection: str
+    expected_detection: str | None
     start_time: datetime
     end_time: datetime
     overall_status: Literal["completed", "partial", "failed"]

@@ -10,7 +10,8 @@ const links = [
   ["Attack Sessions", "/sessions", "04"],
   ["Detections", "/detections", "05"],
   ["Experiments", "/experiments", "06"],
-  ["System", "/system", "07"],
+  ["Evaluation", "/evaluation", "07"],
+  ["System", "/system", "08"],
 ] as const;
 
 export function Nav() {

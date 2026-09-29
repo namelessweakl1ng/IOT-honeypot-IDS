@@ -29,6 +29,7 @@ class Settings:
     experiment_settle_quiet_seconds: float = float(os.getenv("EXPERIMENT_SETTLE_QUIET_SECONDS", "3"))
     experiment_settle_poll_seconds: float = float(os.getenv("EXPERIMENT_SETTLE_POLL_SECONDS", "1"))
     trapsig_revision: str | None = os.getenv("TRAPSIG_REVISION") or None
+    evaluation_step_time_tolerance_seconds: float = float(os.getenv("EVALUATION_STEP_TIME_TOLERANCE_SECONDS", "2"))
 
 
 @lru_cache

@@ -1,6 +1,7 @@
 id: cross-service-recon
 name: Cross-service reconnaissance
 description: Probe three known services
+trial_kind: attack
 target_services:
 - camera
 - router

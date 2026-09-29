@@ -1,6 +1,7 @@
 id: ssh-bruteforce
 name: SSH brute force
 description: Six failed SSH password authentications
+trial_kind: attack
 target_services:
 - ssh
 expected_detection: BRUTE_FORCE

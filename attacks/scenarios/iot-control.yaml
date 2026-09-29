@@ -1,0 +1,11 @@
+id: iot-control
+name: IoT status control
+description: One bounded ordinary status request
+trial_kind: control
+target_services:
+- iot
+expected_detection: null
+severity: informational
+steps:
+- service: iot
+  payload: STATUS\r\n

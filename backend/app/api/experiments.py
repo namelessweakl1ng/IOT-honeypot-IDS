@@ -48,6 +48,7 @@ async def create(payload: ExperimentCreate):
         "attacker_ip": attacker,
         "target_ip": target,
         "target_honeypots": list(scenario.target_honeypots),
+        "trial_kind": scenario.trial_kind,
         "expected_detection": scenario.expected_detection,
         "scenario_manifest_sha256": scenario.manifest_sha256,
         "scenario_step_services": list(scenario.step_services),
@@ -57,6 +58,7 @@ async def create(payload: ExperimentCreate):
         "status": "created",
         "created_at": now(),
         "ground_truth_valid": False,
+        "evaluation_step_time_tolerance_seconds": settings.evaluation_step_time_tolerance_seconds,
     }
     return await store.save(INDEX, identifier, doc)
 
@@ -95,6 +97,7 @@ async def start(identifier: str):
             "multi_service_threshold": settings.multi_service_threshold,
             "detector_ruleset_version": DETECTOR_RULESET_VERSION,
             "trapsig_schema_version": SCHEMA_VERSION,
+            "software_revision": settings.trapsig_revision,
         },
     )
     doc.pop("_id", None)
@@ -194,6 +197,7 @@ async def finish(identifier: str):
     settled, wait = await settle(doc)
     doc.update(telemetry_settled=settled, settle_wait_seconds=wait)
     if not settled:
+        doc = correlate(doc, [], [], [], scientific=True)
         doc.update(status="completed", result="INCONCLUSIVE", result_reason="SETTLE_TIMEOUT", observed_detection=None)
         return await store.save(INDEX, identifier, doc)
     try:
@@ -224,6 +228,7 @@ async def finish(identifier: str):
         )
         doc = correlate(doc, events, sessions, detections, scientific=True)
     except Exception:
+        doc = correlate(doc, [], [], [], scientific=True)
         doc.update(result="INCONCLUSIVE", result_reason="PROCESSING_ERROR", observed_detection=None)
     doc["status"] = "completed"
     return await store.save(INDEX, identifier, doc)

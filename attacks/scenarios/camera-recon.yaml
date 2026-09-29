@@ -1,6 +1,7 @@
 id: camera-recon
 name: Camera reconnaissance
 description: Inspect bounded camera paths
+trial_kind: attack
 target_services:
 - camera
 expected_detection: WEB_ENUMERATION

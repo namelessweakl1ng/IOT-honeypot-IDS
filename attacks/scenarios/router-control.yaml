@@ -1,0 +1,11 @@
+id: router-control
+name: Router ordinary request control
+description: One ordinary router root request
+trial_kind: control
+target_services:
+- router
+expected_detection: null
+severity: informational
+steps:
+- service: router
+  path: /

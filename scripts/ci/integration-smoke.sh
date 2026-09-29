@@ -39,6 +39,14 @@ def request(path, *, method="GET", body=None):
         return json.load(response)
 
 
+def backend_request(path, *, method="GET", body=None):
+    data = None if body is None else json.dumps(body).encode()
+    req = urllib.request.Request(f"http://127.0.0.1:8000{path}", data=data, method=method)
+    req.add_header("Content-Type", "application/json")
+    with urllib.request.urlopen(req) as response:
+        return json.load(response)
+
+
 required = {
     "trapsig-events",
     "trapsig-sessions",
@@ -74,4 +82,25 @@ assert health["backend"] == "healthy" and health["elasticsearch"] in {"green", "
 scenarios = json.load(urllib.request.urlopen("http://127.0.0.1:8000/scenarios"))
 expected = len(list(Path("attacks/scenarios").glob("*.yaml")))
 assert len(scenarios) == expected, (len(scenarios), expected)
+
+evaluation = json.load(urllib.request.urlopen("http://127.0.0.1:8000/evaluation/summary"))
+assert evaluation["cohorts"] == [], evaluation
+assert evaluation["most_recent_evaluation_config_fingerprint"] is None, evaluation
+assert evaluation["resource_measurements"] == {"status": "NOT_MEASURED"}, evaluation
+
+presence_index = "trapsig-events-ci-presence"
+known_event_id = "ci-presence-known"
+request(f"/{presence_index}", method="PUT")
+request(
+    f"/{presence_index}/_doc/{known_event_id}?refresh=true",
+    method="PUT",
+    body={"@timestamp": "2026-01-01T00:00:00Z", "event": {"id": known_event_id}},
+)
+presence = backend_request(
+    "/evaluation/event-presence",
+    method="POST",
+    body={"event_ids": [known_event_id, "ci-presence-missing"]},
+)
+assert presence == {"present_event_ids": [known_event_id]}, presence
+request(f"/{presence_index}", method="DELETE")
 PY

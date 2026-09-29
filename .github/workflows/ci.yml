@@ -29,7 +29,7 @@ jobs:
             requirements-dev.txt
       - run: python -m pip install --upgrade pip
       - run: pip install -r backend/requirements.txt -r attacks/requirements.txt -r requirements-dev.txt
-      - run: python -m ruff check backend attacks tests
+      - run: python -m ruff check backend attacks evaluation tests
       - run: python -m pytest -q
 
   frontend:

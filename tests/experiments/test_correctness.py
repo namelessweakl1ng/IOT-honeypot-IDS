@@ -13,7 +13,7 @@ def test_catalog_discovers_every_repository_manifest_and_stable_hash():
     directory = Path("attacks/scenarios")
     first = ScenarioCatalog(directory).load()
     second = ScenarioCatalog(directory).load()
-    assert len(first) == len(list(directory.glob("*.yaml"))) == 14
+    assert len(first) == len(list(directory.glob("*.yaml"))) == 19
     assert {key: item.manifest_sha256 for key, item in first.items()} == {key: item.manifest_sha256 for key, item in second.items()}
     public = first["ssh-interaction"].public_dict()
     assert "step_services" not in public

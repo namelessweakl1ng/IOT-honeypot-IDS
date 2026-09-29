@@ -1,6 +1,7 @@
 id: multi-stage
 name: Multi-stage attack
 description: Authentication and interaction across decoys
+trial_kind: attack
 target_services:
 - ssh
 - camera
