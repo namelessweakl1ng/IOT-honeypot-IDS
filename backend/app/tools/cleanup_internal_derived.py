@@ -1,4 +1,5 @@
 """Explicit cleanup of historical loopback-derived data (dry-run by default)."""
+
 import argparse
 import asyncio
 from typing import Any
@@ -8,6 +9,7 @@ from ..services.telemetry import is_loopback
 
 TARGET_INDICES = ("trapsig-sessions", "trapsig-detections")
 PAGE_SIZE = 500
+
 
 async def _internal_ids(index: str, elastic_store: Any) -> list[str]:
     """Classify _source in Python, independent of historical ES field mappings."""
@@ -38,6 +40,7 @@ async def _internal_ids(index: str, elastic_store: Any) -> list[str]:
         search_after = hits[-1]["sort"]
     return found
 
+
 async def cleanup(confirm: bool = False, elastic_store: Any = store) -> dict[str, int]:
     matches = {index: await _internal_ids(index, elastic_store) for index in TARGET_INDICES}
     action = "deleting" if confirm else "would delete"
@@ -51,9 +54,13 @@ async def cleanup(confirm: bool = False, elastic_store: Any = store) -> dict[str
             await elastic_store.client.indices.refresh(index=",".join(TARGET_INDICES))
     return {index: len(ids) for index, ids in matches.items()}
 
+
 async def _main(confirm: bool) -> None:
-    try: await cleanup(confirm)
-    finally: await store.close()
+    try:
+        await cleanup(confirm)
+    finally:
+        await store.close()
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -61,4 +68,6 @@ def main() -> None:
     args = parser.parse_args()
     asyncio.run(_main(args.confirm))
 
-if __name__ == "__main__": main()
+
+if __name__ == "__main__":
+    main()
