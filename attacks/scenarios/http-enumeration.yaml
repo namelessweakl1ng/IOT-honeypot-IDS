@@ -1,6 +1,7 @@
 id: http-enumeration
 name: HTTP enumeration
 description: Request distinct administrative paths
+kind: attack
 target_services:
 - http
 expected_detection: WEB_ENUMERATION

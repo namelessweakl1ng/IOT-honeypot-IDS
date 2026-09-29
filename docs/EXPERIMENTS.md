@@ -1,5 +1,7 @@
 # Reproducible experiments
 
+Scenario manifests use `kind: attack` with a supported detection or `kind: control` with `expected_detection: NONE`. Missing kind defaults to attack. Controls permit TN/FP, attacks permit TP/FN, and invalid evidence is INCONCLUSIVE. See [EVALUATION.md](EVALUATION.md) for metrics, cohorts, exports, and physical protocols.
+
 TRAPSIG experiments are controlled, single-target lab runs. They are evidence records, not free-form annotations. Precision, recall, and F1 aggregation are intentionally deferred to the final evaluation work.
 
 ## Scenario catalog

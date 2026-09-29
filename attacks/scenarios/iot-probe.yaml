@@ -1,6 +1,7 @@
 id: iot-probe
 name: IoT probe
 description: Three bounded device commands
+kind: attack
 target_services:
 - iot
 expected_detection: RECONNAISSANCE

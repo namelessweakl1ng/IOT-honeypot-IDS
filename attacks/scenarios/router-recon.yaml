@@ -1,6 +1,7 @@
 id: router-recon
 name: Router reconnaissance
 description: Inspect bounded router paths
+kind: attack
 target_services:
 - router
 expected_detection: WEB_ENUMERATION

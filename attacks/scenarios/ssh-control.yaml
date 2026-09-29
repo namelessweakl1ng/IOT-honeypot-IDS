@@ -1,0 +1,12 @@
+id: ssh-control
+name: SSH single authentication control
+description: One non-default credential authentication attempt
+kind: control
+target_services:
+- ssh
+expected_detection: NONE
+severity: informational
+steps:
+- service: ssh
+  username: trapsig-evaluator
+  password: evaluation-nondefault-7f3b

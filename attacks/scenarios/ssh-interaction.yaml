@@ -1,6 +1,7 @@
 id: ssh-interaction
 name: SSH interaction
 description: Controlled Cowrie login and harmless command
+kind: attack
 target_services:
 - ssh
 expected_detection: COMMAND_INTERACTION

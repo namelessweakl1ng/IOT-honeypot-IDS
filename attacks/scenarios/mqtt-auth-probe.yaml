@@ -1,6 +1,7 @@
 id: mqtt-auth-probe
 name: MQTT authentication probe
 description: Bounded MQTT CONNECT probes
+kind: attack
 target_services:
 - mqtt
 expected_detection: MQTT_PROBING

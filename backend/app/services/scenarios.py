@@ -31,6 +31,7 @@ class Scenario:
     id: str
     name: str
     description: str
+    kind: str
     expected_detection: str
     severity: str
     target_honeypots: tuple[str, ...]
@@ -84,8 +85,14 @@ class ScenarioCatalog:
                 raise ScenarioCatalogError(f"{path.name}: {field} is required")
         if data["id"] != path.stem:
             raise ScenarioCatalogError(f"{path.name}: id must match filename")
-        if data["expected_detection"] not in SUPPORTED_DETECTION_TYPES:
-            raise ScenarioCatalogError(f"{path.name}: unknown expected detection")
+        kind = data.get("kind", "attack")
+        if kind not in {"attack", "control"}:
+            raise ScenarioCatalogError(f"{path.name}: kind must be attack or control")
+        expected = data["expected_detection"]
+        if kind == "control" and expected != "NONE":
+            raise ScenarioCatalogError(f"{path.name}: control scenarios must expect NONE")
+        if kind == "attack" and expected not in SUPPORTED_DETECTION_TYPES:
+            raise ScenarioCatalogError(f"{path.name}: unknown expected detection; attacks require a supported detection")
         services = data.get("target_services")
         steps = data.get("steps")
         if not isinstance(services, list) or not services:
@@ -107,6 +114,7 @@ class ScenarioCatalog:
             id=data["id"],
             name=data["name"],
             description=data["description"],
+            kind=kind,
             expected_detection=data["expected_detection"],
             severity=str(data.get("severity", "unknown")),
             target_honeypots=honeypots,

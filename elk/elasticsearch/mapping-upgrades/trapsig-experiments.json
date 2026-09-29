@@ -73,6 +73,9 @@
         },
         "trapsig_schema_version": {
           "type": "keyword"
+        },
+        "software_revision": {
+          "type": "keyword"
         }
       }
     },
@@ -85,6 +88,69 @@
     },
     "scenario_step_allowed_statuses": {
       "type": "keyword"
+    },
+    "scenario_kind": {
+      "type": "keyword"
+    },
+    "cohort_id": {
+      "type": "keyword"
+    },
+    "observed_detection_types": {
+      "type": "keyword"
+    },
+    "unexpected_detection_types": {
+      "type": "keyword"
+    },
+    "matched_event_count": {
+      "type": "integer"
+    },
+    "linked_session_count": {
+      "type": "integer"
+    },
+    "linked_detection_count": {
+      "type": "integer"
+    },
+    "runner_step_count": {
+      "type": "integer"
+    },
+    "ingestion_latency_count": {
+      "type": "integer"
+    },
+    "telemetry_step_count": {
+      "type": "integer"
+    },
+    "telemetry_steps_covered": {
+      "type": "integer"
+    },
+    "ingestion_latency_min_seconds": {
+      "type": "double"
+    },
+    "ingestion_latency_mean_seconds": {
+      "type": "double"
+    },
+    "ingestion_latency_p50_seconds": {
+      "type": "double"
+    },
+    "ingestion_latency_p95_seconds": {
+      "type": "double"
+    },
+    "ingestion_latency_max_seconds": {
+      "type": "double"
+    },
+    "runner_duration_seconds": {
+      "type": "double"
+    },
+    "experiment_duration_seconds": {
+      "type": "double"
+    },
+    "observed_event_rate_eps": {
+      "type": "double"
+    },
+    "telemetry_step_coverage": {
+      "type": "double"
+    },
+    "evaluation_step_time_tolerance_seconds": {
+      "type": "double"
     }
   }
 }

@@ -8,6 +8,8 @@ node_modules/
 *.tsbuildinfo
 coverage/
 attacks/runs/
+evaluation/results/*
+!evaluation/results/README.md
 sensor/logs/
 *.key
 secrets/
