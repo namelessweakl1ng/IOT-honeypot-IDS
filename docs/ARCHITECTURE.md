@@ -6,6 +6,10 @@ Elasticsearch owns date-based `trapsig-events-*` raw indices and the three stabl
 
 The deployment deliberately has only the components in this document; no parallel messaging, storage, API, collector, runtime-mode, or model lifecycle exists.
 
+## Custom honeypot runtime
+
+The camera, router, IoT TCP service, and MQTT decoys use a small shared socket runtime. That runtime owns connection lifecycle and normalized JSONL persistence, while a separate persona module for each service owns request parsing and responses. `app.py` is only the explicit service dispatcher. This internal separation preserves the current ports, protocol behavior, and telemetry contract while allowing each persona to evolve independently in later work.
+
 ## Data lifecycle
 
 1. A bounded interaction reaches a Pi decoy.
