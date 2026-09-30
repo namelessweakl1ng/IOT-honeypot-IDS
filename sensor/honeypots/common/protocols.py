@@ -1,6 +1,7 @@
 """Safe, bounded parsing helpers for the protocols exposed by the personas."""
 
 import base64
+import binascii
 from urllib.parse import parse_qs, urlsplit
 
 
@@ -17,13 +18,22 @@ def http_details(data: bytes) -> dict:
     authorization = headers.get("authorization", "")
     if authorization.lower().startswith("basic "):
         try:
-            username, password = base64.b64decode(authorization[6:]).decode().split(":", 1)
-        except (ValueError, UnicodeDecodeError):
+            decoded = base64.b64decode(authorization[6:], validate=True).decode("utf-8")
+            username, password = decoded.split(":", 1)
+        except (binascii.Error, ValueError, UnicodeDecodeError):
             pass
     form = parse_qs(text.partition("\r\n\r\n")[2])
     username = username or form.get("username", form.get("user", [None]))[0]
     password = password or form.get("password", form.get("pass", [None]))[0]
-    return {"method": method, "path": urlsplit(target).path, "user_agent": headers.get("user-agent"), "username": username, "password": password}
+    return {
+        "method": method,
+        "path": urlsplit(target).path,
+        "user_agent": headers.get("user-agent"),
+        "username": username,
+        "password": password,
+        "authorization": authorization,
+        "cookie": headers.get("cookie", ""),
+    }
 
 
 def mqtt_details(data: bytes) -> dict:
