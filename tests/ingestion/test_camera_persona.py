@@ -10,7 +10,7 @@ from backend.app.services.detector import detect
 
 sys.path.insert(0, str(Path("sensor/honeypots").resolve()))
 
-from camera.persona import CameraPersona
+from camera.persona import MAX_SESSIONS, SESSION_TTL, CameraPersona
 from common.telemetry import base_event
 
 
@@ -83,6 +83,44 @@ def test_invalid_and_expired_sessions_are_rejected():
     token, _ = login(persona)
     current[0] += 1801
     assert status(request(persona, "/live", headers={"Cookie": f"session={token}"})[1]) == 401
+
+
+def test_new_session_purges_all_expired_sessions():
+    current = [100.0]
+    persona = CameraPersona(clock=lambda: current[0])
+    old_tokens = {login(persona)[0] for _ in range(3)}
+
+    current[0] += SESSION_TTL + 1
+    new_token, response = login(persona)
+
+    assert status(response) == 302
+    assert persona._sessions == {new_token: current[0] + SESSION_TTL}
+    assert old_tokens.isdisjoint(persona._sessions)
+
+
+def test_sessions_are_bounded_without_rejecting_valid_logins():
+    persona = CameraPersona(clock=lambda: 100.0)
+
+    tokens = [login(persona)[0] for _ in range(MAX_SESSIONS + 1)]
+
+    assert len(persona._sessions) <= MAX_SESSIONS
+    assert tokens[-1] in persona._sessions
+
+
+def test_status_counts_only_active_sessions():
+    current = [100.0]
+    persona = CameraPersona(clock=lambda: current[0])
+    login(persona)
+    login(persona)
+    current[0] += 1
+    active_token, _ = login(persona)
+    current[0] += SESSION_TTL - 1
+
+    _, response = request(persona, "/status", headers={"Cookie": f"session={active_token}"})
+
+    assert status(response) == 200
+    assert json.loads(body(response))["sessions"] == 1
+    assert len(persona._sessions) == 1
 
 
 def test_basic_auth_success_failure_and_malformed_input():
