@@ -1,0 +1,5 @@
+root:x:0:
+daemon:x:1:
+operator:x:100:operator
+netmgr:x:101:netmgr
+service:x:102:service
