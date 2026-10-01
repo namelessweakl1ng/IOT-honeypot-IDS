@@ -20,7 +20,22 @@ services:
     image: cowrie/cowrie:latest
     restart: unless-stopped
     ports: ["2222:2222", "2223:2223"]
-    volumes: [cowrie-logs:/cowrie/cowrie-git/var/log/cowrie, ./honeypots/cowrie/cowrie.cfg:/cowrie/cowrie-git/etc/cowrie.cfg:ro, ./honeypots/cowrie/userdb.txt:/cowrie/cowrie-git/etc/userdb.txt:ro]
+    volumes:
+      - cowrie-logs:/cowrie/cowrie-git/var/log/cowrie
+      - ./honeypots/cowrie/cowrie.cfg:/cowrie/cowrie-git/etc/cowrie.cfg:ro
+      - ./honeypots/cowrie/userdb.txt:/cowrie/cowrie-git/etc/userdb.txt:ro
+      - ./honeypots/cowrie/honeyfs/etc/hostname:/cowrie/cowrie-git/honeyfs/etc/hostname:ro
+      - ./honeypots/cowrie/honeyfs/etc/hosts:/cowrie/cowrie-git/honeyfs/etc/hosts:ro
+      - ./honeypots/cowrie/honeyfs/etc/issue:/cowrie/cowrie-git/honeyfs/etc/issue:ro
+      - ./honeypots/cowrie/honeyfs/etc/issue.net:/cowrie/cowrie-git/honeyfs/etc/issue.net:ro
+      - ./honeypots/cowrie/honeyfs/etc/motd:/cowrie/cowrie-git/honeyfs/etc/motd:ro
+      - ./honeypots/cowrie/honeyfs/etc/os-release:/cowrie/cowrie-git/honeyfs/etc/os-release:ro
+      - ./honeypots/cowrie/honeyfs/etc/passwd:/cowrie/cowrie-git/honeyfs/etc/passwd:ro
+      - ./honeypots/cowrie/honeyfs/etc/group:/cowrie/cowrie-git/honeyfs/etc/group:ro
+      - ./honeypots/cowrie/honeyfs/etc/resolv.conf:/cowrie/cowrie-git/honeyfs/etc/resolv.conf:ro
+      - ./honeypots/cowrie/honeyfs/etc/network/interfaces:/cowrie/cowrie-git/honeyfs/etc/network/interfaces:ro
+      - ./honeypots/cowrie/honeyfs/proc/version:/cowrie/cowrie-git/honeyfs/proc/version:ro
+      - ./honeypots/cowrie/honeyfs/proc/cpuinfo:/cowrie/cowrie-git/honeyfs/proc/cpuinfo:ro
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
     pids_limit: 128
