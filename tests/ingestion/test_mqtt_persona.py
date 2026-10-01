@@ -13,6 +13,11 @@ CONNECT = b"\x10\x10\x00\x04MQTT\x04\x02\x00\x0a\x00\x04test"
 SUBSCRIBE = b"\x82\x09\x00\x01\x00\x04test\x00"
 
 
+def connect_packet(flags, fields=b""):
+    payload = b"\x00\x04MQTT\x04" + bytes([flags]) + b"\x00\x0a\x00\x04test" + fields
+    return b"\x10" + bytes([len(payload)]) + payload
+
+
 def test_connect_parsing_and_accepted_connack():
     persona = MQTTPersona()
     details = persona.parse(CONNECT)
@@ -70,6 +75,49 @@ def test_multibyte_remaining_length_is_decoded_without_declared_allocation():
     assert details["packet_type"] == 15
     assert details["operation"] == "unknown"
     assert details["remaining_length"] == 128
+
+
+@pytest.mark.parametrize(
+    "packet,error",
+    [
+        (b"\xc0\x00", None),
+        (b"\xf0\x80\x01" + b"x" * 128, None),
+        (b"\x10\x80", "truncated remaining length"),
+        (b"\x10\x80\x80\x80\x80\x00", "malformed remaining length"),
+        (b"\xc0\x80\x00", "non-minimal remaining length"),
+        (b"\xf0\x81\x00" + b"x", "non-minimal remaining length"),
+    ],
+)
+def test_remaining_length_requires_canonical_encoding(packet, error):
+    details = parse_packet(packet)
+    assert details.get("error") == error
+    assert details.get("malformed", False) is (error is not None)
+
+
+@pytest.mark.parametrize(
+    "packet",
+    [
+        connect_packet(0x42, b"\x00\x02pw"),  # password without username
+        connect_packet(0x82),  # missing username
+        connect_packet(0xC2, b"\x00\x04user"),  # missing password
+        connect_packet(0x1E),  # Will QoS 3
+        connect_packet(0x22),  # Will Retain without Will
+        connect_packet(0x06, b"\x00\x04will\x00"),  # truncated Will message
+        connect_packet(0x02, b"unexpected"),
+    ],
+)
+def test_connect_rejects_invalid_flag_combinations_and_missing_fields(packet):
+    persona = MQTTPersona()
+    details = persona.parse(packet)
+    assert details["malformed"] is True
+    assert persona.response(details) == b""
+
+
+def test_connect_consumes_valid_will_username_and_password_fields():
+    fields = b"\x00\x04will\x00\x03msg\x00\x04user\x00\x02pw"
+    details = parse_packet(connect_packet(0xC6, fields))
+    assert "malformed" not in details
+    assert details["username_present"] is True and details["password_present"] is True
 
 
 def test_unsupported_packet_is_identified_without_ping_response():

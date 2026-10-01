@@ -42,6 +42,8 @@ def parse_packet(data: bytes) -> dict:
         index += 1
         remaining_length += (encoded & 0x7F) * multiplier
         if not encoded & 0x80:
+            if byte_number and remaining_length < 128**byte_number:
+                return {**result, "malformed": True, "error": "non-minimal remaining length"}
             break
         multiplier *= 128
     else:
@@ -88,8 +90,55 @@ def _parse_connect(payload: bytes, result: dict) -> None:
         result["malformed"] = True
         return
     result["client_id"] = client[0]
-    if result["protocol_name"] != "MQTT" or result["protocol_level"] != 4 or connect_flags & 0x01:
+    offset = client[1]
+    username_flag = bool(connect_flags & 0x80)
+    password_flag = bool(connect_flags & 0x40)
+    will_retain = bool(connect_flags & 0x20)
+    will_qos = (connect_flags >> 3) & 0x03
+    will_flag = bool(connect_flags & 0x04)
+    invalid_flags = (
+        connect_flags & 0x01
+        or (password_flag and not username_flag)
+        or (not will_flag and (will_qos or will_retain))
+        or will_qos == 3
+    )
+    if result["protocol_name"] != "MQTT" or result["protocol_level"] != 4 or invalid_flags:
         result["malformed"] = True
+        return
+
+    if will_flag:
+        will_topic = _utf8(payload, offset)
+        if will_topic is None:
+            result["malformed"] = True
+            return
+        offset = will_topic[1]
+        will_message = _binary(payload, offset)
+        if will_message is None:
+            result["malformed"] = True
+            return
+        offset = will_message
+    if username_flag:
+        username = _utf8(payload, offset)
+        if username is None:
+            result["malformed"] = True
+            return
+        offset = username[1]
+    if password_flag:
+        password = _binary(payload, offset)
+        if password is None:
+            result["malformed"] = True
+            return
+        offset = password
+    if offset != len(payload):
+        result["malformed"] = True
+
+
+def _binary(payload: bytes, offset: int) -> int | None:
+    """Return the end of one MQTT length-prefixed binary field."""
+    if offset + 2 > len(payload):
+        return None
+    end = offset + 2 + int.from_bytes(payload[offset : offset + 2], "big")
+    return end if end <= len(payload) else None
 
 
 def _parse_subscribe(payload: bytes, result: dict) -> None:

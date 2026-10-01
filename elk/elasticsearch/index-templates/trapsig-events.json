@@ -126,6 +126,51 @@
             },
             "packet_type": {
               "type": "integer"
+            },
+            "flags": {
+              "type": "integer"
+            },
+            "remaining_length": {
+              "type": "integer"
+            },
+            "client_id": {
+              "type": "keyword",
+              "ignore_above": 1024
+            },
+            "protocol_level": {
+              "type": "integer"
+            },
+            "connect_flags": {
+              "type": "integer"
+            },
+            "keep_alive": {
+              "type": "integer"
+            },
+            "username_present": {
+              "type": "boolean"
+            },
+            "password_present": {
+              "type": "boolean"
+            },
+            "packet_id": {
+              "type": "integer"
+            },
+            "topic": {
+              "type": "keyword",
+              "ignore_above": 1024
+            },
+            "qos": {
+              "type": "integer"
+            },
+            "requested_qos": {
+              "type": "integer"
+            }
+          }
+        },
+        "iot": {
+          "properties": {
+            "operation": {
+              "type": "keyword"
             }
           }
         },
