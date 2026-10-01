@@ -257,6 +257,7 @@ def test_ground_truth_status_must_prove_step_intent(monkeypatch, scenario_id, st
 def test_central_step_contract_distinguishes_authentication_from_command_intent():
     assert allowed_step_statuses({"service": "ssh"}) == {"completed", "rejected"}
     assert allowed_step_statuses({"service": "ssh", "command": "id"}) == {"completed"}
+    assert allowed_step_statuses({"service": "ssh", "commands": ["hostname", "id"]}) == {"completed"}
     assert allowed_step_statuses({"service": "camera"}) == {"completed", "rejected"}
     assert allowed_step_statuses({"service": "mqtt"}) == {"completed"}
 
@@ -292,6 +293,48 @@ def test_ssh_command_uses_an_interactive_channel_that_cowrie_can_close(monkeypat
     channel.invoke_shell.assert_called_once()
     channel.sendall.assert_called_once_with(b"id\nexit\n")
     channel.close.assert_called_once()
+
+
+def test_ssh_commands_share_one_interactive_session(monkeypatch):
+    channel = Mock()
+    transport = Mock()
+    transport.is_active.return_value = True
+    transport.open_session.return_value = channel
+    client = Mock()
+    client.get_transport.return_value = transport
+    monkeypatch.setattr(runner.paramiko, "SSHClient", Mock(return_value=client))
+
+    runner.ssh_login("192.168.50.10", {"username": "root", "password": "root", "commands": ["hostname", "uname -a", "id"]})
+
+    transport.open_session.assert_called_once()
+    channel.invoke_shell.assert_called_once()
+    channel.sendall.assert_called_once_with(b"hostname\nuname -a\nid\nexit\n")
+
+
+def test_mqtt_packets_encode_requested_identity_topic_and_remaining_length():
+    connect = runner.mqtt_packet({"operation": "connect", "client_id": "mqtt-explorer"})
+    subscribe = runner.mqtt_packet({"operation": "subscribe", "topic": "$SYS/#"})
+    assert connect[:2] == bytes((0x10, len(connect) - 2))
+    assert b"\x00\x04MQTT\x04" in connect and connect.endswith(b"\x00\rmqtt-explorer")
+    assert subscribe[:2] == bytes((0x82, len(subscribe) - 2))
+    assert subscribe.endswith(b"\x00\x06$SYS/#\x00")
+    assert runner._mqtt_remaining_length(128) == b"\x80\x01"
+
+
+def test_http_form_login_uses_browser_identity_and_url_encoding(monkeypatch):
+    response = Mock()
+    opener = Mock()
+    opener.open.return_value = response
+    monkeypatch.setattr(runner, "build_opener", Mock(return_value=opener))
+
+    runner.http_request("192.168.50.10", "camera", {"path": "/login", "auth_mode": "form", "username": "admin", "password": "a b&c"})
+
+    request = opener.open.call_args.args[0]
+    assert request.get_method() == "POST"
+    assert request.data == b"username=admin&password=a+b%26c"
+    assert request.headers["Content-type"] == "application/x-www-form-urlencoded"
+    assert "TRAPSIG" not in request.headers["User-agent"].upper()
+    response.read.assert_called_once_with(512)
 
 
 def test_ssh_command_channel_setup_failure_remains_a_failure(monkeypatch):

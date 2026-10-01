@@ -8,7 +8,7 @@ Every `trapsig-events-*` document is ECS-inspired and contains:
 
 `event.category` is one of `authentication`, `network`, `web`, `process`, or `session`; `event.type` uses `connection`, `start`, `end`, `info`, or `error`; outcome is `success`, `failure`, or `unknown`. Protocol details belong only below controlled `ssh`, `http`, `mqtt`, `cowrie`, `authentication`, `process`, or `url` objects. IDs must be stable and unique. Times are UTC ISO-8601. Parse failures retain the original record in `trapsig-dead-letter-*`.
 
-Authentication events may contain `authentication.username` and `authentication.password` from deliberately submitted honeypot credentials. HTTP requests use `http.request.method`, `http.user_agent`, and `url.path`. MQTT records use `mqtt.operation` and `mqtt.packet_type`. These controlled namespaces are retained through Logstash so session and rule processing consumes the exact indexed contract.
+Authentication events may contain `authentication.username` and `authentication.password` from deliberately submitted honeypot credentials. HTTP requests use `http.request.method`, `http.user_agent`, and `url.path`. IoT records use `iot.operation`. MQTT records use `mqtt.operation`, `mqtt.packet_type`, and, when present, `mqtt.client_id`, `mqtt.topic`, `mqtt.packet_id`, `mqtt.qos`, `mqtt.flags`, and `mqtt.remaining_length`. These controlled namespaces are retained through Logstash so session and rule processing consumes the exact indexed contract.
 
 ## Integrity contract (schema version 1)
 

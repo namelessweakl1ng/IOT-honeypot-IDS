@@ -1,5 +1,6 @@
 import argparse
 import base64
+import http.cookiejar
 import json
 import os
 import socket
@@ -7,7 +8,8 @@ import uuid
 from datetime import datetime, timezone
 from hashlib import sha256
 from pathlib import Path
-from urllib.request import Request, urlopen
+from urllib.parse import urlencode
+from urllib.request import HTTPCookieProcessor, Request, build_opener, urlopen
 
 import paramiko
 import yaml
@@ -22,6 +24,7 @@ class ExpectedRejection(Exception):
 
 
 PORTS = {"ssh": 2222, "telnet": 2223, "camera": 8081, "http": 8081, "iot": 9000, "mqtt": 1883, "router": 8080}
+USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120.0 Safari/537.36"
 
 
 def ssh_login(target: str, step: dict) -> None:
@@ -41,7 +44,8 @@ def ssh_login(target: str, step: dict) -> None:
             )
         except paramiko.AuthenticationException as exc:
             raise ExpectedRejection(str(exc)) from exc
-        if step.get("command"):
+        commands = step.get("commands") or ([step["command"]] if step.get("command") else [])
+        if commands:
             transport = client.get_transport()
             if transport is None or not transport.is_active():
                 raise paramiko.SSHException("SSH transport closed before command execution")
@@ -54,7 +58,7 @@ def ssh_login(target: str, step: dict) -> None:
                 channel.settimeout(3)
                 channel.get_pty()
                 channel.invoke_shell()
-                channel.sendall(f"{step['command']}\nexit\n".encode())
+                channel.sendall(("\n".join(commands) + "\nexit\n").encode())
                 channel.shutdown_write()
                 while not channel.closed and channel.recv(512):
                     pass
@@ -65,28 +69,58 @@ def ssh_login(target: str, step: dict) -> None:
 
 
 def http_request(target: str, service: str, step: dict) -> None:
-    headers = {"User-Agent": "TRAPSIG-Controlled-Lab/1.0"}
-    if step.get("username") is not None:
+    headers = {"User-Agent": USER_AGENT}
+    data = None
+    if step.get("auth_mode") == "form":
+        data = urlencode({"username": step["username"], "password": step["password"]}).encode()
+        headers["Content-Type"] = "application/x-www-form-urlencoded"
+    elif step.get("username") is not None:
         token = base64.b64encode(f"{step['username']}:{step['password']}".encode()).decode()
         headers["Authorization"] = f"Basic {token}"
-    request = Request(f"http://{target}:{PORTS[service]}{step.get('path', '/')}", headers=headers)
+    request = Request(f"http://{target}:{PORTS[service]}{step.get('path', '/')}", data=data, headers=headers)
     try:
-        urlopen(request, timeout=3).read(512)
+        if data is None:
+            urlopen(request, timeout=3).read(512)
+        else:
+            opener = build_opener(HTTPCookieProcessor(http.cookiejar.CookieJar()))
+            opener.open(request, timeout=3).read(512)
     except Exception as exc:
         if getattr(exc, "code", None) == 401:
             raise ExpectedRejection("HTTP 401") from exc
         raise
 
 
-def mqtt_request(target: str, step: dict) -> None:
+def _mqtt_remaining_length(length: int) -> bytes:
+    encoded = bytearray()
+    while True:
+        digit = length % 128
+        length //= 128
+        encoded.append(digit | (0x80 if length else 0))
+        if not length:
+            return bytes(encoded)
+
+
+def _mqtt_string(value: str) -> bytes:
+    encoded = value.encode("utf-8")
+    return len(encoded).to_bytes(2, "big") + encoded
+
+
+def mqtt_packet(step: dict) -> bytes:
     operation = step.get("operation", "connect")
-    packets = {
-        "connect": b"\x10\x10\x00\x04MQTT\x04\x02\x00\x0a\x00\x04test",
-        "subscribe": b"\x82\x09\x00\x01\x00\x04test\x00",
-        "ping": b"\xc0\x00",
-    }
+    if operation == "connect":
+        body = b"\x00\x04MQTT\x04\x02\x00\x0a" + _mqtt_string(step.get("client_id", "mqtt-client"))
+        return b"\x10" + _mqtt_remaining_length(len(body)) + body
+    if operation == "subscribe":
+        body = b"\x00\x01" + _mqtt_string(step.get("topic", "#")) + b"\x00"
+        return b"\x82" + _mqtt_remaining_length(len(body)) + body
+    if operation == "ping":
+        return b"\xc0\x00"
+    raise ValueError(f"unsupported MQTT operation: {operation}")
+
+
+def mqtt_request(target: str, step: dict) -> None:
     with socket.create_connection((target, PORTS["mqtt"]), timeout=3) as connection:
-        connection.sendall(packets[operation])
+        connection.sendall(mqtt_packet(step))
         connection.recv(512)
 
 

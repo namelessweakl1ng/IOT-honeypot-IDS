@@ -11,3 +11,4 @@ steps:
   path: /login
   username: admin
   password: admin
+  auth_mode: form

@@ -23,7 +23,7 @@ The displayed network configuration, serial number, locally administered MAC add
 |---|---|
 | `GET /`, `GET /login` | Login interface |
 | `POST /login` | Form authentication |
-| `GET /login` with Basic authorization | Compatibility authentication for the controlled scenario |
+| `GET /login` with Basic authorization | Backward-compatible authentication path |
 | `GET /live` | Synthetic camera viewer and stream metadata |
 | `GET /status` | Compact device status JSON |
 | `GET /snapshot` | Generated SVG surveillance frame |
@@ -39,7 +39,7 @@ All management, status, image, and stream routes require authentication. The sol
 
 ## Telemetry
 
-Every request continues through the shared JSONL contract. HTTP telemetry includes `http.request.method` and `url.path`. Submitted form or Basic credentials add `authentication.username` and `authentication.password`, use the `authentication` category and `login_attempt` action, and report `success` only for the synthetic credential. Service identity remains `camera` / `camera-01`, preserving the controlled `DEFAULT_CREDENTIALS` and `WEB_ENUMERATION` evaluations.
+Every request continues through the shared JSONL contract. HTTP telemetry includes `http.request.method` and `url.path`. Submitted form or Basic credentials add `authentication.username` and `authentication.password`, use the `authentication` category and `login_attempt` action, and report `success` only for the synthetic credential. Service identity remains `camera` / `camera-01`, preserving `DEFAULT_CREDENTIALS` and `WEB_ENUMERATION` evaluations; the final controlled credential scenario uses the form flow.
 
 ## Boundaries and limitations
 

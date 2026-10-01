@@ -1,7 +1,7 @@
 # Velora Message Gateway MQTT emulation
 
 The MQTT persona is a bounded emulation of the fictional **Velora Message
-Gateway VMG-100**. It parses one bounded socket read as an MQTT 3.1.1 packet; it
+Gateway VMG-100**. The shared runtime assembles one size-bounded MQTT frame across TCP reads before the persona parses it as MQTT 3.1.1; it
 is not a complete or production MQTT broker.
 
 Supported behavior is deliberately small:

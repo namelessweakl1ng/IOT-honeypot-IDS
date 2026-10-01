@@ -9,7 +9,9 @@ severity: medium
 steps:
 - service: mqtt
   operation: connect
+  client_id: mqtt-explorer
 - service: mqtt
   operation: subscribe
+  topic: '#'
 - service: mqtt
   operation: ping

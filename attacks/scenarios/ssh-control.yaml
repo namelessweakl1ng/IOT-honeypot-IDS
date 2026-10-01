@@ -8,5 +8,5 @@ expected_detection: null
 severity: informational
 steps:
 - service: ssh
-  username: trapsig-evaluator
+  username: maintenance
   password: evaluation-nondefault-7f3b

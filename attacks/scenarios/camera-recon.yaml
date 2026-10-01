@@ -12,6 +12,6 @@ steps:
 - service: camera
   path: /status
 - service: camera
-  path: /snapshot
+  path: /device
 - service: camera
-  path: /stream
+  path: /network

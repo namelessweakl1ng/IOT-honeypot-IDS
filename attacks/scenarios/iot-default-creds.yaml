@@ -1,0 +1,11 @@
+id: iot-default-creds
+name: IoT default credentials
+description: Submit one bounded VEC-100 AUTH command
+trial_kind: attack
+target_services:
+- iot
+expected_detection: DEFAULT_CREDENTIALS
+severity: high
+steps:
+- service: iot
+  payload: AUTH admin admin\r\n
