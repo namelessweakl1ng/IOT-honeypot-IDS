@@ -66,7 +66,7 @@ It reports UTC, timezone, and `PASS`, `WARNING`, or `UNKNOWN`, using `timedatect
 Verify health/clocks, start samplers, review the attack plan, then execute at least five repeats. Preserve conclusive and inconclusive records; never tune thresholds between repeats.
 
 ### B. Negative-control / false-positive evaluation
-Execute `--all-controls`. Controls are deliberately low intensity. MQTT may produce FP because the current detector flags any MQTT operation; do not alter the rule or hide the result.
+Execute `--all-controls`. Controls are deliberately low intensity. The `mqtt-control` scenario performs one ordinary CONNECT and should normally remain a negative control; do not alter the rule or hide the result.
 
 ### C. Resource use
 Run locally on each host. The sampler only reads Docker stats, records explicit byte units, flushes every interval, and stops on Ctrl+C:
@@ -111,7 +111,7 @@ Save preflight JSON from both hosts. Resolve warnings before timing claims.
 - Results apply only to tested hardware/configuration/scenarios.
 - Bounded controls are not a complete model of benign IoT traffic.
 - Small samples must not be generalized broadly.
-- `MQTT_PROBING` may show poor specificity because any MQTT activity triggers it.
+- `MQTT_PROBING` requires at least two MQTT events or a subscribe, publish, unsubscribe, or ping operation; the controls do not represent all benign MQTT traffic.
 - Physical resource values are unavailable until measured.
 - Network timing depends on clock synchronization.
 - CI validates software contracts, not Raspberry Pi hardware performance.

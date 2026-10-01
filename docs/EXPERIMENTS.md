@@ -2,7 +2,7 @@
 
 Scenario manifests use `trial_kind: attack` with a supported detection or `trial_kind: control` with a null `expected_detection`. Missing kind defaults to attack. Controls permit TN/FP, attacks permit TP/FN, and invalid evidence is INCONCLUSIVE. See [EVALUATION.md](EVALUATION.md) for metrics, cohorts, exports, and physical protocols.
 
-TRAPSIG experiments are controlled, single-target lab runs. They are evidence records, not free-form annotations. Precision, recall, and F1 aggregation are intentionally deferred to the final evaluation work.
+TRAPSIG experiments are controlled, single-target lab runs. They are evidence records, not free-form annotations. Precision, recall, F1, specificity, false-positive rate, accuracy, timing, and other outputs are produced by the evaluation tooling described in [EVALUATION.md](EVALUATION.md).
 
 ## Scenario catalog
 
