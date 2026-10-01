@@ -74,7 +74,7 @@ The explicit target must be a usable private address inside `LAB_SUBNET`. Scenar
 
 ## Create an experiment
 
-Create it with `POST /experiments`, start it with `POST /experiments/{id}/start`, run the matching controlled scenario, then finish it with `POST /experiments/{id}/finish`. Finishing correlates immutable events by time window, attacker IP, and target IP and records linked session/detection IDs plus TP/FN outcome.
+Create it with `POST /experiments`, start it with `POST /experiments/{id}/start`, run the matching controlled scenario, then finish it with `POST /experiments/{id}/finish`. Finishing correlates immutable events by time window, attacker IP, and target IP and records linked session/detection IDs plus a TP/FN/TN/FP/INCONCLUSIVE evaluation result.
 
 ## Test and validate
 

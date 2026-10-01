@@ -1,6 +1,6 @@
 id: mqtt-control
 name: MQTT connection control
-description: One ordinary MQTT connection (the current rule may detect it)
+description: One ordinary MQTT CONNECT control
 trial_kind: control
 target_services:
 - mqtt
