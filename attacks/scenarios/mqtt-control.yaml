@@ -9,3 +9,4 @@ severity: informational
 steps:
 - service: mqtt
   operation: connect
+  client_id: mqtt-monitor

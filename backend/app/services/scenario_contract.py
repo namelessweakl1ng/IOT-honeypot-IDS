@@ -7,7 +7,7 @@ def allowed_step_statuses(step: dict[str, Any]) -> frozenset[str]:
     """Return statuses proving the intended action for one manifest step."""
     service = step.get("service")
     if service == "ssh":
-        return frozenset({"completed"}) if step.get("command") else frozenset({"completed", "rejected"})
+        return frozenset({"completed"}) if step.get("command") or step.get("commands") else frozenset({"completed", "rejected"})
     if service in {"camera", "http", "router"}:
         return frozenset({"completed", "rejected"})
     if service in {"telnet", "iot", "mqtt"}:

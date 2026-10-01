@@ -133,3 +133,6 @@ Save preflight JSON from both hosts. Resolve warnings before timing claims.
 13. Stop resource samplers.
 14. Generate final report.
 15. Preserve raw CSV/JSON/Markdown artifacts for the project report.
+
+
+The final primary scenario-to-detection contracts and research-evidence mapping are maintained in [RESEARCH_TRACEABILITY.md](RESEARCH_TRACEABILITY.md). Physical resource and performance values remain **NOT MEASURED** until the documented laboratory collection is completed.

@@ -16,7 +16,7 @@ Both an HTML form and HTTP Basic authentication are supported at `/login`. The s
 
 Shared HTTP parsing continues to populate `http.request.method`, `http.user_agent`, `url.path`, and submitted `authentication.username` / `authentication.password` fields. Credential submissions use the existing `authentication` / `login_attempt` contract with `success` for `admin` / `admin` and `failure` otherwise.
 
-The unchanged `router-default-creds` scenario remains compatible with HTTP Basic authentication and the `DEFAULT_CREDENTIALS` detector. The unchanged `router-recon` paths (`/`, `/status`, `/network`, `/system`) remain distinct and meaningful for `WEB_ENUMERATION` detection.
+The `router-default-creds` scenario uses the realistic form flow and remains compatible with the `DEFAULT_CREDENTIALS` detector; Basic authentication is retained for compatibility. The `router-recon` paths (`/`, `/status`, `/network`, `/system`) remain distinct and meaningful for `WEB_ENUMERATION` detection.
 
 ## Security boundaries and limitations
 

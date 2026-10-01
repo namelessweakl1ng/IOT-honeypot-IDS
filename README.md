@@ -31,7 +31,7 @@ FastAPI continuously performs one deliberately small, idempotent processing cycl
 | `sensor/` | Hardened Pi honeypots, Filebeat and management scripts |
 | `attacks/` | Subnet-restricted controlled scenario runner and manifests |
 | `tests/` | Behavior tests and clearly synthetic fixtures |
-| `docs/` | Five authoritative project guides |
+| `docs/` | Authoritative architecture, persona, experiment, validation, and research guides |
 
 ## Start the laptop
 
@@ -99,8 +99,8 @@ path, a Fedora laptop, or Raspberry Pi behavior. Those remain separate lab
 verification steps; green GitHub CI does not establish hardware behavior or
 physical resource usage.
 
-See [research evaluation](docs/EVALUATION.md), [setup](docs/SETUP.md), [architecture](docs/ARCHITECTURE.md), [event schema](docs/EVENT_SCHEMA.md), [experiment method](docs/EXPERIMENTS.md), and [demonstration](docs/DEMO.md).
+See the [persona/fidelity matrix](docs/PERSONAS.md), [research traceability](docs/RESEARCH_TRACEABILITY.md), [final validation checklist](docs/FINAL_VALIDATION.md), [research evaluation](docs/EVALUATION.md), [setup](docs/SETUP.md), [architecture](docs/ARCHITECTURE.md), [event schema](docs/EVENT_SCHEMA.md), [experiment method](docs/EXPERIMENTS.md), and [demonstration](docs/DEMO.md).
 
 ## Safety
 
-Run only on an isolated private lab network you own. Do not expose deception services to the Internet. Honeypots return static responses and provide no real device or shell capability. Keep the Pi management key out of Git and restrict it to the management script. Physical-Pi resource, ingestion, and detection measurements are currently **NOT MEASURED**.
+Run only on an isolated private lab network you own. Do not expose deception services to the Internet. The five honeypots provide six logical services: Cowrie SSH/Telnet, camera HTTP, router HTTP, IoT TCP, and MQTT. They provide bounded synthetic device/protocol emulation and never expose real device control, host shells, routing, persistent broker behavior, or arbitrary execution. Keep the Pi management key out of Git and restrict it to the management script. Physical-Pi resource, ingestion, and detection measurements are currently **NOT MEASURED**.

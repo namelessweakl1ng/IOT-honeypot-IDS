@@ -8,7 +8,7 @@ The deployment deliberately has only the components in this document; no paralle
 
 ## Custom honeypot runtime
 
-The camera, router, IoT TCP service, and MQTT decoys use a small shared socket runtime. That runtime owns connection lifecycle and normalized JSONL persistence, while a separate persona module for each service owns request parsing and responses. `app.py` is only the explicit service dispatcher. This internal separation preserves the current ports, protocol behavior, and telemetry contract while allowing each persona to evolve independently in later work.
+The camera, router, IoT TCP service, and MQTT decoys use a small shared socket runtime. It owns bounded connection lifecycle and JSONL persistence, assembles size-limited HTTP requests across reads, reads one bounded IoT line, and assembles one bounded MQTT frame using Remaining Length. Separate persona modules own parsing and replies. Camera and router are stateful bounded HTTP personas with expiring in-memory sessions; IoT is a bounded line protocol; MQTT is a bounded framing/parser emulation. `app.py` is only the explicit dispatcher. Cowrie is an independent runtime providing the SSH/Telnet VEG-200 low-interaction emulated shell.
 
 ## Data lifecycle
 
@@ -32,3 +32,17 @@ validation failures enter daily dead-letter indices. The processor reads but nev
 updates raw records and filters loopback/internal telemetry before creating schema-v1
 sessions and detections. `/system/status` reports dead-letter volume (zero when no
 index exists). Existing schema-less historical documents remain readable.
+
+
+## Where to read the code
+
+1. `sensor/docker-compose.yml` defines the fixed Pi topology and boundaries.
+2. `sensor/honeypots/app.py`, then `common/server.py`, show dispatch, bounded reads, lifecycle, and logging.
+3. Individual persona directories define protocol behavior; `cowrie/` owns SSH/Telnet identity.
+4. `sensor/filebeat/filebeat.yml`, `elk/logstash/pipelines/`, and Elasticsearch templates show collection, normalization, validation, and storage.
+5. Backend `processor.py`/`sessionizer.py`, then `detector.py`, show derived sessions and explainable detections.
+6. Experiment routers and `evaluation/` show ground truth, cohorts, metrics, and reports.
+7. `frontend/src/lib/api.ts` and pages show presentation over the sole API.
+8. `attacks/runner/run.py` shows target validation usage and persona-aware bounded traffic.
+
+See `PERSONAS.md` for file-level persona ownership and fidelity limits.

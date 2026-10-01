@@ -9,5 +9,7 @@ severity: medium
 steps:
 - service: mqtt
   operation: connect
+  client_id: mqtt-client-1
 - service: mqtt
   operation: connect
+  client_id: mqtt-client-2

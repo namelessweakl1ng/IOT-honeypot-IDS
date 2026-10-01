@@ -14,7 +14,7 @@ or external service.
 Telemetry retains the base event fields, adds `iot.operation`, and records
 normalized authentication fields plus success/failure for authentication
 attempts. Three separate `STATUS`, `VERSION`, and `INFO` interactions therefore
-remain compatible with the `iot-probe` reconnaissance detector behavior.
+remain compatible with the `iot-probe` reconnaissance detector behavior. One `AUTH admin admin` interaction provides bounded `iot-default-creds` coverage for the default-credential detector.
 
 This is not an IoT operating system or a production protocol. Input and
 credentials are length-bounded. There is no device control, GPIO, serial/USB,

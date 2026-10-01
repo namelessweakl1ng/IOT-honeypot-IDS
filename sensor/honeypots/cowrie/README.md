@@ -17,7 +17,7 @@ real vendor product.
 `userdb.txt` deliberately permits only `root` / `root`; the wildcard rule rejects
 all other credentials. Fake users in `/etc/passwd` are scenery and do not grant
 authentication. This preserves the `ssh-interaction`, `ssh-bruteforce`, and
-`telnet-auth-attempts` scenario contracts, including command telemetry for `id`.
+`telnet-auth-attempts` scenario contracts, including command telemetry for the harmless `hostname`, `uname -a`, `id`, and `cat /etc/os-release` enumeration sequence.
 
 ## Operator-owned filesystem content
 
