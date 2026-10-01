@@ -1,6 +1,6 @@
 # Final honeypot personas and fidelity
 
-This is the authoritative identity and capability reference for the feature-frozen sensor. Five honeypots expose six logical services; every identity and data value is fictional and bounded for an isolated college laboratory.
+This is the authoritative identity and capability reference for the feature-frozen sensor. Five honeypots expose six logical services; every identity and data value is fictional and bounded for an isolated college laboratory. Because SSH and Telnet both normalize to `service.name: cowrie`, those interactions produce five distinct normalized service names: `cowrie`, `camera`, `iot-service`, `mqtt`, and `router`.
 
 | Service | Fictional device identity | Model / firmware | Protocol / port | Authentication | Interaction and state | Useful telemetry after normalization | Main scenarios / primary detections | Important limitations | Implementation owners |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -14,7 +14,7 @@ Logstash converts Cowrie-native and custom JSONL records into the canonical sche
 
 ## Persona-aware interaction
 
-Camera reconnaissance uses meaningful AsterView paths and router reconnaissance uses public Nexora status paths. Their credential scenarios submit URL-encoded HTML forms and retain Basic authentication only for compatibility. The VEC-100 scenarios use its defined line commands. MQTT scenarios encode deterministic generic client IDs and broad topic filters. Cowrie enumeration uses one authenticated interactive shell for `hostname`, `uname -a`, `id`, and `cat /etc/os-release`.
+Camera reconnaissance probes meaningful protected AsterView endpoints without authenticating, observes their authentication challenges, and records distinct URL interactions for enumeration detection; `camera-default-creds` separately exercises successful authentication. Router reconnaissance uses public Nexora status paths. Credential scenarios submit URL-encoded HTML forms and retain Basic authentication only for compatibility. The VEC-100 scenarios use its defined line commands. MQTT scenarios encode deterministic generic client IDs and broad topic filters. Cowrie enumeration uses one authenticated interactive shell for `hostname`, `uname -a`, `id`, and `cat /etc/os-release`.
 
 Controls (`camera-control`, `router-control`, `iot-control`, `mqtt-control`, and `ssh-control`) stay deliberately low intensity and normally have no expected detection. An attack scenario can legitimately produce secondary detections; its `expected_detection` is the primary evaluation contract.
 

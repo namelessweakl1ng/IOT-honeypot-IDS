@@ -13,7 +13,7 @@ Choose one or two short examples rather than exhausting the audience: open the A
 1. Create and start an experiment for `multi-honeypot-attack`.
 2. From the isolated attacker VM run `python -m attacks.runner.run multi-honeypot-attack --target "$HONEYPOT_IP" --experiment-id "$EXPERIMENT_ID" --api-url "$API_URL"`.
 3. Show the local ground-truth summary and raw/normalized events.
-4. Show source-IP session reconstruction and all six `services_touched`.
+4. Show the reconstructed source-IP session touching all five normalized honeypot service names: `cowrie`, `camera`, `iot-service`, `mqtt`, and `router`. Explain that Cowrie represents two logical services, SSH and Telnet, which are distinguished by protocol and event telemetry.
 5. Open the primary and any secondary detections; explain the rule reason and evidence IDs.
 6. Finish the experiment and show its TP/FN classification and correlated IDs.
 7. Use Kibana for detailed evidence exploration.
