@@ -1,0 +1,5 @@
+NAME="Velora Embedded Linux"
+VERSION="2.7.4"
+ID=velora
+VERSION_ID="2.7.4"
+PRETTY_NAME="Velora Embedded Linux 2.7.4"
