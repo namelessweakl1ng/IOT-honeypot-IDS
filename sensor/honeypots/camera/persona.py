@@ -14,6 +14,7 @@ from common.protocols import add_http_fields, http_details
 from camera.pages import info_table, login_page, shell
 
 SESSION_TTL = 30 * 60
+MAX_SESSIONS = 128
 
 
 class CameraPersona:
@@ -56,10 +57,25 @@ class CameraPersona:
                 return False
             return True
 
+    def _purge_expired_sessions(self, now: float) -> None:
+        expired = [token for token, expiry in self._sessions.items() if expiry <= now]
+        for token in expired:
+            del self._sessions[token]
+
+    def _active_session_count(self) -> int:
+        with self._lock:
+            self._purge_expired_sessions(self._clock())
+            return len(self._sessions)
+
     def _new_session(self) -> str:
         token = secrets.token_urlsafe(24)
         with self._lock:
-            self._sessions[token] = self._clock() + SESSION_TTL
+            now = self._clock()
+            self._purge_expired_sessions(now)
+            if len(self._sessions) >= MAX_SESSIONS:
+                earliest = min(self._sessions, key=self._sessions.get)
+                del self._sessions[earliest]
+            self._sessions[token] = now + SESSION_TTL
         return token
 
     @staticmethod
@@ -116,7 +132,7 @@ class CameraPersona:
         if not self._authenticated(details):
             return self._challenge()
         if path == "/status":
-            payload = json.dumps({"device": "CV-210", "status": "online", "recording": True, "stream": "main", "uptime": int(self._clock() - self._started), "sessions": len(self._sessions)}, separators=(",", ":"))
+            payload = json.dumps({"device": "CV-210", "status": "online", "recording": True, "stream": "main", "uptime": int(self._clock() - self._started), "sessions": self._active_session_count()}, separators=(",", ":"))
             return self._response(HTTPStatus.OK, payload, "application/json")
         if path == "/snapshot":
             return self._snapshot()
