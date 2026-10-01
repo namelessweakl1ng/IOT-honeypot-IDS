@@ -1,9 +1,78 @@
 """Shared bounded socket lifecycle for every custom persona."""
 
+import socket
 import socketserver
 from typing import Protocol
 
 from common.telemetry import base_event, write_jsonl
+
+MAX_HTTP_HEADER_BYTES = 16 * 1024
+MAX_HTTP_BODY_BYTES = 64 * 1024
+MAX_HTTP_REQUEST_BYTES = MAX_HTTP_HEADER_BYTES + MAX_HTTP_BODY_BYTES
+HTTP_READ_TIMEOUT = 2.0
+
+
+class HTTPRequestReadError(Exception):
+    """A client sent an HTTP request that cannot be assembled safely."""
+
+    def __init__(self, status: int, reason: str) -> None:
+        super().__init__(reason)
+        self.status = status
+        self.reason = reason
+
+
+def read_http_request(connection: socket.socket) -> bytes:
+    """Read one Content-Length-framed HTTP request within strict size bounds."""
+    connection.settimeout(HTTP_READ_TIMEOUT)
+    data = bytearray()
+    try:
+        while b"\r\n\r\n" not in data:
+            remaining = MAX_HTTP_HEADER_BYTES - len(data)
+            if remaining <= 0:
+                raise HTTPRequestReadError(431, "Request Header Fields Too Large")
+            chunk = connection.recv(min(4096, remaining))
+            if not chunk:
+                raise HTTPRequestReadError(400, "Bad Request")
+            data.extend(chunk)
+
+        header, separator, initial_body = bytes(data).partition(b"\r\n\r\n")
+        content_lengths = []
+        for line in header.split(b"\r\n")[1:]:
+            name, colon, value = line.partition(b":")
+            if colon and name.strip().lower() == b"content-length":
+                content_lengths.append(value.strip())
+        if len(content_lengths) > 1 or (content_lengths and not content_lengths[0].isdigit()):
+            raise HTTPRequestReadError(400, "Bad Request")
+
+        content_length = int(content_lengths[0]) if content_lengths else 0
+        if content_length > MAX_HTTP_BODY_BYTES:
+            raise HTTPRequestReadError(413, "Payload Too Large")
+
+        body = bytearray(initial_body[:content_length])
+        while len(body) < content_length:
+            chunk = connection.recv(min(4096, content_length - len(body)))
+            if not chunk:
+                raise HTTPRequestReadError(400, "Bad Request")
+            body.extend(chunk)
+    except socket.timeout as exc:
+        raise HTTPRequestReadError(408, "Request Timeout") from exc
+
+    request = header + separator + body
+    if len(request) > MAX_HTTP_REQUEST_BYTES:
+        raise HTTPRequestReadError(413, "Payload Too Large")
+    return request
+
+
+def http_error_response(error: HTTPRequestReadError) -> bytes:
+    body = f"{error.status} {error.reason}\n".encode()
+    return (
+        f"HTTP/1.1 {error.status} {error.reason}\r\n"
+        "Content-Type: text/plain; charset=utf-8\r\n"
+        "Cache-Control: no-store\r\n"
+        "X-Content-Type-Options: nosniff\r\n"
+        f"Content-Length: {len(body)}\r\n"
+        "Connection: close\r\n\r\n"
+    ).encode() + body
 
 
 class Persona(Protocol):
@@ -20,7 +89,14 @@ class Server(socketserver.ThreadingTCPServer):
 def handler_for(persona: Persona, service: str, protocol: str, port: int, log_path: str):
     class Handler(socketserver.BaseRequestHandler):
         def handle(self) -> None:
-            data = self.request.recv(4096)
+            if protocol == "http":
+                try:
+                    data = read_http_request(self.request)
+                except HTTPRequestReadError as error:
+                    self.request.sendall(http_error_response(error))
+                    return
+            else:
+                data = self.request.recv(4096)
             details = persona.parse(data)
             event = base_event(service, protocol, port, self.client_address, details, bool(data))
             persona.enrich(event, details)
