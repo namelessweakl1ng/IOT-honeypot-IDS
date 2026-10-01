@@ -84,6 +84,18 @@ def test_templates_are_typed_and_single_node():
     assert p["source"]["properties"]["ip"]["type"] == "ip" and p["source"]["properties"]["port"]["type"] == "integer"
     assert p["@timestamp"]["type"] == p["event"]["properties"]["ingested"]["type"] == "date"
     assert docs["trapsig-detections"]["template"]["mappings"]["properties"]["severity"]["fields"]["keyword"]["type"] == "keyword"
+    mqtt = p["mqtt"]["properties"]
+    assert all(mqtt[field]["type"] == "integer" for field in ("packet_id", "qos", "remaining_length"))
+    assert mqtt["client_id"]["type"] == mqtt["topic"]["type"] == "keyword"
+    assert p["iot"]["properties"]["operation"]["type"] == "keyword"
+
+
+def test_logstash_preserves_bounded_protocol_telemetry_fields():
+    pipeline = (ROOT / "elk/logstash/pipelines/20-json-honeypots.conf").read_text()
+    for field in ("client_id", "topic", "packet_id", "qos"):
+        assert field in pipeline
+    assert "[iot][operation]" in pipeline
+    assert "[mqtt][password]" not in pipeline
 
 
 def test_logstash_routes_validation_failures_and_preserves_raw():

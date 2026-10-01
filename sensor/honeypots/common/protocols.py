@@ -37,9 +37,10 @@ def http_details(data: bytes) -> dict:
 
 
 def mqtt_details(data: bytes) -> dict:
-    packet_type = data[0] >> 4 if data else 0
-    names = {1: "connect", 3: "publish", 8: "subscribe", 10: "unsubscribe", 12: "ping"}
-    return {"packet_type": packet_type, "operation": names.get(packet_type, "unknown")}
+    """Compatibility entry point for the MQTT persona's bounded parser."""
+    from mqtt.protocol import parse_packet
+
+    return parse_packet(data)
 
 
 def add_http_fields(event: dict, details: dict) -> None:

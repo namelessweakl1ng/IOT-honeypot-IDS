@@ -45,8 +45,9 @@ def test_http_personas_parse_requests_and_preserve_authentication(persona):
 
 def test_iot_tcp_records_payload_interaction():
     persona = IoTServicePersona()
-    assert persona.parse(b"status\xff") == {"payload": "status�"}
-    assert persona.response({}) == b"TRAPSIG-IOT READY\r\n"
+    details = persona.parse(b"status\xff")
+    assert details["malformed"] is True
+    assert persona.response(details) == b"400 BAD REQUEST\r\n"
 
 
 def test_mqtt_packets_are_classified_and_enriched():
