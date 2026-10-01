@@ -81,7 +81,7 @@ def test_reader_accepts_normal_single_read_request():
 
 @pytest.mark.parametrize(
     ("content_length", "expected_status"),
-    [(b"not-a-number", 400), (b"-1", 400), (str(MAX_HTTP_BODY_BYTES + 1).encode(), 413)],
+    [(b"not-a-number", 400), (b"-1", 400), (str(MAX_HTTP_BODY_BYTES + 1).encode(), 413), (b"9" * 5000, 413)],
 )
 def test_reader_rejects_malformed_and_oversized_content_lengths(content_length, expected_status):
     request = b"POST /login HTTP/1.1\r\nContent-Length: " + content_length + b"\r\n\r\n"

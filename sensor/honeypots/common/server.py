@@ -43,6 +43,8 @@ def read_http_request(connection: socket.socket) -> bytes:
                 content_lengths.append(value.strip())
         if len(content_lengths) > 1 or (content_lengths and not content_lengths[0].isdigit()):
             raise HTTPRequestReadError(400, "Bad Request")
+        if content_lengths and len(content_lengths[0]) > len(str(MAX_HTTP_BODY_BYTES)):
+            raise HTTPRequestReadError(413, "Payload Too Large")
 
         content_length = int(content_lengths[0]) if content_lengths else 0
         if content_length > MAX_HTTP_BODY_BYTES:
