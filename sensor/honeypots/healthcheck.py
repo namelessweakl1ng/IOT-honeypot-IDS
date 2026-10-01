@@ -1,7 +1,7 @@
 """Non-invasive health probe: inspect the kernel's listening-socket table."""
+
 import os
 import sys
-
 
 port = int(os.environ["PORT"])
 wanted = f"{port:04X}"
