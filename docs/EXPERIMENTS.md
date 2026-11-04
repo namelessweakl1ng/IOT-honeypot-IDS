@@ -37,6 +37,8 @@ The runner sends traffic from the attacker VM to one explicit private Pi target.
 
 The experiment's `attacker_ip` must match the source address recorded in the normalized events, not necessarily the guest's pre-NAT address. Verify this with a recent event query before creating an experiment. If the VM network mode or routing changes, repeat this check.
 
+**Attribution limitation:** source-IP sessionization cannot distinguish the Kali guest from other clients that share Fedora's translated source address. Traffic from those clients inside the session timeout can be grouped into the same session, and a detection from that mixed session can be linked to the experiment. For defensible attribution, isolate the lab route during a run: stop unrelated traffic from the Fedora host during the experiment window, avoid concurrent experiments (the API already enforces one active experiment), and document the NAT source mapping. Treat the resulting source-IP correlation as bounded lab evidence, not per-guest identity proof.
+
 ## Settling and direct correlation
 
 Finish first records `end_time` and persists `correlating`. The backend polls the count of experiment-specific events until it is unchanged for the configured quiet period, bounded by the settle timeout. The query uses occurrence time, source and destination IP, canonical `service.name` targets, and excludes internal/loopback telemetry. A timeout produces `INCONCLUSIVE / SETTLE_TIMEOUT`; it never produces an FN.
