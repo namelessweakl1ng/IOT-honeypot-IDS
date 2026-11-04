@@ -46,7 +46,7 @@ These are private lab addresses observed during this session. Re-check them befo
 | Pi management account | **PASS** | On the Pi, trapsig was present in the docker group and sudo -u trapsig docker info returned Docker server information. Docker-group membership is highly privileged; retain the repository's restricted-command/SSH-wrapper controls. |
 | Repository transfer to Debian | **PASS** | A tar archive stream over SSH copied the repository tree to ~/IOT-honeypot-IDS; the destination listing showed the expected project directories. .git, .venv, and secrets were excluded. |
 | Debian Internet access | **BLOCKED** | Pings to 8.8.8.8 and 1.1.1.1 received no replies; GitHub DNS resolved to 20.207.73.82, but HTTPS to GitHub timed out and pip reported Network is unreachable. |
-| Debian-to-Pi network | **BLOCKED** | Ping from Debian to 192.168.29.212 received no replies. This contrasts with successful Fedora-to-Pi connectivity. |
+| Debian-to-Pi ICMP test | **FAILED; TCP UNTESTED** | Ping from Debian to 192.168.29.212 received no replies. No TCP port probe was run from the VM. Fedora-to-Pi ping succeeded. |
 | Debian attack dependencies | **BLOCKED** | Python 3 is present and a virtual environment was created, but importing the runner failed because paramiko is absent. Installing attacks/requirements.txt could not reach the package index. |
 | Attack runner invocation | **NOT COMPLETED** | One invocation was attempted from inside attacks/, where attacks.runner.run is not importable as a top-level module. The correct working directory is the repository root. |
 | Filebeat-to-Logstash delivery | **NOT VERIFIED** | No Filebeat output test, Logstash ingress confirmation, or indexed sensor event was provided. |
