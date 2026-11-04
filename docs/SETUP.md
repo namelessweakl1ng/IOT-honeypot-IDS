@@ -116,9 +116,23 @@ A successful Filebeat output test should reach the configured Logstash host and 
 
 ### Restricted backend management account
 
-The Fedora backend manages only the Pi's honeypots using the forced-command wrapper. Follow the exact account, Docker group, permissions, and `authorized_keys` procedure in [the setup guide](SETUP.md) and use the public key only. The private key stays on Fedora in the ignored `secrets/` directory.
+The backend uses a dedicated `trapsig` account to manage the sensor containers through a forced-command SSH wrapper. On the Pi, create the account and grant Docker access:
 
-The wrapper permits only status and fixed `start|stop|restart` operations for `cowrie`, `camera`, `iot-service`, `mqtt`, and `router`. It must not be replaced with an unrestricted shell command. Docker group membership is effectively root-equivalent; keep this dedicated account constrained to the forced command.
+```bash
+sudo useradd --create-home --shell /bin/bash trapsig
+sudo usermod -aG docker trapsig
+```
+
+The new group membership applies only to a new login/SSH session. Reconnect before checking it. Verify that the account can access Docker:
+
+```bash
+id -nG trapsig
+sudo -u trapsig docker info
+```
+
+The `docker` group is highly privileged and effectively root-equivalent. Use this dedicated account only for the backend management path, and constrain its SSH key with the repository's forced-command wrapper in `sensor/scripts/ssh-manage-wrapper.sh`. Install the backend public key in `/home/trapsig/.ssh/authorized_keys` with the forced-command restriction, correct ownership, and restrictive permissions. Never install the private key on the Pi; it stays on Fedora in the ignored `secrets/` directory.
+
+The wrapper permits only status and fixed `start|stop|restart` operations for `cowrie`, `camera`, `iot-service`, `mqtt`, and `router`. It must not be replaced with an unrestricted shell command.
 
 ## 4. Attacker VM connectivity
 
