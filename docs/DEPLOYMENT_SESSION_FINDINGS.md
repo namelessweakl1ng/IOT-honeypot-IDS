@@ -9,7 +9,7 @@
 - **Fedora analysis stack:** running and locally healthy.
 - **Raspberry Pi honeypots:** five services reported running.
 - **Fedora-to-Pi management SSH:** working with the dedicated key and strict host-key checking.
-- **Debian attacker VM:** repository copied successfully, but it cannot currently reach the Pi or the Internet.
+- **Debian attacker VM:** repository copied successfully; Internet access is unavailable, and the ICMP test to the Pi failed. TCP reachability to Pi services has not yet been tested.
 - **Attack runner:** not yet executed; Paramiko is missing and pip could not reach the package index.
 - **End-to-end telemetry:** not yet verified.
 
@@ -129,7 +129,7 @@ Observed tests:
 - ping 1.1.1.1: 100% packet loss.
 - curl -I --connect-timeout 10 https://github.com: timeout.
 - pip install -r requirements.txt: Network is unreachable.
-- ping 192.168.29.212 from Debian: 100% packet loss.
+- ping 192.168.29.212 from Debian: 100% packet loss (ICMP only; no TCP port probe was run from the VM).
 - ping 192.168.29.212 from Fedora: 3/3 replies.
 
 On Fedora, virsh net-list --all showed the default network active and persistent. virsh net-info default showed bridge virbr0; virsh net-dumpxml default showed forward mode='nat'. Firewalld showed wlo1 in FedoraWorkstation and virbr0 in libvirt.
