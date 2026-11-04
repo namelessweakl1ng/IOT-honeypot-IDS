@@ -41,12 +41,24 @@ Fedora libvirt default NAT network
           |
           |
 Debian attacker VM
+  Hostname: debian; architecture: x86_64
   IP: 192.168.122.213/24 (enp1s0)
   - repository at ~/IOT-honeypot-IDS
   - attacks/.venv created
 ~~~
 
 The standard project architecture in [ARCHITECTURE.md](ARCHITECTURE.md) describes the analysis laptop and Pi. This session adds a third, separate Debian attacker VM.
+
+## Fedora preflight and local worktree notes
+
+The Fedora preflight completed with SELinux enforcing and the repository bind mounts using private `:Z` relabeling. Its output was:
+
+~~~text
+INFO: SELinux is Enforcing; repository bind mounts use private :Z relabeling.
+TRAPSIG analysis preflight passed.
+~~~
+
+A later Fedora `git status` also showed `frontend/next-env.d.ts` as modified. It was not included in the Elasticsearch hostname commit. The session did not capture its diff or establish why it was modified. **Inspect the current worktree and file diff before staging or discarding it; do not automatically include or restore it.**
 
 ## Findings
 
@@ -71,10 +83,10 @@ After the change, Elasticsearch became healthy and returned a green one-node clu
 
 The Fedora-side files were created:
 
-- ~/.ssh/trapsig_pi — private key kept on Fedora.
-- ~/.ssh/trapsig_pi.pub — public key.
-- secrets/pi_ssh_key — private-key copy mounted for the laptop backend.
-- secrets/known_hosts — Pi host keys.
+- `~/.ssh/trapsig_pi` — generated Ed25519 private key kept on Fedora. A pre-existing key at this path was overwritten after the operator confirmed the replacement.
+- `~/.ssh/trapsig_pi.pub` — matching public key.
+- `secrets/pi_ssh_key` — private-key copy used by the laptop backend; file mode was set to `600`.
+- `secrets/known_hosts` — Pi host keys collected with `ssh-keyscan -H`; file mode was set to `600`.
 
 The session successfully ran the following from Fedora:
 
@@ -98,7 +110,7 @@ The Pi's ED25519 host-key fingerprint was compared with the ED25519 entry in Fed
 
 ### 3. Pi management account exists
 
-On the Pi, trapsig already existed. It was added to the docker group; id trapsig showed that group, and sudo -u trapsig docker info returned Docker server details.
+On the Pi, `trapsig` already existed and its password was locked. It was added to the `docker` group; `id trapsig` showed that group, and `sudo -u trapsig docker info` returned Docker server details.
 
 Docker-group membership is effectively root-equivalent. Keep the restricted SSH forced-command wrapper and do not grant the account general sudo or an unrestricted SSH key. Follow [SETUP.md](SETUP.md) for the intended account and wrapper permissions.
 
@@ -132,7 +144,7 @@ Observed tests:
 - ping 192.168.29.212 from Debian: 100% packet loss (ICMP only; no TCP port probe was run from the VM).
 - ping 192.168.29.212 from Fedora: 3/3 replies.
 
-On Fedora, virsh net-list --all showed the default network active and persistent. virsh net-info default showed bridge virbr0; virsh net-dumpxml default showed forward mode='nat'. Firewalld showed wlo1 in FedoraWorkstation and virbr0 in libvirt.
+On Fedora, `virsh net-list --all` showed the default network active and persistent. `virsh net-info default` showed bridge `virbr0`; `virsh net-dumpxml default` showed `forward mode='nat'`. Firewalld showed `wlo1` in `FedoraWorkstation`, `virbr0` in `libvirt`, and Docker bridges in the `docker` zone.
 
 This evidence points to a host-side forwarding, firewall, or NAT path that needs investigation, but **does not yet prove which component is responsible**. The following diagnostics have not yet been returned:
 
@@ -231,6 +243,10 @@ docker compose exec filebeat filebeat test output -c /usr/share/filebeat/filebea
 The laptop Compose configuration binds Logstash Beats port 5044 to 0.0.0.0 by default, while the UI, API, Elasticsearch, Kibana, and Logstash monitoring ports are bound to 127.0.0.1 by default. Keep that exposure boundary unless there is a deliberate, documented reason to change it.
 
 After a bounded scenario is run, verify that the corresponding event reaches Elasticsearch/Kibana and that the backend creates the expected session/detection. Preserve the runner's JSON ground-truth output under attacks/runs/. Because the API is loopback-bound by default, do not assume the Debian VM can post directly to the laptop API over the LAN; keep the local JSON artifact and transfer it back, or use an explicitly configured SSH tunnel if API submission is needed.
+
+## GitHub CI validation for this handoff PR
+
+GitHub Actions `TRAPSIG CI` run [#36](https://github.com/namelessweakl1ng/IOT-honeypot-IDS/actions/runs/41754900589) ran on PR #21 head `b58638c3ec6b861d5f55b0c51ea2bb8646f875cf` and completed successfully. The five successful jobs were Integration (Elasticsearch/Logstash/backend smoke checks), Contracts (Compose configuration, mount validation, sensor Compose configuration, shell checks), Python (dependency installation, Ruff, pytest), Docker Build (backend/frontend and sensor honeypot images), and Frontend (`npm ci`, lint, typecheck, production build). This validates the repository CI workflow only; it does not replace the outstanding physical Pi, Filebeat, Debian VM networking, attack-runner, or detection checks listed above.
 
 ## Recommended continuation order
 
