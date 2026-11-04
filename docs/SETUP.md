@@ -26,7 +26,6 @@ cd IOT-honeypot-IDS
 cp .env.example .env
 $EDITOR .env
 mkdir -p secrets
-install -m 600 ~/.ssh/trapsig_pi secrets/pi_ssh_key
 ```
 
 Set the environment values for the actual Pi and lab network. For the example deployment:
@@ -39,19 +38,46 @@ LOCAL_BIND_HOST=127.0.0.1
 BEATS_BIND_HOST=0.0.0.0
 ```
 
-Keep any other existing project settings in `.env`. The UI/API, Kibana, Elasticsearch, and Logstash monitoring endpoint remain bound to loopback when `LOCAL_BIND_HOST=127.0.0.1`; `BEATS_BIND_HOST=0.0.0.0` publishes only the Beats input on port 5044 for the Pi. If a VM on the Fedora host's libvirt network must access the API, bind the API deliberately to the libvirt host-side address (for example `192.168.122.1`) rather than exposing all services on every interface. Recreate only the backend after changing its environment:
+Keep `LOCAL_BIND_HOST=127.0.0.1`. It controls the published host ports for Elasticsearch, Kibana, the frontend, the API, and Logstash monitoring. Do not change it to the libvirt address to make the API reachable: that would expose all those services on the VM network. `BEATS_BIND_HOST=0.0.0.0` publishes only the Beats input on port 5044 for the Pi.
+
+### Optional API access from the Kali/libvirt network
+
+The backend API is the only service that may need a separate libvirt-facing binding. Keep the normal Compose configuration loopback-only and use a one-off override that changes only the backend port:
+
+```bash
+cat > compose.api-libvirt.yml <<'YAML'
+services:
+  backend:
+    ports:
+      - "192.168.122.1:8000:8000"
+YAML
+docker compose -f docker-compose.yml -f compose.api-libvirt.yml up -d --no-deps --force-recreate backend
+```
+
+Replace `192.168.122.1` with Fedora's actual libvirt host-side address. Restrict access with the Fedora firewall to the libvirt subnet or the specific Kali guest. Do not use `LOCAL_BIND_HOST=0.0.0.0`. Return to the normal loopback-only binding by recreating the backend without the override:
 
 ```bash
 docker compose up -d --no-deps --force-recreate backend
 ```
 
-Do not use `LOCAL_BIND_HOST=0.0.0.0` without a firewall rule limiting access to the lab. Check the API address from each client: host-local clients use `http://127.0.0.1:8000`; a libvirt NAT guest may use the Fedora libvirt gateway address.
+Check the API from Fedora at `http://127.0.0.1:8000`, and from Kali at the explicitly configured Fedora libvirt address only while the override is active.
 
-Create the backend SSH key and host-key file. Never commit `secrets/`, private keys, passwords, or real `.env` files:
+### Backend SSH key and host-key setup
+
+Create one dedicated key on Fedora. Do not overwrite or replace a key after installing its public half on the Pi. The private key is mounted into the backend container from the ignored `secrets/` directory:
 
 ```bash
-ssh-keygen -t ed25519 -f ~/.ssh/trapsig_backend -N '' -C trapsig-backend
-install -m 600 ~/.ssh/trapsig_backend secrets/pi_ssh_key
+ssh-keygen -t ed25519 -f secrets/pi_ssh_key -N '' -C trapsig-backend
+chmod 600 secrets/pi_ssh_key
+```
+
+On the Pi, install the matching public key using the forced-command restriction below. The `PI_HOST` value is stored in `.env`, so load it before using it in shell commands:
+
+```bash
+set -a
+. ./.env
+set +a
+: "${PI_HOST:?Set PI_HOST in .env first}"
 ssh-keyscan -H "$PI_HOST" > secrets/known_hosts
 ssh-keygen -lf secrets/known_hosts
 chmod 600 secrets/known_hosts
@@ -130,9 +156,27 @@ id -nG trapsig
 sudo -u trapsig docker info
 ```
 
-The `docker` group is highly privileged and effectively root-equivalent. Use this dedicated account only for the backend management path, and constrain its SSH key with the repository's forced-command wrapper in `sensor/scripts/ssh-manage-wrapper.sh`. Install the backend public key in `/home/trapsig/.ssh/authorized_keys` with the forced-command restriction, correct ownership, and restrictive permissions. Never install the private key on the Pi; it stays on Fedora in the ignored `secrets/` directory.
+The `docker` group is highly privileged and effectively root-equivalent. Use this dedicated account only for the backend management path. The wrapper runs the fixed script `/opt/trapsig/sensor/scripts/ssh-manage-wrapper.sh`; the project tree and scripts must be root-owned and not writable by `trapsig`.
 
-The wrapper permits only status and fixed `start|stop|restart` operations for `cowrie`, `camera`, `iot-service`, `mqtt`, and `router`. It must not be replaced with an unrestricted shell command.
+Install the public key generated on Fedora (`secrets/pi_ssh_key.pub`) on the Pi. Create the SSH directory and add the key as a forced-command-only entry:
+
+```bash
+sudo install -d -o trapsig -g trapsig -m 700 /home/trapsig/.ssh
+sudo sh -c 'printf "%s\\n" "command=\\"/opt/trapsig/sensor/scripts/ssh-manage-wrapper.sh\\",no-agent-forwarding,no-port-forwarding,no-X11-forwarding,no-pty,no-user-rc $(cat /path/to/pi_ssh_key.pub)" > /home/trapsig/.ssh/authorized_keys'
+sudo chown trapsig:trapsig /home/trapsig/.ssh/authorized_keys
+sudo chmod 600 /home/trapsig/.ssh/authorized_keys
+```
+
+Replace `/path/to/pi_ssh_key.pub` with the actual path where you transferred the **public** key from Fedora. Never copy the private key to the Pi. Confirm the public key line starts with the `command=` restriction and has the `ssh-ed25519` key at its end. The wrapper permits only status and fixed `start|stop|restart` operations for `cowrie`, `camera`, `iot-service`, `mqtt`, and `router`. It must not be replaced with an unrestricted shell command.
+
+From Fedora, install the same private key and known-hosts file at the paths used by Compose, then test the restricted command:
+
+```bash
+install -m 600 secrets/pi_ssh_key secrets/pi_ssh_key
+ssh -i secrets/pi_ssh_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=secrets/known_hosts trapsig@"$PI_HOST" /opt/trapsig/sensor/scripts/manage.sh status
+```
+
+Do not commit `secrets/`, private keys, passwords, or real `.env` files.
 
 ## 4. Attacker VM connectivity
 
@@ -184,10 +228,10 @@ From Kali, run a bounded single-target connectivity check as above. Then use the
 ## Troubleshooting observed deployment failures
 
 - **Wrong IP/subnet:** check `ip -4 -brief addr` and `ip -4 route` on each host. A stale `192.168.98.x` value was once used where the actual network was `10.171.98.0/24`.
-- **Fedora API not reachable at localhost from Kali:** `localhost` inside Kali is the Kali VM, not Fedora. Use Fedora's libvirt gateway address only if the backend is intentionally bound there; otherwise use the host-local URL on Fedora.
+- **Fedora API not reachable at localhost from Kali:** keep the analysis services loopback-bound and use the optional backend-only Compose override above. Restrict the API port with Fedora's firewall.
 - **Experiment rejects attacker/target IP:** `LAB_SUBNET` in Fedora's backend environment must contain both the attacker source address recorded by the Pi and the Pi target address. Recreate only the backend after editing Fedora's `.env`.
 - **Ground-truth submission returns HTTP 409:** inspect the experiment with `GET /experiments/{id}`. Start it before running the scenario. The runner's timestamped summary must fall inside the experiment window, match the exact scenario manifest hash, target, and expected detection, and contain the scenario's complete ordered step list. The local run JSON is written before API submission.
-- **SSH management reports unreachable:** verify `PI_HOST` is the Pi address, compare the known-host fingerprint, verify the forced-command public key entry and file permissions on the Pi, and test the exact backend SSH command from Fedora.
+- **SSH management reports unreachable:** verify `PI_HOST` is loaded from `.env`, compare the known-host fingerprint, verify the forced-command public key entry and file permissions on the Pi, and test the exact backend SSH command from Fedora.
 - **Docker reports no memory limit support:** verify memory cgroup controller availability and inspect the kernel command line; do not claim resource limits are enforced until Docker no longer reports the warning.
 - **Filebeat output test fails:** verify `ANALYSIS_HOST`, Logstash port 5044 publication, Fedora firewall, and Filebeat logs. A successful output test confirms transport to Logstash, not that every later analytics stage is correct.
 
