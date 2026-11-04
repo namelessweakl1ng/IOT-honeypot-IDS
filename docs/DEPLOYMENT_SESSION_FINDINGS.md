@@ -180,9 +180,7 @@ Paramiko==3.5.1
 PyYAML==6.0.2
 ~~~
 
-The import failed with ModuleNotFoundError: No module named 'paramiko'. The pip installation attempt failed because the VM had no network access.
-
-A second invocation failed with No module named 'attacks' because it was run while the current directory was ~/IOT-honeypot-IDS/attacks. The module must be launched from the repository root.
+An invocation from inside `~/IOT-honeypot-IDS/attacks` failed with `ModuleNotFoundError: No module named 'attacks'` because the repository root was not the working directory. A later invocation from `~/IOT-honeypot-IDS` reached the runner import but failed with `ModuleNotFoundError: No module named 'paramiko'`. The attempt to install `attacks/requirements.txt` failed because the VM had no network access.
 
 After network access is restored (or after transferring a compatible offline wheelhouse from Fedora), continue on Debian:
 
