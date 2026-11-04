@@ -2,7 +2,7 @@
 
 > Scope: one operator-led deployment and troubleshooting session covering a Fedora analysis laptop, a Raspberry Pi sensor, and a Debian attacker VM.
 >
-> Status: **analysis stack operational; Pi management reachable from Fedora; attacker VM network and attack execution blocked.**
+> Status: **analysis stack operational; Pi management reachable from Fedora; attacker VM Internet access and attack execution blocked.**
 >
 > Evidence source: terminal output supplied during the session plus inspection of repository configuration. This is a deployment smoke evaluation, not a formal detection-performance study.
 
@@ -12,7 +12,7 @@ The Fedora analysis stack was brought to a healthy state after adding an explici
 
 From Fedora, SSH access to the Pi succeeded using the dedicated management key and strict known-host checking. The Pi management status command reported all five honeypot services as running.
 
-The Debian attacker VM received a copy of the repository over SSH using a tar stream. However, it cannot currently reach the Internet or the Pi. DNS lookup for GitHub succeeds, but outbound connectivity tests time out; the VM also cannot ping the Pi. Its attack-runner dependencies are therefore not installed, and no attack scenario has been executed.
+The Debian attacker VM received a copy of the repository over SSH using a tar stream. However, it has no usable outbound Internet access, and its ICMP ping test to the Pi failed. DNS lookup for GitHub succeeds, but outbound connectivity tests time out. TCP reachability to Pi service ports has not yet been tested. Its attack-runner dependencies are therefore not installed, and no attack scenario has been executed.
 
 **Conclusion:** the analysis services are locally available, and Pi management from Fedora is verified. The complete attacker-to-honeypot-to-Filebeat-to-Logstash-to-Elasticsearch path remains unverified.
 
@@ -58,7 +58,7 @@ These are private lab addresses observed during this session. Re-check them befo
 1. The Elasticsearch hostname change is a confirmed local deployment fix and is already on main.
 2. The analysis stack's local health checks passed. This proves service startup and local HTTP health, not that sensor events are arriving.
 3. Pi management is reachable from Fedora. The reported five honeypot services were running when checked.
-4. The Debian VM is attached to the Fedora libvirt NAT network, but its route to the Internet and the Pi is not functioning. The exact host-side forwarding/firewall cause has **not** been established; net.ipv4.ip_forward, firewalld policy output, and the relevant nftables rules were requested but not supplied.
+4. The Debian VM is attached to the Fedora libvirt NAT network. Its outbound Internet tests failed, and its ICMP ping test to the Pi failed; TCP reachability to Pi services has not been tested. The exact host-side forwarding/firewall cause has **not** been established; net.ipv4.ip_forward, firewalld policy output, and the relevant nftables rules were requested but not supplied.
 5. The attack runner has not yet generated traffic. Missing Python dependencies and missing network reachability are independent blockers.
 
 ## Evaluation boundary
