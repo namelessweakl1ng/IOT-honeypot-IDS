@@ -1,10 +1,10 @@
 # Research evaluation
 
-> Current physical Fedora/Raspberry Pi results: **NOT MEASURED**.
+> Current physical Fedora/Raspberry Pi resource, recovery, and repeated-cohort effectiveness results: **NOT MEASURED**. One separate single-run smoke test recorded event-ingestion timing; it is described in [EXPERIMENTS.md](EXPERIMENTS.md) and is not a repeated-cohort benchmark.
 
 - Fedora CPU/RAM — **NOT MEASURED**
 - Pi CPU/RAM — **NOT MEASURED**
-- Physical ingestion latency — **NOT MEASURED**
+- Physical event-ingestion latency — one smoke-test sample set is recorded in [EXPERIMENTS.md](EXPERIMENTS.md); repeated-cohort ingestion characterization — **NOT MEASURED**
 - Physical recovery completeness — **NOT MEASURED**
 
 TRAPSIG records defensible measurements; it does not ship benchmark claims. Run every command against the private lab only and retain generated artifacts.

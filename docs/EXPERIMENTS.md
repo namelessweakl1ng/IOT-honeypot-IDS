@@ -26,6 +26,19 @@ Supplying both `--experiment-id` and `--api-url` posts the summary after its loc
 
 **A TP or FN requires valid controlled-run ground truth.** Missing ground truth or a failed/partial run makes the result inconclusive.
 
+## Attacker address behind VM NAT
+
+The runner sends traffic from the attacker VM to one explicit private Pi target. With QEMU/libvirt's default NAT, the Pi can see the Fedora host's lab-interface address as the source IP because NAT rewrites the guest source address. In the verified physical-lab run:
+
+- Kali guest: `192.168.122.151`
+- Fedora host / source observed by Pi: `10.171.98.199`
+- Raspberry Pi target: `10.171.98.88`
+- Lab subnet used by the backend and runner: `10.171.98.0/24`
+
+The experiment's `attacker_ip` must match the source address recorded in the normalized events, not necessarily the guest's pre-NAT address. Verify this with a recent event query before creating an experiment. If the VM network mode or routing changes, repeat this check.
+
+**Attribution limitation:** source-IP sessionization cannot distinguish the Kali guest from other clients that share Fedora's translated source address. Traffic from those clients inside the session timeout can be grouped into the same session, and a detection from that mixed session can be linked to the experiment. For defensible attribution, isolate the lab route during a run: stop unrelated traffic from the Fedora host during the experiment window, avoid concurrent experiments (the API already enforces one active experiment), and document the NAT source mapping. Treat the resulting source-IP correlation as bounded lab evidence, not per-guest identity proof.
+
 ## Settling and direct correlation
 
 Finish first records `end_time` and persists `correlating`. The backend polls the count of experiment-specific events until it is unchanged for the configured quiet period, bounded by the settle timeout. The query uses occurrence time, source and destination IP, canonical `service.name` targets, and excludes internal/loopback telemetry. A timeout produces `INCONCLUSIVE / SETTLE_TIMEOUT`; it never produces an FN.
@@ -49,3 +62,30 @@ Experiments report, only when the source timestamps exist and are non-negative:
 - `processing_latency_seconds = detected_at - evidence_end_time`
 
 They also retain first/last occurrence and ingestion timestamps plus telemetry settle duration. Missing or impossible timings remain null rather than being invented or silently clamped.
+
+## Verified end-to-end smoke test (4 November 2026)
+
+One real lab run completed successfully using the `multi-honeypot-attack` scenario:
+
+| Item | Observed value |
+| --- | --- |
+| Experiment | `EXP-2F9572CFF717` |
+| Runner ID | `RUN-f42456a53773` |
+| Ground truth | Valid; runner status `completed` |
+| Scenario steps | 7 of 7 accepted (including expected authentication/HTTP rejections) |
+| Telemetry settled | Yes, approximately 3.03 seconds |
+| Matched events | 14 |
+| Linked sessions | 1 |
+| Linked detections | 6 |
+| Expected detection | `MULTI_STAGE_ATTACK`, observed |
+| Result | **TP** |
+| Telemetry step coverage | 7/7 (100%) |
+| Runner duration | Approximately 2.08 seconds |
+| Mean event-ingestion latency | Approximately 5.31 seconds |
+| P95 event-ingestion latency | Approximately 9.52 seconds |
+
+This is one observed run, not a statistical evaluation or general performance claim. In this run, `detection_latency_seconds` and `processing_latency_seconds` were null because the matched detection did not provide a usable `detected_at` value. Treat those metrics as unavailable; do not substitute zero or infer a value from `evidence_latency_seconds`.
+
+## Repeatability and interpretation
+
+A single TP proves that the expected rule fired for this controlled run with valid ground truth and matched telemetry. It does not establish general precision, recall, F1, false-positive rate, accuracy, detection latency, throughput, or resource overhead. Run repeated attack and control cohorts and follow [EVALUATION.md](EVALUATION.md) before making broader claims.
