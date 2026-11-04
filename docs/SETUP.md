@@ -156,23 +156,27 @@ id -nG trapsig
 sudo -u trapsig docker info
 ```
 
-The `docker` group is highly privileged and effectively root-equivalent. Use this dedicated account only for the backend management path. The wrapper runs the fixed script `/opt/trapsig/sensor/scripts/ssh-manage-wrapper.sh`; the project tree and scripts must be root-owned and not writable by `trapsig`.
+The `docker` group is highly privileged and effectively root-equivalent. Use this dedicated account only for the backend management path. The wrapper runs the fixed script `/opt/trapsig/sensor/scripts/ssh-manage-wrapper.sh`; keep the project tree and scripts root-owned and not writable by `trapsig`.
 
-Install the public key generated on Fedora (`secrets/pi_ssh_key.pub`) on the Pi. Create the SSH directory and add the key as a forced-command-only entry:
+Install the public key generated on Fedora (`secrets/pi_ssh_key.pub`) on the Pi. Create the SSH directory and append the key as a forced-command-only entry:
 
 ```bash
 sudo install -d -o trapsig -g trapsig -m 700 /home/trapsig/.ssh
-sudo sh -c 'printf "%s\\n" "command=\\"/opt/trapsig/sensor/scripts/ssh-manage-wrapper.sh\\",no-agent-forwarding,no-port-forwarding,no-X11-forwarding,no-pty,no-user-rc $(cat /path/to/pi_ssh_key.pub)" > /home/trapsig/.ssh/authorized_keys'
+PUBKEY=/path/to/pi_ssh_key.pub  # replace with the transferred public-key path
+sudo sh -c 'printf "%s\\n" "command=\\"/opt/trapsig/sensor/scripts/ssh-manage-wrapper.sh\\",no-agent-forwarding,no-port-forwarding,no-X11-forwarding,no-pty,no-user-rc $(cat "$1")" >> /home/trapsig/.ssh/authorized_keys' sh "$PUBKEY"
 sudo chown trapsig:trapsig /home/trapsig/.ssh/authorized_keys
 sudo chmod 600 /home/trapsig/.ssh/authorized_keys
 ```
 
-Replace `/path/to/pi_ssh_key.pub` with the actual path where you transferred the **public** key from Fedora. Never copy the private key to the Pi. Confirm the public key line starts with the `command=` restriction and has the `ssh-ed25519` key at its end. The wrapper permits only status and fixed `start|stop|restart` operations for `cowrie`, `camera`, `iot-service`, `mqtt`, and `router`. It must not be replaced with an unrestricted shell command.
+Replace `/path/to/pi_ssh_key.pub` with the actual path where you transferred the **public** key from Fedora. Never copy the private key to the Pi. Confirm the authorized-key line starts with the `command=` restriction and contains the `ssh-ed25519` public key. The wrapper permits only status and fixed `start|stop|restart` operations for `cowrie`, `camera`, `iot-service`, `mqtt`, and `router`. It must not be replaced with an unrestricted shell command.
 
-From Fedora, install the same private key and known-hosts file at the paths used by Compose, then test the restricted command:
+From Fedora, load the Pi host from `.env` and test the restricted command:
 
 ```bash
-install -m 600 secrets/pi_ssh_key secrets/pi_ssh_key
+set -a
+. ./.env
+set +a
+: "${PI_HOST:?Set PI_HOST in .env first}"
 ssh -i secrets/pi_ssh_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=secrets/known_hosts trapsig@"$PI_HOST" /opt/trapsig/sensor/scripts/manage.sh status
 ```
 
