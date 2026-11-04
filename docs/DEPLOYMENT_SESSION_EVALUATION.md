@@ -48,7 +48,7 @@ These are private lab addresses observed during this session. Re-check them befo
 | Debian Internet access | **BLOCKED** | Pings to 8.8.8.8 and 1.1.1.1 received no replies; GitHub DNS resolved to 20.207.73.82, but HTTPS to GitHub timed out and pip reported Network is unreachable. |
 | Debian-to-Pi ICMP test | **FAILED; TCP UNTESTED** | Ping from Debian to 192.168.29.212 received no replies. No TCP port probe was run from the VM. Fedora-to-Pi ping succeeded. |
 | Debian attack dependencies | **BLOCKED** | Python 3 is present and a virtual environment was created, but importing the runner failed because paramiko is absent. Installing attacks/requirements.txt could not reach the package index. |
-| Attack runner invocation | **NOT COMPLETED** | One invocation was attempted from inside attacks/, where attacks.runner.run is not importable as a top-level module. The correct working directory is the repository root. |
+| Attack runner invocation | **NOT COMPLETED** | An invocation from inside `attacks/` failed because `attacks.runner.run` was not importable from that working directory. A later attempt from the repository root reached the runner import but failed because `paramiko` was missing. No scenario ran. |
 | Filebeat-to-Logstash delivery | **NOT VERIFIED** | No Filebeat output test, Logstash ingress confirmation, or indexed sensor event was provided. |
 | Attack detection and experiment metrics | **NOT MEASURED** | No scenario was executed, so there are no ground-truth records, detections, precision/recall values, or latency measurements from this session. |
 | Physical resource/recovery evaluation | **NOT MEASURED** | No CPU/RAM sampling, restart-idempotency test, Logstash interruption/recovery test, or clock-synchronization evidence was collected. |
