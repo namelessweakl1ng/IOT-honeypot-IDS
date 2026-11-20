@@ -61,6 +61,21 @@ def test_overview_handles_missing_indices(monkeypatch, missing_position):
     assert [totals["events"], totals["sessions"], totals["detections"]][missing_position] == 0
 
 
+@pytest.mark.parametrize(("minutes", "interval"), [(43200, "1d"), (525600, "7d")])
+def test_overview_supports_long_analysis_windows(monkeypatch, minutes, interval):
+    aggregate = AsyncMock(side_effect=[result(), result(), result()])
+    monkeypatch.setattr(analytics.store, "aggregate", aggregate)
+
+    response = TestClient(app).get(f"/analytics/overview?minutes={minutes}")
+
+    assert response.status_code == 200
+    assert response.json()["range_minutes"] == minutes
+    event_aggregations = aggregate.call_args_list[0].args[2]
+    assert event_aggregations["events_over_time"]["date_histogram"]["fixed_interval"] == interval
+    time_filter = aggregate.call_args_list[0].args[1]["bool"]["filter"][0]["range"]["@timestamp"]["gte"]
+    assert time_filter == f"now-{minutes}m"
+
+
 def test_overview_empty_and_invalid_responses(monkeypatch):
     monkeypatch.setattr(analytics.store, "aggregate", AsyncMock(side_effect=[result(), result(), result()]))
     body = TestClient(app).get("/analytics/overview").json()
