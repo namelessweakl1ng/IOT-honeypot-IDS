@@ -3,7 +3,7 @@ import { api, displayValue } from "@/lib/api";
 import type { AnalyticsOverview, SystemStatus } from "@/lib/types";
 import { EmptyChart, HorizontalBars, Matrix, Panel, SessionBars, Timeline } from "@/components/soc-charts";
 
-const ranges = [[15, "15m"], [60, "1h"], [360, "6h"], [1440, "24h"], [10080, "7d"]] as const;
+const ranges = [[15, "15m"], [60, "1h"], [360, "6h"], [1440, "24h"], [10080, "7d"], [43200, "1mo"], [525600, "1y"]] as const;
 const severityColors = { critical: "#ef5362", high: "#dc6671", medium: "#d7a548", low: "#4b9bd5" };
 const emptyAnalytics = (minutes: number): AnalyticsOverview => ({ range_minutes: minutes, totals: { events: 0, sessions: 0, detections: 0, unique_sources: 0, failed_auth_attempts: 0, multi_service_sessions: 0 }, events_over_time: [], honeypots: [], protocols: [], categories: [], actions: [], outcomes: [], top_sources: [], auth_outcomes: [], detection_severity: [], detection_types: [], source_honeypot_matrix: [], sessions: [], recent_detections: [], recent_events: [] });
 const stateTone = (value: unknown) => ["healthy", "running", "configured", "green"].includes(String(value).toLowerCase()) ? "ok" : ["unavailable", "unreachable", "red", "error"].includes(String(value).toLowerCase()) ? "danger" : "warn";
