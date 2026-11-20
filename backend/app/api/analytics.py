@@ -44,7 +44,19 @@ async def overview(minutes: int = Query(60)) -> dict[str, Any]:
 
         raise HTTPException(422, "minutes must be one of 15, 60, 360, 1440, 10080, 43200, 525600")
 
-    interval = "1m" if minutes <= 60 else "10m" if minutes <= 360 else "1h" if minutes <= 1440 else "12h" if minutes <= 10080 else "1d" if minutes <= 43200 else "7d"
+    interval = (
+        "1m"
+        if minutes <= 60
+        else "10m"
+        if minutes <= 360
+        else "1h"
+        if minutes <= 1440
+        else "12h"
+        if minutes <= 10080
+        else "1d"
+        if minutes <= 43200
+        else "7d"
+    )
     events_task = store.aggregate(
         "trapsig-events-*",
         _query(minutes, "@timestamp", True),
