@@ -17,7 +17,7 @@ async def events(
     category: str | None = None,
     action: str | None = None,
     outcome: str | None = None,
-    minutes: int | None = Query(None, ge=1, le=10080),
+    minutes: int | None = Query(None, ge=1, le=525600),
 ):
     filters = []
     for field, value in [
