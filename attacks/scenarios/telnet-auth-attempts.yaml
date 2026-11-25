@@ -4,7 +4,7 @@ description: Bounded Telnet input attempts
 trial_kind: attack
 target_services:
 - telnet
-expected_detection: BRUTE_FORCE
+expected_detection: BEHAVIOURAL_ANOMALY
 severity: high
 steps:
 - service: telnet
