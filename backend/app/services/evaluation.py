@@ -9,7 +9,7 @@ import statistics
 from collections import defaultdict
 from typing import Any, Iterable
 
-from .detector import SUPPORTED_DETECTION_TYPES
+from .adaptive import SUPPORTED_DETECTION_TYPES
 
 EXPORT_COLUMNS = (
     "experiment_id",
@@ -23,7 +23,8 @@ EXPORT_COLUMNS = (
     "ground_truth_valid",
     "telemetry_settled",
     "software_revision",
-    "detector_ruleset_version",
+    "adaptive_model_version",
+    "adaptive_policy_version",
     "scenario_manifest_sha256",
     "evaluation_config_fingerprint",
     "unexpected_detection_types",
@@ -106,10 +107,9 @@ def evaluation_config_fingerprint(experiment: dict[str, Any]) -> str | None:
     config = experiment.get("config_snapshot") or {}
     required = (
         "session_timeout_seconds",
-        "brute_force_threshold",
-        "web_enumeration_threshold",
-        "multi_service_threshold",
-        "detector_ruleset_version",
+        "adaptive_model_version",
+        "adaptive_policy_version",
+        "feature_schema_version",
         "trapsig_schema_version",
     )
     revision = experiment.get("software_revision")
