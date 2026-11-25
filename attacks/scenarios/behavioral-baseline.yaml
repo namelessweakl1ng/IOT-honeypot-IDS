@@ -1,0 +1,20 @@
+id: behavioral-baseline
+name: Behavioural baseline calibration
+description: Benign, low-volume interactions across the custom decoys to train the learned baseline
+trial_kind: control
+target_services: [camera, router, iot, mqtt]
+expected_detection: null
+severity: informational
+steps:
+  - {service: camera, path: /}
+  - {service: camera, path: /device}
+  - {service: camera, path: /status}
+  - {service: router, path: /}
+  - {service: router, path: /status}
+  - {service: router, path: /wireless}
+  - {service: iot, payload: "STATUS\\r\\n"}
+  - {service: iot, payload: "VERSION\\r\\n"}
+  - {service: iot, payload: "INFO\\r\\n"}
+  - {service: iot, payload: "HELP\\r\\n"}
+  - {service: mqtt, operation: connect, client_id: "baseline-monitor"}
+  - {service: mqtt, operation: subscribe, topic: "devices/+/status"}
