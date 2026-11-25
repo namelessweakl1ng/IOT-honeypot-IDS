@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException
 from ..config import get_settings
 from ..elastic import store
 from ..schemas import ExperimentCreate, GroundTruthSubmission
-from ..services.detector import DETECTOR_RULESET_VERSION
+from ..services.adaptive import AdaptiveEngine, MODEL_VERSION, POLICY_VERSION
 from ..services.experiments import correlate, event_query, exact_filter, parse_time, validate_lab_host
 from ..services.scenarios import ScenarioCatalog, ScenarioCatalogError
 from ..services.telemetry import SCHEMA_VERSION
@@ -88,14 +88,14 @@ async def start(identifier: str):
     doc.update(
         status="running",
         start_time=now(),
-        detector_ruleset_version=DETECTOR_RULESET_VERSION,
+        adaptive_model_version=MODEL_VERSION,
+        adaptive_policy_version=POLICY_VERSION,
         software_revision=settings.trapsig_revision,
         config_snapshot={
             "session_timeout_seconds": settings.session_timeout_seconds,
-            "brute_force_threshold": settings.brute_force_threshold,
-            "web_enumeration_threshold": settings.web_enumeration_threshold,
-            "multi_service_threshold": settings.multi_service_threshold,
-            "detector_ruleset_version": DETECTOR_RULESET_VERSION,
+            "adaptive_model_version": MODEL_VERSION,
+            "adaptive_policy_version": POLICY_VERSION,
+            "feature_schema_version": "1",
             "trapsig_schema_version": SCHEMA_VERSION,
             "software_revision": settings.trapsig_revision,
         },
@@ -200,6 +200,7 @@ async def finish(identifier: str):
         doc = correlate(doc, [], [], [], scientific=True)
         doc.update(status="completed", result="INCONCLUSIVE", result_reason="SETTLE_TIMEOUT", observed_detection=None)
         return await store.save(INDEX, identifier, doc)
+    sessions: list[dict] = []
     try:
         from ..services import processor as processor_module
 
@@ -230,5 +231,45 @@ async def finish(identifier: str):
     except Exception:
         doc = correlate(doc, [], [], [], scientific=True)
         doc.update(result="INCONCLUSIVE", result_reason="PROCESSING_ERROR", observed_detection=None)
+    # Reinforcement feedback is computed only from completed, validated trials.
+    # A feedback-store failure must not rewrite a valid scientific result as a failure.
+    if doc.get("ground_truth_valid") and doc.get("result") in {"TP", "FN", "TN", "FP"}:
+        try:
+            session_ids = [item.get("session_id") for item in sessions if item.get("session_id")]
+            decisions = (
+                await store.search_all(
+                    "trapsig-decisions",
+                    exact_filter("session_id", session_ids),
+                    missing_index_is_empty=True,
+                )
+                if session_ids
+                else []
+            )
+            by_session = {item.get("session_id"): item for item in decisions}
+            prior = await store.get("trapsig-adaptive-state", "primary")
+            engine = AdaptiveEngine(prior or {})
+            for session in sessions:
+                decision = by_session.get(session.get("session_id"))
+                if decision:
+                    engine.learn_reward(decision, doc.get("trial_kind", "attack"), doc["result"])
+                if doc.get("trial_kind") == "control" and doc["result"] == "TN":
+                    engine.learn_control(session)
+            await store.save(
+                "trapsig-adaptive-state",
+                "primary",
+                {**engine.to_state(), "updated_at": now(), "last_experiment_id": identifier},
+            )
+            from ..services import processor as processor_module
+
+            if processor_module.processor:
+                processor_module.processor.engine = engine
+            doc["adaptive_feedback"] = {
+                "model_samples": len(engine.baseline.samples),
+                "calibration_samples": len(engine.baseline.calibration_scores),
+                "policy_updates": engine.policy.updates,
+            }
+        except Exception as exc:
+            doc["adaptive_feedback_error"] = str(exc)
+
     doc["status"] = "completed"
     return await store.save(INDEX, identifier, doc)
