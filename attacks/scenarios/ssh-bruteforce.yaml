@@ -4,7 +4,7 @@ description: Six failed SSH password authentications
 trial_kind: attack
 target_services:
 - ssh
-expected_detection: BRUTE_FORCE
+expected_detection: BEHAVIOURAL_ANOMALY
 severity: high
 steps:
 - service: ssh
