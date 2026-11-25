@@ -4,7 +4,7 @@ description: One ordinary camera root request
 trial_kind: control
 target_services:
 - camera
-expected_detection: null
+expected_detection: BEHAVIOURAL_ANOMALY
 severity: informational
 steps:
 - service: camera
