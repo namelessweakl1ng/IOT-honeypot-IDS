@@ -1,0 +1,23 @@
+id: multi-stage-pivot
+name: Multi-stage IoT pivot campaign
+description: Interacts with a fake SSH shell, enumerates camera and router surfaces, and probes controller and MQTT control paths
+trial_kind: attack
+target_services: [ssh, camera, router, iot, mqtt]
+expected_detection: BEHAVIOURAL_ANOMALY
+severity: high
+steps:
+  - {service: ssh, username: admin, password: wrong}
+  - {service: ssh, username: root, password: root, commands: ["id", "uname -a", "cat /etc/passwd", "ls -la /etc", "ps"]}
+  - {service: camera, path: /device}
+  - {service: camera, path: /api/system}
+  - {service: camera, path: /../../../../etc/passwd}
+  - {service: router, path: /login}
+  - {service: router, path: /admin}
+  - {service: router, path: /api/config}
+  - {service: iot, payload: "HELP\\r\\n"}
+  - {service: iot, payload: "AUTH admin admin\\r\\n"}
+  - {service: iot, payload: "RELAY 1 ON\\r\\n"}
+  - {service: mqtt, operation: connect, client_id: "edge-maintenance"}
+  - {service: mqtt, operation: subscribe, topic: "devices/+/config"}
+  - {service: mqtt, operation: publish, topic: "devices/edge-01/command", payload: "reboot"}
+  - {service: mqtt, operation: ping}
