@@ -1,0 +1,15 @@
+id: iot-controller-discovery
+name: IoT controller discovery and unauthorized control
+description: Maps the fictional controller interface, then attempts an unauthorized command and weak local authentication
+trial_kind: attack
+target_services: [iot]
+expected_detection: BEHAVIOURAL_ANOMALY
+severity: medium
+steps:
+  - {service: iot, payload: "HELP\\r\\n"}
+  - {service: iot, payload: "INFO\\r\\n"}
+  - {service: iot, payload: "VERSION\\r\\n"}
+  - {service: iot, payload: "CONFIG EXPORT\\r\\n"}
+  - {service: iot, payload: "AUTH operator guest\\r\\n"}
+  - {service: iot, payload: "AUTH admin admin\\r\\n"}
+  - {service: iot, payload: "RELAY 1 ON\\r\\n"}
