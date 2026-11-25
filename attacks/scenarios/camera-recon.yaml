@@ -4,7 +4,7 @@ description: Probe AsterView endpoints and authentication boundaries
 trial_kind: attack
 target_services:
 - camera
-expected_detection: WEB_ENUMERATION
+expected_detection: BEHAVIOURAL_ANOMALY
 severity: medium
 steps:
 - service: camera
