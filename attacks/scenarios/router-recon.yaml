@@ -4,7 +4,7 @@ description: Inspect bounded router paths
 trial_kind: attack
 target_services:
 - router
-expected_detection: WEB_ENUMERATION
+expected_detection: BEHAVIOURAL_ANOMALY
 severity: medium
 steps:
 - service: router
