@@ -310,9 +310,14 @@ class AdaptiveEngine:
         context = None
         action = "observe"
         q_values: dict[str, float] = {}
-        if anomalous:
+        if ready:
             context = self.policy.context(features, float(score), float(threshold))
-            action, q_values = self.policy.choose(context)
+            if anomalous:
+                action, q_values = self.policy.choose(context)
+            else:
+                q_values = dict(self.policy.q_values.get(
+                    context, {"observe": 0.0, "guarded": 0.15, "restrictive": 0.0}
+                ))
         self.last_score = score
         self.last_action = action
 
