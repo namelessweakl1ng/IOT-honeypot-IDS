@@ -4,6 +4,7 @@ import http.cookiejar
 import json
 import os
 import socket
+import time
 import uuid
 from datetime import datetime, timezone
 from hashlib import sha256
@@ -106,17 +107,35 @@ def _mqtt_string(value: str) -> bytes:
 
 
 def mqtt_packet(step: dict) -> bytes:
+    """Build bounded MQTT 3.1.1 packets for the local deception broker only."""
     operation = step.get("operation", "connect")
     if operation == "connect":
-        body = b"\x00\x04MQTT\x04\x02\x00\x0a" + _mqtt_string(step.get("client_id", "mqtt-client"))
+        username = step.get("username")
+        password = step.get("password")
+        if password is not None and username is None:
+            raise ValueError("MQTT password requires a username")
+        flags = 0x02 | (0x80 if username is not None else 0) | (0x40 if password is not None else 0)
+        body = b"\x00\x04MQTT\x04" + bytes([flags]) + b"\x00\x0a"
+        body += _mqtt_string(step.get("client_id", "mqtt-client")[:64])
+        if username is not None:
+            body += _mqtt_string(str(username)[:64])
+        if password is not None:
+            encoded_password = str(password).encode("utf-8")[:64]
+            body += len(encoded_password).to_bytes(2, "big") + encoded_password
         return b"\x10" + _mqtt_remaining_length(len(body)) + body
     if operation == "subscribe":
-        body = b"\x00\x01" + _mqtt_string(step.get("topic", "#")) + b"\x00"
+        body = b"\x00\x01" + _mqtt_string(step.get("topic", "#")[:128]) + b"\x00"
         return b"\x82" + _mqtt_remaining_length(len(body)) + body
+    if operation == "publish":
+        topic = step.get("topic", "devices/test/status")
+        payload = str(step.get("payload", "status")).encode("utf-8")[:256]
+        body = _mqtt_string(str(topic)[:128]) + payload
+        return b"\x30" + _mqtt_remaining_length(len(body)) + body
     if operation == "ping":
         return b"\xc0\x00"
+    if operation == "disconnect":
+        return b"\xe0\x00"
     raise ValueError(f"unsupported MQTT operation: {operation}")
-
 
 def mqtt_request(target: str, step: dict) -> None:
     with socket.create_connection((target, PORTS["mqtt"]), timeout=3) as connection:
@@ -157,6 +176,11 @@ def run(scenario_id: str, target: str, source: str = "controlled-attacker", expe
         step_started = datetime.now(timezone.utc)
         status, detail = "completed", None
         try:
+            delay_seconds = float(step.get("delay_seconds", 0.0))
+            if not 0.0 <= delay_seconds <= 3.0:
+                raise ValueError("scenario delay_seconds must be between 0 and 3")
+            if delay_seconds:
+                time.sleep(delay_seconds)
             execute(target, step)
         except ExpectedRejection as exc:
             status = "rejected" if "rejected" in allowed_step_statuses(step) else "failed"
