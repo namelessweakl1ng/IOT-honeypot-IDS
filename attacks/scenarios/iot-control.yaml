@@ -4,7 +4,7 @@ description: One bounded ordinary status request
 trial_kind: control
 target_services:
 - iot
-expected_detection: null
+expected_detection: BEHAVIOURAL_ANOMALY
 severity: informational
 steps:
 - service: iot
