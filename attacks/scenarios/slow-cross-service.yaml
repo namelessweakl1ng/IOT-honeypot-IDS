@@ -1,0 +1,15 @@
+id: slow-cross-service
+name: Low-and-slow cross-service reconnaissance
+description: Spreads bounded low-rate discovery interactions across services to test temporal and cross-service modelling
+trial_kind: attack
+target_services: [camera, router, iot, mqtt]
+expected_detection: BEHAVIOURAL_ANOMALY
+severity: medium
+steps:
+  - {service: camera, path: /}
+  - {service: iot, payload: "STATUS\\r\\n", delay_seconds: 1.2}
+  - {service: router, path: /status, delay_seconds: 1.4}
+  - {service: mqtt, operation: connect, client_id: "slow-observer", delay_seconds: 1.1}
+  - {service: camera, path: /api/system, delay_seconds: 1.3}
+  - {service: iot, payload: "CONFIG EXPORT\\r\\n", delay_seconds: 1.2}
+  - {service: mqtt, operation: subscribe, topic: "sensors/+/config", delay_seconds: 1.1}
