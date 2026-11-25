@@ -1,0 +1,15 @@
+id: mqtt-topic-enumeration
+name: MQTT topic enumeration and command injection attempt
+description: Uses valid MQTT 3.1.1 packets to enumerate likely device topics and publish harmless test payloads
+trial_kind: attack
+target_services: [mqtt]
+expected_detection: BEHAVIOURAL_ANOMALY
+severity: medium
+steps:
+  - {service: mqtt, operation: connect, client_id: "diag-agent"}
+  - {service: mqtt, operation: subscribe, topic: "$SYS/broker/version"}
+  - {service: mqtt, operation: subscribe, topic: "devices/+/status"}
+  - {service: mqtt, operation: subscribe, topic: "sensors/+/config"}
+  - {service: mqtt, operation: publish, topic: "devices/edge-01/command", payload: "status"}
+  - {service: mqtt, operation: publish, topic: "devices/edge-01/command", payload: "diagnostic"}
+  - {service: mqtt, operation: ping}
