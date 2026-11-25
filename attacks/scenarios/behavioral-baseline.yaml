@@ -3,7 +3,7 @@ name: Behavioural baseline calibration
 description: Benign, low-volume interactions across the custom decoys to train the learned baseline
 trial_kind: control
 target_services: [camera, router, iot, mqtt]
-expected_detection: BEHAVIOURAL_ANOMALY
+expected_detection: null
 severity: informational
 steps:
   - {service: camera, path: /}
