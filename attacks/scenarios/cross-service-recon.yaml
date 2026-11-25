@@ -6,7 +6,7 @@ target_services:
 - camera
 - router
 - mqtt
-expected_detection: MULTI_SERVICE_ACTIVITY
+expected_detection: BEHAVIOURAL_ANOMALY
 severity: medium
 steps:
 - service: camera
