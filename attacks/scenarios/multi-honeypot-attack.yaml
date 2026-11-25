@@ -9,7 +9,7 @@ target_services:
 - iot
 - mqtt
 - router
-expected_detection: MULTI_STAGE_ATTACK
+expected_detection: BEHAVIOURAL_ANOMALY
 severity: high
 steps:
 - service: ssh
